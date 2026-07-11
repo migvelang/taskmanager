@@ -1,24 +1,26 @@
 <!DOCTYPE html>
-<!-- saved from url=(0225)file:///Users/miguelmoraga/Library/Application%20Support/Claude/local-agent-mode-sessions/19e266fc-42ec-44d4-b588-a8ce32376ccd/bcc051e2-8f91-4bce-af60-3184d00f3900/local_d58d7499-327c-41ea-b067-834c1e99060e/outputs/index.html -->
-<html lang="es"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
+<html lang="es">
+<head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Task Manager">
 <meta name="theme-color" content="#0b1020">
-<title>Daily Task Manager · Miguel</title>
+<title>Daily Task Manager</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { background:#0b1020; }
-body { color:#c9d2f2; font-family:-apple-system,'Segoe UI',Roboto,sans-serif; padding:14px; padding-top:calc(14px + env(safe-area-inset-top)); min-height:100vh; max-width:860px; margin:0 auto; }
+body { color:#c9d2f2; font-family:-apple-system,'Segoe UI',Roboto,sans-serif; padding:14px; padding-top:calc(14px + env(safe-area-inset-top)); padding-bottom:calc(20px + env(safe-area-inset-bottom)); min-height:100vh; max-width:900px; margin:0 auto; }
 .mono { font-family:ui-monospace,'SF Mono',Menlo,monospace; }
 .hdr { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
 .hdr h1 { font-size:17px; font-weight:600; color:#e8ecff; letter-spacing:1.5px; }
 .hdr .sub { font-size:11px; color:#7d8ab8; margin-top:2px; font-family:ui-monospace,monospace; }
-.chips { display:flex; gap:6px; flex-wrap:wrap; }
-.chip { font-size:10px; padding:4px 10px; border-radius:20px; border:1px solid #2a3560; color:#7d8ab8; font-family:ui-monospace,monospace; letter-spacing:.5px; cursor:pointer; background:transparent; }
+.chip { font-size:10px; padding:5px 11px; border-radius:20px; border:1px solid #2a3560; color:#7d8ab8; font-family:ui-monospace,monospace; letter-spacing:.5px; cursor:pointer; background:transparent; }
 .chip.ok { border-color:#1D9E75; color:#5DCAA5; }
 .chip.warn { border-color:#EF9F27; color:#EF9F27; }
+.chip.err { border-color:#F0997B; color:#F0997B; }
 .stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin-bottom:12px; }
 .stat { background:#121a33; border-radius:10px; padding:10px 12px; }
 .stat p { font-size:10px; color:#7d8ab8; letter-spacing:1px; }
@@ -26,7 +28,6 @@ body { color:#c9d2f2; font-family:-apple-system,'Segoe UI',Roboto,sans-serif; pa
 .b-teal { border-left:3px solid #5DCAA5; } .b-coral { border-left:3px solid #F0997B; }
 .b-purp { border-left:3px solid #AFA9EC; } .b-amber { border-left:3px solid #EF9F27; }
 .cols { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.35fr); gap:8px; margin-bottom:8px; }
-@media (max-width:640px){ .cols { grid-template-columns:1fr; } .stats { grid-template-columns:repeat(2,1fr); } }
 .card { background:#121a33; border-radius:10px; padding:12px 14px; margin-bottom:8px; }
 .card h2 { font-size:12px; letter-spacing:1.5px; margin-bottom:8px; font-weight:600; }
 .h-teal { color:#5DCAA5; } .h-coral { color:#F0997B; } .h-purp { color:#AFA9EC; } .h-amber { color:#EF9F27; }
@@ -37,24 +38,24 @@ body { color:#c9d2f2; font-family:-apple-system,'Segoe UI',Roboto,sans-serif; pa
 .done .tx, .done .cid { text-decoration:line-through; color:#5a6690 !important; }
 .cid { font-family:ui-monospace,monospace; font-size:12px; color:#5DCAA5; flex:none; }
 .badge { font-size:9px; letter-spacing:.5px; padding:3px 8px; border-radius:10px; border:1px solid; cursor:pointer; flex:none; background:transparent; font-family:inherit; }
-.s-curso { color:#EF9F27; border-color:#EF9F27; } .s-esper { color:#85B7EB; border-color:#85B7EB; } .s-listo { color:#5DCAA5; border-color:#5DCAA5; }
+.s-curso { color:#EF9F27; border-color:#EF9F27; } .s-esper { color:#85B7EB; border-color:#85B7EB; }
 .del { color:#3a4670; background:none; border:none; cursor:pointer; font-size:16px; flex:none; padding:0 4px; }
 .del:active { color:#E24B4A; }
 .alerta { background:#2a1420; border-radius:8px; padding-left:6px; border-bottom:none; margin:2px 0; border:1px solid #79293a; }
 .warntx { font-size:9px; color:#F09595; flex:none; }
 .addrow { display:flex; gap:6px; margin-top:8px; }
-.addrow input, .set input, .set textarea { background:#0b1020; border:1px solid #2a3560; color:#c9d2f2; border-radius:6px; padding:8px; font-size:13px; outline:none; width:100%; font-family:inherit; }
-.addrow input:focus { border-color:#5DCAA5; }
+.addrow input, .set input { background:#0b1020; border:1px solid #2a3560; color:#c9d2f2; border-radius:6px; padding:8px; font-size:13px; outline:none; width:100%; font-family:inherit; }
+.addrow input:focus, .set input:focus { border-color:#5DCAA5; }
 .addrow input { flex:1; min-width:0; }
 .btn { background:#0b1020; border:1px solid #2a3560; color:#c9d2f2; border-radius:6px; padding:8px 12px; font-size:13px; cursor:pointer; }
 .btn:active { border-color:#5DCAA5; color:#5DCAA5; }
 .btn.go { border-color:#1D9E75; color:#5DCAA5; }
 .week { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:5px; }
-.day { min-height:60px; border-radius:8px; padding:3px; }
+.day { min-height:60px; border-radius:8px; padding:3px; background:#0d1330; }
 .day p { font-size:9px; color:#7d8ab8; text-align:center; margin-bottom:4px; letter-spacing:.5px; }
 .day.today { border:1px solid #5DCAA5; } .day.today p { color:#5DCAA5; font-weight:600; }
 .ev { border-radius:5px; padding:3px 4px; font-size:9px; margin-bottom:3px; line-height:1.25; overflow-wrap:anywhere; }
-.ev-ag { background:#231d45; color:#CECBF6; } .ev-tu { background:#0d2b22; color:#9FE1CB; } .ev-ics { background:#12233f; color:#B5D4F4; }
+.ev-ag { background:#231d45; color:#CECBF6; } .ev-ics { background:#12233f; color:#B5D4F4; }
 .wknav { display:flex; gap:6px; align-items:center; }
 .wknav button { background:none; border:1px solid #2a3560; color:#7d8ab8; border-radius:6px; padding:3px 12px; cursor:pointer; font-size:14px; }
 .quick { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
@@ -65,28 +66,29 @@ body { color:#c9d2f2; font-family:-apple-system,'Segoe UI',Roboto,sans-serif; pa
 .detail { background:#0b1020; border:1px solid #2a3560; border-radius:8px; padding:8px 10px; margin:4px 0 6px; font-size:11px; color:#7d8ab8; }
 .muted { font-size:11px; color:#5a6690; padding:4px 0; }
 details summary { cursor:pointer; font-size:12px; color:#7d8ab8; letter-spacing:1px; list-style:none; }
+details summary::-webkit-details-marker { display:none; }
 details summary::before { content:'▸ '; } details[open] summary::before { content:'▾ '; }
 .set { display:none; background:#121a33; border:1px solid #2a3560; border-radius:10px; padding:14px; margin-bottom:10px; }
 .set label { font-size:11px; color:#7d8ab8; display:block; margin:10px 0 4px; letter-spacing:.5px; }
 .set .hint { font-size:10px; color:#5a6690; margin-top:2px; }
 #toast { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); background:#121a33; border:1px solid #5DCAA5; color:#c9d2f2; border-radius:10px; padding:10px 16px; font-size:12px; display:none; z-index:9; max-width:90%; }
+@media (max-width:640px){ .cols, .stats, .week, .quick { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
+
 <div class="hdr">
   <div>
     <h1>DAILY TASK MANAGER</h1>
-    <div class="sub" id="fecha">VIERNES, 10 DE JULIO</div>
+    <div class="sub" id="fecha">—</div>
   </div>
-  <div class="chips">
-    <button class="chip warn" id="chip-sync" onclick="toggleSet()">⚙ CONFIGURAR SYNC</button>
-  </div>
+  <button class="chip warn" id="chip-sync" onclick="toggleSet()">CONECTANDO</button>
 </div>
 
-<div class="set" id="setPanel" style="display: block;">
+<div class="set" id="setPanel">
   <p style="font-size:13px; color:#e8ecff; font-weight:600;">⚙ Configuración (se guarda en este dispositivo)</p>
-  <label>Clave de sincronización (inventa una larga y única — es tu "contraseña"; usa la misma en todos tus dispositivos)</label>
-  <input id="cfg-clave" placeholder="ej: miguel-piso3-x7k9m2p4q8">
+  <label>Clave de sincronización (inventa una larga y única — funciona como contraseña; usa la misma clave en todos tus dispositivos para ver los mismos datos)</label>
+  <input id="cfg-clave" placeholder="ej: miguel-x7k9m2p4q8">
   <label>URL ICS de tu calendario Outlook (opcional)</label>
   <input id="cfg-ics" placeholder="https://outlook.office365.com/owa/calendar/..../calendar.ics">
   <p class="hint">Outlook Web → ⚙ Configuración → Calendario → Calendarios compartidos → Publicar un calendario → copia el enlace ICS.</p>
@@ -97,29 +99,29 @@ details summary::before { content:'▸ '; } details[open] summary::before { cont
 </div>
 
 <div class="stats">
-  <div class="stat b-teal"><p>TAREAS PEND.</p><b id="st-t">14</b></div>
-  <div class="stat b-coral"><p>CASOS ABIERTOS</p><b id="st-c">16</b></div>
-  <div class="stat b-purp"><p>EVENTOS SEMANA</p><b id="st-e">4</b></div>
-  <div class="stat b-amber"><p>ALERTAS</p><b id="st-a" style="color: rgb(240, 149, 149);">7</b></div>
+  <div class="stat b-teal"><p>TAREAS PEND.</p><b id="st-t" class="mono">0</b></div>
+  <div class="stat b-coral"><p>CASOS ABIERTOS</p><b id="st-c" class="mono">0</b></div>
+  <div class="stat b-purp"><p>EVENTOS SEMANA</p><b id="st-e" class="mono">0</b></div>
+  <div class="stat b-amber"><p>ALERTAS</p><b id="st-a" class="mono">0</b></div>
 </div>
 
 <div class="cols">
   <div class="card">
     <h2 class="h-teal">✓ TAREAS</h2>
-    <div id="tareas"><div class="row"><input type="checkbox" onchange="tgT(0)"><span class="tx">Sacar impresoras DV</span><button class="del" onclick="delT(0)">×</button></div><div class="row"><input type="checkbox" onchange="tgT(1)"><span class="tx">TRF Isa</span><button class="del" onclick="delT(1)">×</button></div><div class="row"><input type="checkbox" onchange="tgT(2)"><span class="tx">Capacitación Exchange</span><button class="del" onclick="delT(2)">×</button></div><div class="row"><input type="checkbox" onchange="tgT(3)"><span class="tx">Lenovo tablets</span><button class="del" onclick="delT(3)">×</button></div><div class="row"><input type="checkbox" onchange="tgT(4)"><span class="tx">Evidencias no se suben</span><button class="del" onclick="delT(4)">×</button></div><div class="row"><input type="checkbox" onchange="tgT(5)"><span class="tx">Flujo</span><button class="del" onclick="delT(5)">×</button></div><div class="row"><input type="checkbox" onchange="tgT(6)"><span class="tx">Grupo con asesores para confirmar cambio en caso de RTV</span><button class="del" onclick="delT(6)">×</button></div><div class="row"><input type="checkbox" onchange="tgT(7)"><span class="tx">Seguimiento</span><button class="del" onclick="delT(7)">×</button></div><div class="row"><input type="checkbox" onchange="tgT(8)"><span class="tx">Cuándo pagan Norton</span><button class="del" onclick="delT(8)">×</button></div><div class="row"><input type="checkbox" onchange="tgT(9)"><span class="tx">Campaña gamer con Diego</span><button class="del" onclick="delT(9)">×</button></div><div class="row"><input type="checkbox" onchange="tgT(10)"><span class="tx">GFK</span><button class="del" onclick="delT(10)">×</button></div><div class="row"><input type="checkbox" onchange="tgT(11)"><span class="tx">Cambio Gelen</span><button class="del" onclick="delT(11)">×</button></div><div class="row"><input type="checkbox" onchange="tgT(12)"><span class="tx">Cambio Vega</span><button class="del" onclick="delT(12)">×</button></div><div class="row"><input type="checkbox" onchange="tgT(13)"><span class="tx">Supervisor Acer promotor Zurita</span><button class="del" onclick="delT(13)">×</button></div></div>
-    <div class="addrow"><input id="in-tarea" placeholder="+ nueva tarea" onkeydown="if(event.key===&#39;Enter&#39;)addTarea()"><button class="btn" onclick="addTarea()">+</button></div>
+    <div id="tareas"></div>
+    <div class="addrow"><input id="in-tarea" placeholder="+ nueva tarea" onkeydown="if(event.key==='Enter')addTarea()"><button class="btn" onclick="addTarea()">+</button></div>
   </div>
   <div class="card">
     <h2 class="h-coral">⬢ CASOS DE CLIENTES</h2>
-    <div id="casos"><div class="row"><input type="checkbox" onchange="cerrar(0)"><span class="cid">HELPME-197254</span><span class="tx" onclick="det(0)">Error bluetooth impresora</span><button class="badge s-curso" onclick="ciclo(0)">EN CURSO</button><button class="del" onclick="delC(0)">×</button></div><div class="detail" id="det-0" style="display:none">última actividad: 2026-07-09 · <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="toca(0)">⟳ registrar movimiento hoy</button></div><div class="row"><input type="checkbox" onchange="cerrar(1)"><span class="cid">DSP-168553</span><span class="tx" onclick="det(1)">Eliminar cuenta clienta 6495226-9</span><button class="badge s-curso" onclick="ciclo(1)">EN CURSO</button><button class="del" onclick="delC(1)">×</button></div><div class="detail" id="det-1" style="display:none">última actividad: 2026-07-09 · <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="toca(1)">⟳ registrar movimiento hoy</button></div><div class="row"><input type="checkbox" onchange="cerrar(2)"><span class="cid">OCR-861693</span><span class="tx" onclick="det(2)">Liberar mandato RUT 16971170-7</span><button class="badge s-curso" onclick="ciclo(2)">EN CURSO</button><button class="del" onclick="delC(2)">×</button></div><div class="detail" id="det-2" style="display:none">última actividad: 2026-07-08 · <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="toca(2)">⟳ registrar movimiento hoy</button></div><div class="row"><input type="checkbox" onchange="cerrar(3)"><span class="cid">HELPME-197041</span><span class="tx" onclick="det(3)">Habilitar local 3660 para transferir desde 3790 y 5416</span><button class="badge s-curso" onclick="ciclo(3)">EN CURSO</button><button class="del" onclick="delC(3)">×</button></div><div class="detail" id="det-3" style="display:none">última actividad: 2026-07-08 · <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="toca(3)">⟳ registrar movimiento hoy</button></div><div class="row alerta"><input type="checkbox" onchange="cerrar(4)"><span class="cid">HELPME-196614</span><span class="tx" onclick="det(4)">Crear carteles <span class="warntx">⚠ 3d</span></span><button class="badge s-curso" onclick="ciclo(4)">EN CURSO</button><button class="del" onclick="delC(4)">×</button></div><div class="detail" id="det-4" style="display:none">última actividad: 2026-07-07 · <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="toca(4)">⟳ registrar movimiento hoy</button></div><div class="row alerta"><input type="checkbox" onchange="cerrar(5)"><span class="cid">PEOP-74690</span><span class="tx" onclick="det(5)">ABM Usuarios <span class="warntx">⚠ 4d</span></span><button class="badge s-curso" onclick="ciclo(5)">EN CURSO</button><button class="del" onclick="delC(5)">×</button></div><div class="detail" id="det-5" style="display:none">última actividad: 2026-07-06 · <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="toca(5)">⟳ registrar movimiento hoy</button></div><div class="row alerta"><input type="checkbox" onchange="cerrar(6)"><span class="cid">PEOP-74671</span><span class="tx" onclick="det(6)">Licenciamiento Office 365 <span class="warntx">⚠ 4d</span></span><button class="badge s-curso" onclick="ciclo(6)">EN CURSO</button><button class="del" onclick="delC(6)">×</button></div><div class="detail" id="det-6" style="display:none">última actividad: 2026-07-06 · <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="toca(6)">⟳ registrar movimiento hoy</button></div><div class="row alerta"><input type="checkbox" onchange="cerrar(7)"><span class="cid">HELPME-196305</span><span class="tx" onclick="det(7)">Acceso Patricio González <span class="warntx">⚠ 5d</span></span><button class="badge s-curso" onclick="ciclo(7)">EN CURSO</button><button class="del" onclick="delC(7)">×</button></div><div class="detail" id="det-7" style="display:none">última actividad: 2026-07-05 · <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="toca(7)">⟳ registrar movimiento hoy</button></div><div class="row alerta"><input type="checkbox" onchange="cerrar(8)"><span class="cid">HELPME-196304</span><span class="tx" onclick="det(8)">Habilitar cuenta SRX Patricio González <span class="warntx">⚠ 5d</span></span><button class="badge s-curso" onclick="ciclo(8)">EN CURSO</button><button class="del" onclick="delC(8)">×</button></div><div class="detail" id="det-8" style="display:none">última actividad: 2026-07-05 · <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="toca(8)">⟳ registrar movimiento hoy</button></div><div class="row alerta"><input type="checkbox" onchange="cerrar(9)"><span class="cid">DSP-168223</span><span class="tx" onclick="det(9)">Eliminar cuenta de cliente <span class="warntx">⚠ 6d</span></span><button class="badge s-curso" onclick="ciclo(9)">EN CURSO</button><button class="del" onclick="delC(9)">×</button></div><div class="detail" id="det-9" style="display:none">última actividad: 2026-07-04 · <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="toca(9)">⟳ registrar movimiento hoy</button></div><div class="row alerta"><input type="checkbox" onchange="cerrar(10)"><span class="cid">HELPME-195486</span><span class="tx" onclick="det(10)">Error procesar RTV <span class="warntx">⚠ 7d</span></span><button class="badge s-curso" onclick="ciclo(10)">EN CURSO</button><button class="del" onclick="delC(10)">×</button></div><div class="detail" id="det-10" style="display:none">última actividad: 2026-07-03 · <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="toca(10)">⟳ registrar movimiento hoy</button></div><div class="row"><input type="checkbox" onchange="cerrar(11)"><span class="cid">67948261</span><span class="tx" onclick="det(11)">Cobros de administración</span><button class="badge s-curso" onclick="ciclo(11)">EN CURSO</button><button class="del" onclick="delC(11)">×</button></div><div class="detail" id="det-11" style="display:none">última actividad: 2026-07-09 · <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="toca(11)">⟳ registrar movimiento hoy</button></div><div class="row"><input type="checkbox" onchange="cerrar(12)"><span class="cid">67967654</span><span class="tx" onclick="det(12)">Cobro de mandato Nico</span><button class="badge s-curso" onclick="ciclo(12)">EN CURSO</button><button class="del" onclick="delC(12)">×</button></div><div class="detail" id="det-12" style="display:none">última actividad: 2026-07-09 · <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="toca(12)">⟳ registrar movimiento hoy</button></div><div class="row"><input type="checkbox" onchange="cerrar(13)"><span class="cid">66982245</span><span class="tx" onclick="det(13)">Cobro mandato</span><button class="badge s-curso" onclick="ciclo(13)">EN CURSO</button><button class="del" onclick="delC(13)">×</button></div><div class="detail" id="det-13" style="display:none">última actividad: 2026-07-09 · <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="toca(13)">⟳ registrar movimiento hoy</button></div><div class="row"><input type="checkbox" onchange="cerrar(14)"><span class="cid">66996004</span><span class="tx" onclick="det(14)">Cambio Giovanni</span><button class="badge s-curso" onclick="ciclo(14)">EN CURSO</button><button class="del" onclick="delC(14)">×</button></div><div class="detail" id="det-14" style="display:none">última actividad: 2026-07-09 · <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="toca(14)">⟳ registrar movimiento hoy</button></div><div class="row"><input type="checkbox" onchange="cerrar(15)"><span class="cid">+56995753183</span><span class="tx" onclick="det(15)">Cliente correo GC pendiente de anulación</span><button class="badge s-curso" onclick="ciclo(15)">EN CURSO</button><button class="del" onclick="delC(15)">×</button></div><div class="detail" id="det-15" style="display:none">última actividad: 2026-07-09 · <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="toca(15)">⟳ registrar movimiento hoy</button></div></div>
+    <div id="casos"></div>
     <div class="addrow">
       <input id="in-cnum" placeholder="N° caso" style="flex:0 0 95px">
-      <input id="in-cdesc" placeholder="descripción" onkeydown="if(event.key===&#39;Enter&#39;)addCaso()">
+      <input id="in-cdesc" placeholder="descripción" onkeydown="if(event.key==='Enter')addCaso()">
       <button class="btn" onclick="addCaso()">+</button>
     </div>
     <details style="margin-top:10px">
       <summary>REGISTRO DE CIERRES</summary>
-      <div id="cerrados"><div class="row done"><span class="cid">66994323</span><span class="tx">NC Giovanni</span><span class="muted">2026-07-09</span><button class="del" onclick="reabrir(0)" title="reabrir">↩</button></div></div>
+      <div id="cerrados"></div>
     </details>
   </div>
 </div>
@@ -129,25 +131,22 @@ details summary::before { content:'▸ '; } details[open] summary::before { cont
     <h2 class="h-purp" style="margin:0">▦ MI SEMANA</h2>
     <div class="wknav"><button onclick="mvWeek(-1)">‹</button><button onclick="mvWeek(0)">hoy</button><button onclick="mvWeek(1)">›</button></div>
   </div>
-  <div class="week" id="week"><div class="day"><p>LUN 6</p><div class="ev ev-tu" style="cursor:pointer" onclick="showDia(&#39;2026-07-06&#39;)">10 en piso ▸</div></div><div class="day"><p>MAR 7</p><div class="ev ev-tu" style="cursor:pointer" onclick="showDia(&#39;2026-07-07&#39;)">11 en piso ▸</div></div><div class="day"><p>MIÉ 8</p><div class="ev ev-tu" style="cursor:pointer" onclick="showDia(&#39;2026-07-08&#39;)">11 en piso ▸</div></div><div class="day"><p>JUE 9</p><div class="ev ev-tu" style="cursor:pointer" onclick="showDia(&#39;2026-07-09&#39;)">9 en piso ▸</div></div><div class="day today"><p>VIE 10</p><div class="ev ev-ag">Cubrir alto valor</div><div class="ev ev-ag">Armado de Apple</div><div class="ev ev-tu" style="cursor:pointer" onclick="showDia(&#39;2026-07-10&#39;)">9 en piso ▸</div></div><div class="day"><p>SÁB 11</p><div class="ev ev-ag">Día libre Miguel</div><div class="ev ev-tu" style="cursor:pointer" onclick="showDia(&#39;2026-07-11&#39;)">10 en piso ▸</div></div><div class="day"><p>DOM 12</p><div class="ev ev-ag">Día libre Miguel</div><div class="ev ev-tu" style="cursor:pointer" onclick="showDia(&#39;2026-07-12&#39;)">8 en piso ▸</div></div></div>
-  <p class="muted" style="margin-top:6px">■ <span style="color:#CECBF6">agenda</span> · ■ <span style="color:#B5D4F4">calendario outlook</span> · ■ <span style="color:#9FE1CB">turnos (click en el día)</span></p>
-  <div id="diaDetail" style="display:none; margin-top:8px; background:#0b1020; border:1px solid #2a3560; border-radius:8px; padding:10px 12px;"></div>
-  <div class="addrow"><input id="in-ev" placeholder="+ evento: 2026-07-15 | descripción" onkeydown="if(event.key===&#39;Enter&#39;)addEv()"><button class="btn" onclick="addEv()">+</button></div>
+  <div class="week" id="week"></div>
+  <p class="muted" style="margin-top:6px">■ <span style="color:#CECBF6">agenda</span> · ■ <span style="color:#B5D4F4">calendario outlook</span></p>
+  <div class="addrow"><input id="in-ev" placeholder="+ evento: 2026-07-15 | descripción" onkeydown="if(event.key==='Enter')addEv()"><button class="btn" onclick="addEv()">+</button></div>
 </div>
 
 <div class="card">
   <h2 class="h-amber">⚡ ACCESOS DIRECTOS</h2>
   <div class="quick">
-    <a class="qbtn" href="https://falabella-my.sharepoint.com/:x:/r/personal/mmoragaa_falabella_cl/_layouts/15/Doc.aspx?sourcedoc=%7BF2AC94A7-BC36-4893-A4CB-3E33E8AE10F9%7D&amp;file=TURNO%20PISO%203.xlsx&amp;action=default&amp;mobileredirect=true" target="_blank"><span class="ico">🕐</span><b>Turnos piso 3</b><span>excel en línea</span></a>
-    <a class="qbtn" href="https://outlook.office.com/mail/" target="_blank"><span class="ico">✉</span><b>Correo</b><span>outlook web</span></a>
-    <a class="qbtn" href="https://outlook.office.com/calendar/" target="_blank"><span class="ico">📅</span><b>Calendario</b><span>outlook web</span></a>
+    <a class="qbtn" href="https://falabella-my.sharepoint.com/:x:/r/personal/mmoragaa_falabella_cl/_layouts/15/Doc.aspx?sourcedoc=%7BF2AC94A7-BC36-4893-A4CB-3E33E8AE10F9%7D&file=TURNO%20PISO%203.xlsx&action=default&mobileredirect=true" target="_blank" rel="noopener"><span class="ico">🕐</span><b>Turnos piso 3</b><span>excel en línea</span></a>
+    <a class="qbtn" href="https://outlook.office.com/mail/" target="_blank" rel="noopener"><span class="ico">✉</span><b>Correo</b><span>outlook web</span></a>
+    <a class="qbtn" href="https://outlook.office.com/calendar/" target="_blank" rel="noopener"><span class="ico">📅</span><b>Calendario</b><span>outlook web</span></a>
   </div>
 </div>
 
 <div id="toast"></div>
 
-<script src="./index_files/firebase-app-compat.js"></script>
-<script src="./index_files/firebase-firestore-compat.js"></script>
 <script>
 const FB_CONFIG = {
   apiKey: "AIzaSyDhUAcJXKa-woJtTBGV0QFSZFpR6E-5MbE",
@@ -161,9 +160,10 @@ const CID = Math.random().toString(36).slice(2);
 const $ = id => document.getElementById(id);
 const hoy = () => { const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-let S = { tareas:[], casos:[], cerrados:[], agenda:[], wk:0 };
+let S = { tareas:[], casos:[], cerrados:[], agenda:[] };
+let WK = 0;
 let ICS = [];
-let ref = null, applying = false, saveTimer = null;
+let ref = null, saveTimer = null;
 
 const SEED = {
  tareas:['Sacar impresoras DV','TRF Isa','Capacitación Exchange','Lenovo tablets','Evidencias no se suben','Flujo','Grupo con asesores para confirmar cambio en caso de RTV','Seguimiento','Cuándo pagan Norton','Campaña gamer con Diego','GFK','Cambio Gelen','Cambio Vega','Supervisor Acer promotor Zurita'].map(t=>({done:false,text:t})),
@@ -186,40 +186,37 @@ const SEED = {
   {id:'+56995753183',desc:'Cliente correo GC pendiente de anulación',estado:'EN CURSO',act:'2026-07-09'}],
  cerrados:[{id:'66994323',desc:'NC Giovanni',cerrado:'2026-07-09'}],
  agenda:[
-  {d:'2026-07-10',t:'Cubrir alto valor'},{d:'2026-07-10',t:'Armado de Apple'},
   {d:'2026-07-11',t:'Día libre Miguel'},{d:'2026-07-12',t:'Día libre Miguel'},
   {d:'2026-07-14',t:'Cumpleaños Isabel Matus'},{d:'2026-07-17',t:'Cumpleaños Miguel Romero'},
   {d:'2026-07-18',t:'Día libre Miguel'},{d:'2026-07-19',t:'Día libre Miguel'},
   {d:'2026-07-27',t:'Capacitación Starlink'}]
 };
 
-const TURNOS = {
- actualizado:'2026-07-09',
- dates:['2026-07-06','2026-07-07','2026-07-08','2026-07-09','2026-07-10','2026-07-11','2026-07-12','2026-07-13','2026-07-14','2026-07-15','2026-07-16','2026-07-17','2026-07-18','2026-07-19'],
- secciones:{
-  'COMPUTACIÓN':{
-   'Duran Sebastian':['Lic','Lic','Lic','Lic','Lic','L','L','11–21','10–20','11–21','11–21','10–17','L','L'],
-   'Estrada Tamara':['Vac','11–21','11–21','10–20','10–17','L','L','11–21','11–21','10–17','L','L','10–20','10:30–20:30'],
-   'Vega Christian':['10:30–20:30','11–21','10–17','L','L','11–21','10–20','10–17','L','L','11–21','11–21','11–21','10:30–20:30'],
-   'Guerra Jasson':['L','10–17','11–21','11–21','11–21','11–21','L','11–21','11–21','11–21','10–17','11–21','L','L'],
-   'Soto Sebastian':['L','L','L','L','L','10–21','09:30–20:30','L','L','L','L','L','10–21','09:30–20:30']},
-  'APPLE':{
-   'Pilar Enrique':['10–20','10–20','10–17','10–20','10–20','L','L','10–20','10–17','10–20','10–20','10–20','L','L'],
-   'Sepulveda Maria Jesus':['L','L','L','L','L','10–21','09:30–20:30','L','L','L','L','L','10–21','09:30–20:30']},
-  'CONNECT':{
-   'Gonzalez Yesenia':['10–20','11–21','11–21','10–17','10–20','L','L','11–21','11–21','11–21','10–20','10–17','L','L'],
-   'Guillen Karen':['11–21','11–21','10–17','L','L','11–21','10:30–20:30','10–17','L','L','11–21','11–21','11–21','10–20'],
-   'Landeros Giovanni':['10–20','11–21','11–21','10–17','11–21','Per','L','11–21','11–21','11–21','11–21','10–17','L','L'],
-   'Mendez Christopher':['10–17','L','L','11–21','10–20','11–21','10:30–20:30','L','10–17','11–21','11–21','11–21','11–21','L'],
-   'Parra Gelen':['L','10–17','11–21','11–21','10–20','10–20','L','11–21','11–21','11–21','11–21','11–18','L','L'],
-   'Sintjago Jomarly':['11–21','10–20','10–17','L','L','10–20','10:30–20:30','10–17','L','L','11–21','11–21','11–21','10:30–20:30'],
-   'Sobarzo Cristian':['10–17','L','L','11–21','11–21','10–20','10–20','L','10–17','11–21','11–21','11–21','11–21','L']},
-  'ALTO VALOR':{
-   'Andrade Sara':['09–19','09–19','09–16','L','L','09–19','09–19','09–16','L','L','09–19','09–19','09–19','09–19'],
-   'Gonzalez Patricio':['11–21','11–21','10–20','10–17','11–21','L','L','10–20','11–21','10–20','10–20','10–17','L','L']}
- }
-};
-const OFF = {'L':'libre','Lic':'licencia','Vac':'vacaciones','Per':'permiso'};
+function loadScript(src, ms){
+  return new Promise((resolve, reject)=>{
+    const s=document.createElement('script');
+    let done=false;
+    const timer=setTimeout(()=>{ if(!done){ done=true; reject(new Error('timeout: '+src)); } }, ms);
+    s.src=src;
+    s.onload=()=>{ if(!done){ done=true; clearTimeout(timer); resolve(); } };
+    s.onerror=()=>{ if(!done){ done=true; clearTimeout(timer); reject(new Error('load failed: '+src)); } };
+    document.head.appendChild(s);
+  });
+}
+async function loadFirebase(){
+  const cdn='https://cdn.jsdelivr.net/npm/firebase@10.14.1/', gstatic='https://www.gstatic.com/firebasejs/10.14.1/';
+  try{
+    await loadScript(cdn+'firebase-app-compat.js', 7000);
+    await loadScript(cdn+'firebase-firestore-compat.js', 7000);
+    return true;
+  }catch(e){
+    try{
+      await loadScript(gstatic+'firebase-app-compat.js', 7000);
+      await loadScript(gstatic+'firebase-firestore-compat.js', 7000);
+      return true;
+    }catch(e2){ return false; }
+  }
+}
 
 function cfg(){ try{ return JSON.parse(localStorage.getItem('dtm-cfg'))||null; }catch(e){ return null; } }
 function toggleSet(){
@@ -236,13 +233,31 @@ function saveCfg(){
 function toast(m){ const t=$('toast'); t.textContent=m; t.style.display='block'; clearTimeout(window._tt); window._tt=setTimeout(()=>t.style.display='none',5000); }
 function setChip(txt, cls){ const c=$('chip-sync'); c.textContent=txt; c.className='chip '+cls; }
 
-function conectar(){
-  const c=cfg();
+async function conectar(){
   $('fecha').textContent = new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'}).toUpperCase();
+
   const local = localStorage.getItem('dtm-data');
-  if(local){ try{ Object.assign(S, JSON.parse(local)); }catch(e){} } else { Object.assign(S, JSON.parse(JSON.stringify(SEED))); }
+  if(local){ try{ Object.assign(S, JSON.parse(local)); }catch(e){ Object.assign(S, JSON.parse(JSON.stringify(SEED))); } }
+  else { Object.assign(S, JSON.parse(JSON.stringify(SEED))); }
   render();
-  if(!c){ setChip('⚙ CONFIGURAR SYNC','warn'); $('setPanel').style.display='block'; return; }
+
+  const c=cfg();
+  if(!c){ setChip('SIN CONEXIÓN','warn'); $('setPanel').style.display='block'; return; }
+
+  if(!navigator.onLine){
+    setChip('SIN CONEXIÓN','warn');
+    toast('Sin conexión a internet — trabajando con los datos guardados en este dispositivo.');
+    return;
+  }
+
+  setChip('CONECTANDO','warn');
+  const ok = await loadFirebase();
+  if(!ok){
+    setChip('SDK BLOQUEADO','err');
+    toast('No se pudo cargar el SDK de sincronización (Firebase). Puede estar bloqueado por un bloqueador de anuncios/privacidad, o el CDN no responde. La app sigue funcionando en modo local.');
+    return;
+  }
+
   try{
     firebase.initializeApp(FB_CONFIG);
     ref = firebase.firestore().collection('paneles').doc(c.clave);
@@ -251,25 +266,30 @@ function conectar(){
       const d = snap.data();
       if(!d){ push(); return; }
       if(d.by===CID) return;
-      applying=true;
       S.tareas=d.tareas||[]; S.casos=d.casos||[]; S.cerrados=d.cerrados||[]; S.agenda=d.agenda||[];
-      applying=false;
       localStorage.setItem('dtm-data', JSON.stringify(S));
       render();
-      setChip('SYNC ✓ '+new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}),'ok');
-    }, err => { setChip('SYNC ERROR · ver config','warn'); toast('Firestore: '+err.message); });
-    setChip('CONECTANDO…','warn');
-  }catch(e){ setChip('CONFIG INVÁLIDA','warn'); toast(e.message); }
+      setChip('SYNC ✓','ok');
+    }, err => {
+      setChip('SIN CONEXIÓN','warn');
+      toast('Error de Firestore: '+err.message+' — se sigue guardando local.');
+    });
+  }catch(e){
+    setChip('SIN CONEXIÓN','err');
+    toast('No se pudo conectar la sincronización: '+e.message);
+  }
+
   if(c.ics) cargarICS(c.ics);
 }
+
 function push(){
   localStorage.setItem('dtm-data', JSON.stringify(S));
   if(!ref) return;
   clearTimeout(saveTimer);
   saveTimer=setTimeout(()=>{
     ref.set({tareas:S.tareas, casos:S.casos, cerrados:S.cerrados, agenda:S.agenda, by:CID, upd:new Date().toISOString()})
-      .then(()=>setChip('SYNC ✓ '+new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}),'ok'))
-      .catch(e=>{ setChip('SIN CONEXIÓN · guardado local','warn'); });
+      .then(()=>setChip('SYNC ✓','ok'))
+      .catch(e=>{ setChip('SIN CONEXIÓN','warn'); toast('No se pudo guardar en la nube (guardado local): '+e.message); });
   },400);
 }
 
@@ -288,14 +308,14 @@ async function cargarICS(url){
       render(); return;
     }catch(e){}
   }
-  toast('No pude leer el calendario ICS (revisa el enlace)');
+  toast('No pude leer el calendario ICS (revisa el enlace en ⚙ configuración)');
 }
 
 function diasSin(act){ if(!act) return 0; return Math.floor((new Date(hoy())-new Date(act))/86400000); }
 
 function render(){
   $('tareas').innerHTML = S.tareas.map((t,i)=>
-    '<div class="row'+(t.done?' done':'')+'"><input type="checkbox" '+(t.done?'checked':'')+' onchange="tgT('+i+')"><span class="tx">'+esc(t.text)+'</span><button class="del" onclick="delT('+i+')">×</button></div>'
+    '<div class="row'+(t.done?' done':'')+'"><input type="checkbox" '+(t.done?'checked':'')+' onchange="tgT('+i+')"><span class="tx" onclick="tgT('+i+')">'+esc(t.text)+'</span><button class="del" onclick="delT('+i+')">×</button></div>'
   ).join('') || '<p class="muted">Sin tareas pendientes 🎉</p>';
 
   $('casos').innerHTML = S.casos.map((c,i)=>{
@@ -315,7 +335,7 @@ function render(){
     '<div class="row done"><span class="cid">'+esc(c.id)+'</span><span class="tx">'+esc(c.desc)+'</span><span class="muted">'+esc(c.cerrado||'')+'</span><button class="del" onclick="reabrir('+i+')" title="reabrir">↩</button></div>'
   ).join('') || '<p class="muted">Aún no hay cierres</p>';
 
-  const mon=new Date(); mon.setDate(mon.getDate()-((mon.getDay()+6)%7)+S.wk*7);
+  const mon=new Date(); mon.setDate(mon.getDate()-((mon.getDay()+6)%7)+WK*7);
   let wh='';
   for(let i=0;i<7;i++){
     const d=new Date(mon); d.setDate(mon.getDate()+i);
@@ -323,12 +343,6 @@ function render(){
     const lbl=d.toLocaleDateString('es-CL',{weekday:'short',day:'numeric'}).toUpperCase();
     let evs=S.agenda.filter(e=>e.d===ds).map(e=>'<div class="ev ev-ag">'+esc(e.t)+'</div>').join('')
       + ICS.filter(e=>e.d===ds).map(e=>'<div class="ev ev-ics">'+esc(e.t)+'</div>').join('');
-    const ti=TURNOS.dates.indexOf(ds);
-    if(ti>=0){
-      let n=0;
-      for(const sec of Object.values(TURNOS.secciones)) for(const p of Object.values(sec)) if(!OFF[p[ti]]) n++;
-      evs+='<div class="ev ev-tu" style="cursor:pointer" onclick="showDia(\''+ds+'\')">'+n+' en piso ▸</div>';
-    }
     wh+='<div class="day'+(ds===hoy()?' today':'')+'"><p>'+lbl+'</p>'+evs+'</div>';
   }
   $('week').innerHTML=wh;
@@ -343,23 +357,10 @@ function render(){
   $('st-a').textContent=na; $('st-a').style.color=na>0?'#F09595':'#e8ecff';
 }
 
-function showDia(ds){
-  const ti=TURNOS.dates.indexOf(ds); if(ti<0) return;
-  const el=$('diaDetail');
-  const f=new Date(ds+'T12:00:00').toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
-  let h='<p style="font-size:12px; color:#9FE1CB; letter-spacing:1px; margin-bottom:6px;">TURNOS · '+f.toUpperCase()+' <span style="color:#5a6690">(excel al '+TURNOS.actualizado+')</span></p>';
-  for(const [sec,pers] of Object.entries(TURNOS.secciones)){
-    const on=[], off=[];
-    for(const [nom,arr] of Object.entries(pers)) (OFF[arr[ti]]?off:on).push(OFF[arr[ti]]?nom+' ('+OFF[arr[ti]]+')':nom+' <span style="color:#9FE1CB">'+arr[ti]+'</span>');
-    h+='<p style="font-size:11px; color:#c9d2f2; margin:6px 0 2px;"><b style="color:#F0997B">'+sec+'</b> · '+(on.join(' · ')||'<span style="color:#5a6690">nadie</span>')+'</p>';
-    if(off.length) h+='<p style="font-size:10px; color:#5a6690; margin:0;">'+off.join(' · ')+'</p>';
-  }
-  el.innerHTML=h; el.style.display='block';
-}
-
 function tgT(i){ S.tareas[i].done=!S.tareas[i].done; render(); push(); }
 function delT(i){ if(confirm('¿Eliminar "'+S.tareas[i].text+'"?')){ S.tareas.splice(i,1); render(); push(); } }
 function addTarea(){ const v=$('in-tarea').value.trim(); if(!v)return; S.tareas.push({done:false,text:v}); $('in-tarea').value=''; render(); push(); }
+
 function cerrar(i){ const c=S.casos.splice(i,1)[0]; S.cerrados.unshift({id:c.id,desc:c.desc,cerrado:hoy()}); render(); push(); }
 function reabrir(i){ const c=S.cerrados.splice(i,1)[0]; S.casos.push({id:c.id,desc:c.desc,estado:'EN CURSO',act:hoy()}); render(); push(); }
 function ciclo(i){ const c=S.casos[i]; c.estado=c.estado==='EN CURSO'?'ESPERANDO':'EN CURSO'; c.act=hoy(); render(); push(); }
@@ -368,13 +369,13 @@ function delC(i){ if(confirm('¿Eliminar caso '+S.casos[i].id+'?')){ S.casos.spl
 function addCaso(){ const n=$('in-cnum').value.trim(), d=$('in-cdesc').value.trim(); if(!n&&!d)return;
   S.casos.push({id:n||'s/n',desc:d,estado:'EN CURSO',act:hoy()}); $('in-cnum').value=''; $('in-cdesc').value=''; render(); push(); }
 function det(i){ const e=$('det-'+i); e.style.display=e.style.display==='none'?'block':'none'; }
+
 function addEv(){ const v=$('in-ev').value.trim(); const m=v.match(/^(\d{4}-\d{2}-\d{2})\s*\|\s*(.+)$/);
   if(!m){ toast('Formato: 2026-07-15 | descripción'); return; }
   S.agenda.push({d:m[1],t:m[2]}); $('in-ev').value=''; render(); push(); }
-function mvWeek(n){ S.wk=n===0?0:S.wk+n; $('diaDetail').style.display='none'; render(); }
+function mvWeek(n){ WK = n===0 ? 0 : WK+n; render(); }
 
 conectar();
 </script>
-
-
-</body></html>
+</body>
+</html>
