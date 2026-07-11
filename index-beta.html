@@ -24,6 +24,7 @@
   --alerta-bg:#ffe6e2; --alerta-border:#f1b6ac; --warn-text:#b83c2a;
   --evag-bg:#eae6ff; --evag-text:#4a3fa0; --evics-bg:#e2eeff; --evics-text:#2a5faa;
   --done:#a2a8c9; --shadow: 0 8px 24px -14px rgba(60,70,140,.25);
+  --blob1:rgba(28,154,118,.16); --blob2:rgba(114,103,201,.14); --blob3:rgba(200,97,62,.10); --grid-line:rgba(41,48,102,.05);
 }
 @media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){
   --bg:#eef1fb; --card:#ffffff; --card2:#f4f6ff; --text:#293066; --heading:#131a3d; --muted:#6a72a3; --border:#d9deef; --input-bg:#f6f7fd;
@@ -31,9 +32,23 @@
   --alerta-bg:#ffe6e2; --alerta-border:#f1b6ac; --warn-text:#b83c2a;
   --evag-bg:#eae6ff; --evag-text:#4a3fa0; --evics-bg:#e2eeff; --evics-text:#2a5faa;
   --done:#a2a8c9; --shadow: 0 8px 24px -14px rgba(60,70,140,.25);
+  --blob1:rgba(28,154,118,.16); --blob2:rgba(114,103,201,.14); --blob3:rgba(200,97,62,.10); --grid-line:rgba(41,48,102,.05);
 }}
 html, body { background:var(--bg); }
-body { color:var(--text); font-family:-apple-system,'Segoe UI',Roboto,sans-serif; padding:14px; padding-top:calc(14px + env(safe-area-inset-top)); padding-bottom:calc(24px + env(safe-area-inset-bottom)); min-height:100vh; max-width:920px; margin:0 auto; transition:background-color .25s ease, color .25s ease; }
+body { color:var(--text); font-family:-apple-system,'Segoe UI',Roboto,sans-serif; padding:14px; padding-top:calc(14px + env(safe-area-inset-top)); padding-bottom:calc(24px + env(safe-area-inset-bottom)); min-height:100vh; max-width:920px; margin:0 auto; transition:background-color .25s ease, color .25s ease; position:relative; }
+body::before{ content:''; position:fixed; inset:0; z-index:-2;
+  background:
+    radial-gradient(640px circle at 12% 18%, var(--blob1), transparent 60%),
+    radial-gradient(560px circle at 88% 12%, var(--blob2), transparent 60%),
+    radial-gradient(720px circle at 50% 105%, var(--blob3), transparent 60%);
+  filter:blur(50px); animation:drift 40s ease-in-out infinite alternate; transition:background .25s ease;
+}
+body::after{ content:''; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 34px 34px; mask-image:radial-gradient(circle at 50% 0%, black, transparent 75%);
+}
+@keyframes drift{ 0%{ transform:translate3d(0,0,0) scale(1); } 100%{ transform:translate3d(-3%,3%,0) scale(1.08); } }
+@media (prefers-reduced-motion: reduce){ body::before{ animation:none; } }
 .mono { font-family:ui-monospace,'SF Mono',Menlo,monospace; }
 .hdr { display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
 .hdr h1 { font-size:18px; font-weight:700; letter-spacing:1.5px; background:linear-gradient(90deg,var(--teal),var(--purple)); -webkit-background-clip:text; background-clip:text; color:transparent; }
@@ -71,6 +86,11 @@ body { color:var(--text); font-family:-apple-system,'Segoe UI',Roboto,sans-serif
 .s-curso { color:var(--amber); border-color:var(--amber); } .s-esper { color:#6fa8dc; border-color:#6fa8dc; }
 .del { color:var(--border); background:none; border:none; cursor:pointer; font-size:16px; flex:none; padding:0 4px; }
 .del:active { color:#E24B4A; }
+.edit { color:var(--border); background:none; border:none; cursor:pointer; font-size:13px; flex:none; padding:0 4px; }
+.edit:active { color:var(--teal); }
+.editinput { background:var(--input-bg); border:1px solid var(--teal); color:var(--text); border-radius:5px; padding:4px 6px; font-size:13px; outline:none; flex:1; min-width:0; font-family:inherit; }
+.editrow { display:flex; gap:6px; flex:1; min-width:0; }
+.editrow .cid.editinput { flex:0 0 110px; font-family:ui-monospace,monospace; }
 .alerta { background:var(--alerta-bg); border-radius:8px; padding-left:6px; border-bottom:none; margin:2px 0; border:1px solid var(--alerta-border); }
 .warntx { font-size:9px; color:var(--warn-text); flex:none; }
 .addrow { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
@@ -96,11 +116,15 @@ body { color:var(--text); font-family:-apple-system,'Segoe UI',Roboto,sans-serif
 .ev-ag { background:var(--evag-bg); color:var(--evag-text); } .ev-ics { background:var(--evics-bg); color:var(--evics-text); }
 .wknav { display:flex; gap:6px; align-items:center; }
 .wknav button { background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:3px 12px; cursor:pointer; font-size:14px; }
-.quick { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
-.qbtn { background:var(--input-bg); border:1px solid var(--border); border-radius:8px; padding:10px 6px; text-align:center; cursor:pointer; display:block; text-decoration:none; }
-.qbtn .ico { font-size:18px; display:block; margin-bottom:4px; }
-.qbtn b { font-size:12px; color:var(--text); font-weight:600; display:block; }
-.qbtn span { font-size:9px; color:var(--muted); }
+.quarter { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.qmonth { background:var(--card2); border-radius:8px; padding:8px; }
+.qmonth h4 { font-size:10px; text-align:center; color:var(--muted); margin-bottom:5px; letter-spacing:.5px; font-weight:600; }
+.qgrid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:2px; }
+.qday { position:relative; font-size:8px; text-align:center; padding:3px 0; border-radius:4px; color:var(--muted); cursor:pointer; }
+.qday.dim { opacity:.3; }
+.qday.today { background:var(--teal); color:#06160f; font-weight:700; }
+.qday i { position:absolute; bottom:1px; left:50%; transform:translateX(-50%); width:3px; height:3px; border-radius:50%; background:var(--purple); display:block; }
+.qday.today i { background:#06160f; }
 .detail { background:var(--input-bg); border:1px solid var(--border); border-radius:8px; padding:8px 10px; margin:4px 0 6px; font-size:11px; color:var(--muted); }
 .muted { font-size:11px; color:var(--done); padding:4px 0; }
 details summary { cursor:pointer; font-size:12px; color:var(--muted); letter-spacing:1px; list-style:none; }
@@ -110,7 +134,13 @@ details summary::before { content:'▸ '; } details[open] summary::before { cont
 .set label { font-size:11px; color:var(--muted); display:block; margin:10px 0 4px; letter-spacing:.5px; }
 .set .hint { font-size:10px; color:var(--done); margin-top:2px; }
 #toast { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); background:var(--card); border:1px solid var(--teal); color:var(--text); border-radius:10px; padding:10px 16px; font-size:12px; display:none; z-index:9; max-width:90%; box-shadow:var(--shadow); }
-@media (max-width:640px){ .cols, .stats, .week, .quick { grid-template-columns:1fr; } }
+.page { display:flex; flex-direction:column; }
+@media (max-width:640px){
+  .cols, .stats, .week { grid-template-columns:1fr; }
+  .sec-stats{ order:1; } .sec-week{ order:2; } .sec-cols{ order:3; } .sec-quarter{ order:4; }
+  .quarter{ grid-auto-flow:column; grid-auto-columns:78%; grid-template-columns:none; overflow-x:auto; scroll-snap-type:x mandatory; padding-bottom:4px; margin:0 -14px; padding-left:14px; padding-right:14px; }
+  .qmonth{ scroll-snap-align:start; }
+}
 </style>
 </head>
 <body>
@@ -143,14 +173,15 @@ details summary::before { content:'▸ '; } details[open] summary::before { cont
   </div>
 </div>
 
-<div class="stats">
+<div class="page">
+<div class="stats sec-stats">
   <div class="stat b-teal"><p>TAREAS PEND.</p><b id="st-t" class="mono">0</b></div>
   <div class="stat b-coral"><p>CASOS ABIERTOS</p><b id="st-c" class="mono">0</b></div>
   <div class="stat b-purp"><p id="st-e-label">EVENTOS SEMANA</p><b id="st-e" class="mono">0</b></div>
   <div class="stat b-amber"><p>ALERTAS</p><b id="st-a" class="mono">0</b></div>
 </div>
 
-<div class="cols">
+<div class="cols sec-cols">
   <div class="card">
     <h2 class="h-teal">✓ TAREAS</h2>
     <div id="tareas"></div>
@@ -176,7 +207,7 @@ details summary::before { content:'▸ '; } details[open] summary::before { cont
   </div>
 </div>
 
-<div class="card">
+<div class="card sec-week">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
     <h2 class="h-purp" style="margin:0" id="wkTitle">▦ MI SEMANA</h2>
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
@@ -207,13 +238,11 @@ details summary::before { content:'▸ '; } details[open] summary::before { cont
   </div>
 </div>
 
-<div class="card">
-  <h2 class="h-amber">⚡ ACCESOS DIRECTOS</h2>
-  <div class="quick">
-    <a class="qbtn" href="https://falabella-my.sharepoint.com/:x:/r/personal/mmoragaa_falabella_cl/_layouts/15/Doc.aspx?sourcedoc=%7BF2AC94A7-BC36-4893-A4CB-3E33E8AE10F9%7D&file=TURNO%20PISO%203.xlsx&action=default&mobileredirect=true" target="_blank" rel="noopener"><span class="ico">🕐</span><b>Turnos piso 3</b><span>excel en línea</span></a>
-    <a class="qbtn" href="https://outlook.office.com/mail/" target="_blank" rel="noopener"><span class="ico">✉</span><b>Correo</b><span>outlook web</span></a>
-    <a class="qbtn" href="https://outlook.office.com/calendar/" target="_blank" rel="noopener"><span class="ico">📅</span><b>Calendario</b><span>outlook web</span></a>
-  </div>
+<div class="card sec-quarter">
+  <h2 class="h-amber">▤ PRÓXIMOS 3 MESES</h2>
+  <div class="quarter" id="quarterGrid"></div>
+  <p class="hint" style="margin-top:6px">clic en un día para abrirlo en el planificador de arriba</p>
+</div>
 </div>
 
 <div id="toast"></div>
@@ -232,12 +261,14 @@ const $ = id => document.getElementById(id);
 const hoy = () => fmt(new Date());
 const fmt = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const escAttr = s => esc(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 const NOTIFY_THRESHOLD = 2;
 let S = { tareas:[], tareasCerradas:[], casos:[], cerrados:[], agenda:[] };
 let VIEW = 'semana';
 let WK = 0, MOFF = 0;
 let ICS = [];
 let ref = null, saveTimer = null;
+let editT = -1, editC = -1;
 
 const SEED = {
  tareas:['Sacar impresoras DV','TRF Isa','Capacitación Exchange','Lenovo tablets','Evidencias no se suben','Flujo','Grupo con asesores para confirmar cambio en caso de RTV','Seguimiento','Cuándo pagan Norton','Campaña gamer con Diego','GFK','Cambio Gelen','Cambio Vega','Supervisor Acer promotor Zurita'].map(t=>({done:false,text:t})),
@@ -482,9 +513,16 @@ function migrarTareas(){
 }
 
 function render(){
-  $('tareas').innerHTML = S.tareas.map((t,i)=>
-    '<div class="row'+(t.done?' done':'')+'"><input type="checkbox" '+(t.done?'checked':'')+' onchange="tgT('+i+')"><span class="tx" onclick="tgT('+i+')">'+esc(t.text)+'</span><button class="del" onclick="delT('+i+')">×</button></div>'
-  ).join('') || '<p class="muted">Sin tareas pendientes 🎉</p>';
+  $('tareas').innerHTML = S.tareas.map((t,i)=>{
+    if(editT===i){
+      return '<div class="row"><input type="checkbox" '+(t.done?'checked':'')+' onchange="tgT('+i+')">'+
+        '<input class="editinput" id="editT-'+i+'" value="'+escAttr(t.text)+'" onkeydown="if(event.key===\'Enter\')saveEditT('+i+',this.value); if(event.key===\'Escape\')cancelEdit()">'+
+        '<button class="edit" onclick="saveEditT('+i+',$(\'editT-'+i+'\').value)" title="guardar">✓</button>'+
+        '<button class="del" onclick="cancelEdit()" title="cancelar">×</button></div>';
+    }
+    return '<div class="row'+(t.done?' done':'')+'"><input type="checkbox" '+(t.done?'checked':'')+' onchange="tgT('+i+')"><span class="tx" onclick="tgT('+i+')">'+esc(t.text)+'</span><button class="edit" onclick="startEditT('+i+')" title="editar">✎</button><button class="del" onclick="delT('+i+')">×</button></div>';
+  }).join('') || '<p class="muted">Sin tareas pendientes 🎉</p>';
+  if(editT>=0){ const el=$('editT-'+editT); if(el){ el.focus(); el.setSelectionRange(el.value.length,el.value.length); } }
 
   $('tareasCerradas').innerHTML = S.tareasCerradas.map((t,i)=>
     '<div class="row done"><span class="tx">'+esc(t.text)+'</span><span class="muted">'+esc(t.cerrado||'')+'</span><button class="del" onclick="reabrirTarea('+i+')" title="reabrir">↩</button></div>'
@@ -493,15 +531,26 @@ function render(){
   $('casos').innerHTML = S.casos.map((c,i)=>{
     const d=diasSin(c.act), al=d>=3;
     const sc=c.estado==='ESPERANDO'?'s-esper':'s-curso';
+    if(editC===i){
+      return '<div class="row"><input type="checkbox" disabled>'+
+        '<div class="editrow">'+
+        '<input class="editinput cid" id="editC-id-'+i+'" value="'+escAttr(c.id)+'" style="flex:0 0 100px">'+
+        '<input class="editinput" id="editC-desc-'+i+'" value="'+escAttr(c.desc)+'" onkeydown="if(event.key===\'Enter\')saveEditC('+i+'); if(event.key===\'Escape\')cancelEdit()">'+
+        '</div>'+
+        '<button class="edit" onclick="saveEditC('+i+')" title="guardar">✓</button>'+
+        '<button class="del" onclick="cancelEdit()" title="cancelar">×</button></div>';
+    }
     return '<div class="row'+(al?' alerta':'')+'">'+
       '<input type="checkbox" onchange="cerrar('+i+')">'+
       '<span class="cid">'+esc(c.id)+'</span>'+
       '<span class="tx" onclick="det('+i+')">'+esc(c.desc)+(al?' <span class="warntx">⚠ '+d+'d</span>':'')+'</span>'+
       '<button class="badge '+sc+'" onclick="ciclo('+i+')">'+esc(c.estado)+'</button>'+
+      '<button class="edit" onclick="startEditC('+i+')" title="editar">✎</button>'+
       '<button class="del" onclick="delC('+i+')">×</button></div>'+
       '<div class="detail" id="det-'+i+'" style="display:none">última actividad: '+esc(c.act||'—')+
       ' · <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="toca('+i+')">⟳ registrar movimiento hoy</button></div>';
   }).join('') || '<p class="muted">Sin casos abiertos</p>';
+  if(editC>=0){ const el=$('editC-desc-'+editC); if(el){ el.focus(); } }
 
   $('cerrados').innerHTML = S.cerrados.map((c,i)=>
     '<div class="row done"><span class="cid">'+esc(c.id)+'</span><span class="tx">'+esc(c.desc)+'</span><span class="muted">'+esc(c.cerrado||'')+'</span><button class="del" onclick="reabrir('+i+')" title="reabrir">↩</button></div>'
@@ -530,6 +579,38 @@ function render(){
   $('st-e').textContent=todosEventos.filter(e=>e.d>=mS&&e.d<=mE).length;
   const na=S.casos.filter(c=>diasSin(c.act)>=3).length;
   $('st-a').textContent=na; $('st-a').style.color=na>0?'var(--warn-text)':'var(--heading)';
+
+  renderQuarter();
+}
+
+function renderQuarter(){
+  let html='';
+  for(let k=0;k<3;k++){
+    const base=new Date(); base.setDate(1); base.setMonth(base.getMonth()+k);
+    const label=base.toLocaleDateString('es-CL',{month:'long',year:'numeric'}).toUpperCase();
+    const first=new Date(base.getFullYear(),base.getMonth(),1);
+    const startOffset=(first.getDay()+6)%7;
+    const start=new Date(first); start.setDate(first.getDate()-startOffset);
+    let cells='';
+    for(let i=0;i<42;i++){
+      const d=new Date(start); d.setDate(start.getDate()+i);
+      const ds=fmt(d);
+      const inMonth=d.getMonth()===base.getMonth();
+      const has = S.agenda.some(e=>e.d===ds) || ICS.some(e=>e.d===ds);
+      cells+='<div class="qday'+(ds===hoy()?' today':'')+(inMonth?'':' dim')+'" onclick="jumpToDate(\''+ds+'\')">'+d.getDate()+(has?'<i></i>':'')+'</div>';
+    }
+    html+='<div class="qmonth"><h4>'+label+'</h4><div class="qgrid">'+cells+'</div></div>';
+  }
+  $('quarterGrid').innerHTML=html;
+}
+
+function jumpToDate(ds){
+  VIEW='mes';
+  const target=new Date(ds+'T12:00:00'), now=new Date();
+  MOFF=(target.getFullYear()-now.getFullYear())*12+(target.getMonth()-now.getMonth());
+  render();
+  showDayDetail(ds);
+  $('wkTitle').scrollIntoView({behavior:'smooth', block:'start'});
 }
 
 function evChip(e){ return '<div class="ev ev-ag">'+(e.hora?'<b>'+esc(e.hora)+'</b> ':'')+esc(e.t)+'</div>'; }
@@ -589,12 +670,22 @@ function tgT(i){ const t=S.tareas[i]; t.done=!t.done; if(t.done) t.doneAt=Date.n
 function delT(i){ if(confirm('¿Eliminar "'+S.tareas[i].text+'"?')){ S.tareas.splice(i,1); render(); push(); } }
 function addTarea(){ const v=$('in-tarea').value.trim(); if(!v)return; S.tareas.push({done:false,text:v}); $('in-tarea').value=''; render(); push(); }
 function reabrirTarea(i){ const t=S.tareasCerradas.splice(i,1)[0]; S.tareas.push({done:false,text:t.text}); render(); push(); }
+function startEditT(i){ editT=i; render(); }
+function saveEditT(i,val){ const v=val.trim(); if(v) S.tareas[i].text=v; editT=-1; render(); push(); }
 
 function cerrar(i){ const c=S.casos.splice(i,1)[0]; S.cerrados.unshift({id:c.id,desc:c.desc,cerrado:hoy()}); render(); push(); }
 function reabrir(i){ const c=S.cerrados.splice(i,1)[0]; S.casos.push({id:c.id,desc:c.desc,estado:'EN CURSO',act:hoy()}); render(); push(); }
 function ciclo(i){ const c=S.casos[i]; c.estado=c.estado==='EN CURSO'?'ESPERANDO':'EN CURSO'; c.act=hoy(); render(); push(); }
 function toca(i){ S.casos[i].act=hoy(); render(); push(); }
 function delC(i){ if(confirm('¿Eliminar caso '+S.casos[i].id+'?')){ S.casos.splice(i,1); render(); push(); } }
+function startEditC(i){ editC=i; render(); }
+function saveEditC(i){
+  const idv=$('editC-id-'+i).value.trim(), descv=$('editC-desc-'+i).value.trim();
+  if(idv) S.casos[i].id=idv;
+  if(descv) S.casos[i].desc=descv;
+  editC=-1; render(); push();
+}
+function cancelEdit(){ editT=-1; editC=-1; render(); }
 function addCaso(){ const n=$('in-cnum').value.trim(), d=$('in-cdesc').value.trim(); if(!n&&!d)return;
   S.casos.push({id:n||'s/n',desc:d,estado:'EN CURSO',act:hoy()}); $('in-cnum').value=''; $('in-cdesc').value=''; render(); push(); }
 function det(i){ const e=$('det-'+i); e.style.display=e.style.display==='none'?'block':'none'; }
