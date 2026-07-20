@@ -483,20 +483,30 @@ async function buscarSku(){
   const sku = extraerSku($('inSku').value.trim());
   if (!sku){ showErr('Escribe un SKU / código para buscar.'); return; }
   const btn = $('btnSku'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
-  const api = `https://www.falabella.com/s/browse/v3/product/cl?site=falabella-cl&productId=${sku}`;
+  const apiDe = id => `https://www.falabella.com/s/browse/v3/product/cl?site=falabella-cl&productId=${id}`;
   let pd = null, lastErr = '';
-  // 1) directo a la API pública de falabella.com (tiene CORS abierto)
-  try {
-    const r = await fetch(api, { signal: AbortSignal.timeout(20000), headers: { 'accept':'application/json' } });
-    if (r.ok){ const j = await r.json(); pd = j && j.data; }
-    else lastErr = 'HTTP ' + r.status;
-  } catch(e){ lastErr = e.name === 'TimeoutError' ? 'tiempo de espera agotado' : 'sin conexión con falabella.com'; }
-  // 2) respaldo vía proxy (por si algún día cierran el CORS)
-  if (!pd){
+  const consultar = async id => {
+    // 1) directo a la API pública de falabella.com (tiene CORS abierto)
     try {
-      const r = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(api), { signal: AbortSignal.timeout(25000) });
-      if (r.ok){ const j = await r.json(); pd = j && j.data; }
+      const r = await fetch(apiDe(id), { signal: AbortSignal.timeout(20000), headers: { 'accept':'application/json' } });
+      if (r.ok) return await r.json();
+      lastErr = 'HTTP ' + r.status;
+    } catch(e){ lastErr = e.name === 'TimeoutError' ? 'tiempo de espera agotado' : 'sin conexión con falabella.com'; }
+    // 2) respaldo vía proxy (por si algún día cierran el CORS)
+    try {
+      const r = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(apiDe(id)), { signal: AbortSignal.timeout(25000) });
+      if (r.ok) return await r.json();
     } catch(e){}
+    return null;
+  };
+  // los SKU de variantes (color/capacidad) redirigen al producto padre vía altUrl
+  let id = sku;
+  for (let salto = 0; salto < 3; salto++){
+    const j = await consultar(id);
+    const alt = j && j.data && j.data.altUrl && String(j.data.altUrl).match(/product\/(\d+)/);
+    if (alt && alt[1] !== id){ id = alt[1]; continue; }
+    pd = j && j.data && j.data.variants ? j.data : null;
+    break;
   }
   btn.disabled = false; btn.textContent = 'Buscar';
   if (!pd){
