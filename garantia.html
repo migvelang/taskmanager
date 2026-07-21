@@ -139,7 +139,7 @@ table.cfg input[type=checkbox] { width:18px; height:18px; accent-color:var(--lim
       </svg>
       <div class="tt">
         <b>Garantía Extendida</b>
-        <span>Calculadora de cuotas</span>
+        <span>Calculadora de cuotas · <span id="verTag">v4</span></span>
       </div>
     </div>
     <div class="hdr-right">
@@ -538,15 +538,24 @@ async function buscarSku(){
     return;
   }
   try {
-    const variant = (pd.variants||[]).find(v => v.id === sku) || (pd.variants||[])[0];
-    const precios = {};
-    (variant && variant.prices || []).forEach(p => {
-      const v = parsePrecio((p.price||[])[0]);
-      if (v == null) return;
-      if (p.type === 'cmrPrice') precios.cmr = v;
-      else if (p.type === 'normalPrice') precios.normal = v;
-      else precios.oferta = v;   // internetPrice / eventPrice
-    });
+    const leerPrecios = v => {
+      const pr = {};
+      ((v && v.prices) || []).forEach(p => {
+        const val = parsePrecio((p.price||[])[0]);
+        if (val == null) return;
+        if (p.type === 'cmrPrice') pr.cmr = val;
+        else if (p.type === 'normalPrice') pr.normal = val;
+        else pr.oferta = val;   // internetPrice / eventPrice
+      });
+      return pr;
+    };
+    // variante exacta; si no tiene precios, cae a la primera variante que sí tenga
+    let variant = (pd.variants||[]).find(v => v.id === sku) || (pd.variants||[])[0];
+    let precios = leerPrecios(variant);
+    if (precios.cmr == null && precios.oferta == null && precios.normal == null){
+      const alt = (pd.variants||[]).find(v => Object.keys(leerPrecios(v)).length);
+      if (alt){ variant = alt; precios = leerPrecios(alt); diag('variante sin precio → usa ' + alt.id); }
+    }
     const garantias = {};
     ((pd.warrantyOptions||{}).fieldOptions||[]).forEach(o => {
       const v = parsePrecio(o.textPrice);
