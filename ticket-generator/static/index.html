@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generador de Tickets · Facturación RMA</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  :root{
+    --bg:#0b1020; --card:#121a33; --card2:#0d1330; --text:#c9d2f2; --heading:#e8ecff;
+    --muted:#7d8ab8; --border:#2a3560; --teal:#5DCAA5; --teal-dim:#1D9E75;
+    --coral:#F0997B; --amber:#EF9F27; --purple:#AFA9EC;
+  }
+  body{ background:var(--bg); color:var(--text); font-family:-apple-system,'Segoe UI',Roboto,sans-serif;
+        padding:18px; max-width:1080px; margin:0 auto; line-height:1.45; }
+  h1{ font-size:19px; color:var(--heading); letter-spacing:1px; }
+  .sub{ font-size:12px; color:var(--muted); margin-top:3px; }
+  .mono{ font-family:ui-monospace,'SF Mono',Menlo,monospace; }
+  .card{ background:var(--card); border-radius:12px; padding:16px; margin-top:14px; }
+  .card h2{ font-size:13px; letter-spacing:1px; color:var(--teal); margin-bottom:10px; text-transform:uppercase; }
+  label{ font-size:12px; color:var(--muted); display:block; margin-bottom:4px; }
+  input[type=text], input[type=number], select{
+    background:var(--card2); border:1px solid var(--border); color:var(--text);
+    border-radius:8px; padding:9px 10px; font-size:14px; outline:none; width:100%; font-family:inherit; }
+  input:focus, select:focus{ border-color:var(--teal); }
+  .btn{ background:var(--card2); border:1px solid var(--border); color:var(--text);
+        border-radius:8px; padding:9px 14px; font-size:13px; cursor:pointer; font-family:inherit; }
+  .btn:hover{ border-color:var(--teal); }
+  .btn.go{ border-color:var(--teal-dim); color:var(--teal); }
+  .btn.warn{ border-color:var(--coral); color:var(--coral); }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .row{ display:flex; gap:10px; align-items:end; flex-wrap:wrap; }
+  .stats{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
+  .stat{ background:var(--card2); border-radius:8px; padding:8px 14px; font-size:12px; }
+  .stat b{ color:var(--heading); font-size:18px; display:block; }
+  table{ width:100%; border-collapse:collapse; font-size:13px; margin-top:8px; }
+  th,td{ text-align:left; padding:7px 8px; border-bottom:1px solid var(--border); vertical-align:top; }
+  th{ color:var(--muted); font-size:11px; letter-spacing:.5px; text-transform:uppercase; }
+  td.desc{ color:var(--text); max-width:420px; }
+  .pill{ font-size:10px; padding:2px 8px; border-radius:10px; border:1px solid; display:inline-block; }
+  .pill.ok{ color:var(--teal); border-color:var(--teal); }
+  .pill.pend{ color:var(--amber); border-color:var(--amber); }
+  .hidden{ display:none; }
+  .step{ background:var(--card2); border-radius:10px; padding:16px; }
+  .step .txt{ background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:12px;
+              font-size:14px; margin:10px 0; }
+  .muted{ color:var(--muted); font-size:12px; }
+  .tabs{ display:flex; gap:6px; margin-bottom:12px; }
+  .tab{ padding:7px 14px; border-radius:8px; border:1px solid var(--border); cursor:pointer; font-size:13px; color:var(--muted); }
+  .tab.active{ border-color:var(--teal); color:var(--teal); }
+  .warnbox{ background:#2a1420; border:1px solid #79293a; color:#F09595; border-radius:8px; padding:10px 12px; font-size:12px; }
+  a{ color:var(--teal); }
+  .prog{ height:8px; background:var(--card2); border-radius:5px; overflow:hidden; margin:8px 0; }
+  .prog > div{ height:100%; background:var(--teal); width:0; transition:width .3s; }
+</style>
+</head>
+<body>
+  <div>
+    <h1>🎫 GENERADOR DE TICKETS · Facturación RMA</h1>
+    <div class="sub">Lee OST / F11 / GD / SN desde tu Excel, crea los tickets y escribe el N° en la columna E.</div>
+  </div>
+
+  <!-- 1. Carga -->
+  <div class="card">
+    <h2>1 · Cargar Excel</h2>
+    <div class="row">
+      <div style="flex:2; min-width:220px;">
+        <label>Archivo .xlsx (A=OST · B=F11 · C=GD · D=SN)</label>
+        <input type="file" id="file" accept=".xlsx,.xls">
+      </div>
+      <div style="flex:1; min-width:160px;">
+        <label>¿Primera fila es encabezado?</label>
+        <select id="header">
+          <option value="auto">Detectar automáticamente</option>
+          <option value="true">Sí, es encabezado</option>
+          <option value="false">No, empieza en fila 1</option>
+        </select>
+      </div>
+      <button class="btn go" id="loadBtn">Cargar</button>
+    </div>
+    <div id="loadMsg" class="muted" style="margin-top:8px;"></div>
+  </div>
+
+  <!-- 2. Vista previa -->
+  <div class="card hidden" id="previewCard">
+    <h2>2 · Vista previa</h2>
+    <div class="stats">
+      <div class="stat"><b id="stTotal">0</b>Total</div>
+      <div class="stat"><b id="stPend">0</b>Pendientes</div>
+      <div class="stat"><b id="stDone">0</b>Con ticket</div>
+    </div>
+    <div style="overflow:auto; max-height:340px;">
+      <table id="tbl">
+        <thead><tr><th>Fila</th><th>OST</th><th>F11</th><th>GD</th><th>SN</th><th>Descripción del ticket</th><th>N° Ticket</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 3. Crear -->
+  <div class="card hidden" id="createCard">
+    <h2>3 · Crear tickets</h2>
+    <div class="tabs">
+      <div class="tab active" data-mode="assist" id="tabAssist">Modo asistido</div>
+      <div class="tab" data-mode="auto" id="tabAuto">Modo automático</div>
+    </div>
+
+    <!-- ASISTIDO -->
+    <div id="assistPane">
+      <p class="muted" style="margin-bottom:10px;">
+        Para cada ticket: copia el texto, créalo en el portal y pega aquí el N° que devuelve. Funciona sin configurar nada.
+      </p>
+      <div id="assistEmpty" class="muted hidden">✅ No quedan tickets pendientes.</div>
+      <div class="step hidden" id="assistStep">
+        <div class="muted">Ticket <span id="asPos"></span> · fila <span id="asRow" class="mono"></span></div>
+        <div class="txt mono" id="asText"></div>
+        <div class="row">
+          <button class="btn" id="asCopy">📋 Copiar texto</button>
+          <a class="btn" id="asOpen" href="https://pantallaunica.falabella.com/#/sac" target="_blank">🌐 Abrir portal</a>
+        </div>
+        <div class="row" style="margin-top:12px;">
+          <div style="flex:1; min-width:200px;">
+            <label>N° de ticket que devolvió el portal</label>
+            <input type="text" id="asTicket" placeholder="Ej: 1234567" class="mono">
+          </div>
+          <button class="btn go" id="asSave">Guardar y siguiente →</button>
+          <button class="btn" id="asSkip">Saltar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUTOMÁTICO -->
+    <div id="autoPane" class="hidden">
+      <div id="autoNotReady" class="warnbox hidden">
+        El modo automático necesita los <b>selectores</b> del formulario del portal (config.json).
+        Mientras no estén, usa el modo asistido. Ver el README, sección «Capturar selectores».
+      </div>
+      <div id="autoReady" class="hidden">
+        <p class="muted" style="margin-bottom:10px;">
+          Abre el navegador controlado, inicia sesión + 2FA una vez, y la app crea todos los tickets pendientes.
+        </p>
+        <div class="row">
+          <button class="btn go" id="autoStart">▶ Iniciar</button>
+          <button class="btn" id="autoContinue" disabled>Ya inicié sesión</button>
+          <button class="btn warn" id="autoCancel" disabled>Cancelar</button>
+        </div>
+        <div class="prog"><div id="autoBar"></div></div>
+        <div id="autoMsg" class="muted"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Descargar -->
+  <div class="card hidden" id="dlCard">
+    <h2>4 · Descargar Excel actualizado</h2>
+    <p class="muted" style="margin-bottom:10px;">Los N° de ticket se escriben en la columna E. Descarga el archivo para conservarlos.</p>
+    <a class="btn go" href="/api/download">⬇ Descargar .xlsx</a>
+  </div>
+
+<script>
+let rows = [];
+let assistQueue = [];
+let assistIdx = 0;
+let autoReadyFlag = false;
+
+const $ = s => document.querySelector(s);
+
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+$('#loadBtn').onclick = async () => {
+  const f = $('#file').files[0];
+  if(!f){ $('#loadMsg').textContent = 'Selecciona un archivo primero.'; return; }
+  const fd = new FormData();
+  fd.append('file', f);
+  fd.append('has_header', $('#header').value);
+  $('#loadMsg').textContent = 'Leyendo…';
+  const r = await fetch('/api/upload', { method:'POST', body:fd });
+  if(!r.ok){ $('#loadMsg').textContent = 'Error: ' + (await r.text()); return; }
+  const data = await r.json();
+  rows = data.rows;
+  autoReadyFlag = data.automatic_ready;
+  $('#loadMsg').innerHTML = `Cargado <b>${esc(data.filename)}</b> · encabezado: ${data.has_header?'sí':'no'} · salida: columna ${data.output_column}`;
+  renderPreview();
+  buildAssistQueue();
+  setupAuto();
+  $('#previewCard').classList.remove('hidden');
+  $('#createCard').classList.remove('hidden');
+  $('#dlCard').classList.remove('hidden');
+};
+
+function renderPreview(){
+  const done = rows.filter(r=>r.ticket).length;
+  $('#stTotal').textContent = rows.length;
+  $('#stDone').textContent = done;
+  $('#stPend').textContent = rows.length - done;
+  const tb = $('#tbl tbody');
+  tb.innerHTML = rows.map(r => `
+    <tr>
+      <td class="mono">${r.excel_row}</td>
+      <td class="mono">${esc(r.ost)}</td><td class="mono">${esc(r.f11)}</td>
+      <td class="mono">${esc(r.gd)}</td><td class="mono">${esc(r.sn)}</td>
+      <td class="desc">${esc(r.description)}</td>
+      <td>${ r.ticket ? `<span class="pill ok mono">${esc(r.ticket)}</span>` : `<span class="pill pend">pendiente</span>` }</td>
+    </tr>`).join('');
+}
+
+/* ---------- Modo asistido ---------- */
+function buildAssistQueue(){
+  assistQueue = rows.filter(r=>!r.ticket);
+  assistIdx = 0;
+  showAssist();
+}
+function showAssist(){
+  if(assistIdx >= assistQueue.length){
+    $('#assistStep').classList.add('hidden');
+    $('#assistEmpty').classList.remove('hidden');
+    return;
+  }
+  $('#assistEmpty').classList.add('hidden');
+  $('#assistStep').classList.remove('hidden');
+  const r = assistQueue[assistIdx];
+  $('#asPos').textContent = `${assistIdx+1} / ${assistQueue.length}`;
+  $('#asRow').textContent = r.excel_row;
+  $('#asText').textContent = r.description;
+  $('#asTicket').value = '';
+  $('#asTicket').focus();
+}
+$('#asCopy').onclick = async () => {
+  await navigator.clipboard.writeText(assistQueue[assistIdx].description);
+  $('#asCopy').textContent = '✅ Copiado';
+  setTimeout(()=> $('#asCopy').textContent = '📋 Copiar texto', 1200);
+};
+$('#asSave').onclick = async () => {
+  const r = assistQueue[assistIdx];
+  const num = $('#asTicket').value.trim();
+  if(!num){ $('#asTicket').focus(); return; }
+  const fd = new FormData();
+  fd.append('excel_row', r.excel_row);
+  fd.append('ticket_number', num);
+  const resp = await fetch('/api/ticket', { method:'POST', body:fd });
+  if(!resp.ok){ alert('Error: ' + await resp.text()); return; }
+  const orig = rows.find(x=>x.excel_row===r.excel_row);
+  if(orig) orig.ticket = num;
+  renderPreview();
+  assistIdx++;
+  showAssist();
+};
+$('#asSkip').onclick = () => { assistIdx++; showAssist(); };
+$('#asTicket').addEventListener('keydown', e => { if(e.key==='Enter') $('#asSave').click(); });
+
+/* ---------- Tabs ---------- */
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  const auto = t.dataset.mode === 'auto';
+  $('#autoPane').classList.toggle('hidden', !auto);
+  $('#assistPane').classList.toggle('hidden', auto);
+});
+
+/* ---------- Modo automático ---------- */
+function setupAuto(){
+  $('#autoNotReady').classList.toggle('hidden', autoReadyFlag);
+  $('#autoReady').classList.toggle('hidden', !autoReadyFlag);
+}
+let pollTimer = null;
+$('#autoStart').onclick = async () => {
+  const r = await fetch('/api/auto/start', { method:'POST' });
+  if(!r.ok){ $('#autoMsg').textContent = 'Error: ' + await r.text(); return; }
+  $('#autoStart').disabled = true;
+  $('#autoContinue').disabled = false;
+  $('#autoCancel').disabled = false;
+  pollTimer = setInterval(pollAuto, 1000);
+};
+$('#autoContinue').onclick = () => fetch('/api/auto/continue', { method:'POST' });
+$('#autoCancel').onclick = () => fetch('/api/auto/cancel', { method:'POST' });
+async function pollAuto(){
+  const s = await (await fetch('/api/auto/status')).json();
+  $('#autoMsg').innerHTML = esc(s.message || s.phase || '') + (s.error ? ` · <span style="color:#F09595">${esc(s.error)}</span>` : '');
+  if(s.total){ $('#autoBar').style.width = Math.round(100*(s.current||0)/s.total) + '%'; }
+  if(s.results){ // reflejar en tabla
+    s.results.forEach(res => { if(res.ok){ const o = rows.find(x=>x.excel_row===res.excel_row); if(o) o.ticket = res.ticket; } });
+    renderPreview();
+  }
+  if(!s.running){
+    clearInterval(pollTimer);
+    $('#autoStart').disabled = false;
+    $('#autoContinue').disabled = true;
+    $('#autoCancel').disabled = true;
+  }
+}
+</script>
+</body>
+</html>

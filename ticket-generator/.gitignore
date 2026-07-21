@@ -1,0 +1,14 @@
+# Entorno y dependencias
+.venv/
+__pycache__/
+*.pyc
+
+# Configuración local con selectores (cópiala desde config.example.json)
+config.json
+
+# Sesión persistente del navegador (contiene cookies de tu login)
+.browser-session/
+
+# Archivos de trabajo
+*.xlsx
+!ejemplo*.xlsx

@@ -1,0 +1,12 @@
+{
+  "portal_url": "https://pantallaunica.falabella.com/#/sac",
+  "suffix": "tiene autorización de facturación, favor informar RMA para poder facturar.",
+  "output_column": "E",
+  "user_data_dir": ".browser-session",
+  "selectors": {
+    "description_input": "",
+    "submit_button": "",
+    "ticket_result": "",
+    "logged_in_marker": ""
+  }
+}
