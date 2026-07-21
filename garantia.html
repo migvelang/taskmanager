@@ -162,6 +162,7 @@ table.cfg input[type=checkbox] { width:18px; height:18px; accent-color:var(--lim
           <button class="btn-sec" id="btnSku" onclick="buscarSku()">Buscar</button>
         </div>
         <p class="hint">Trae precio Normal, Oferta y CMR + garantías desde falabella.com</p>
+        <div id="diagBox" style="display:none; font-size:10px; color:#7a8a55; background:#f7faec; border:1px solid #e2ead0; border-radius:8px; padding:6px 8px; margin-top:6px; word-break:break-word;"></div>
       </div>
       <div>
         <label class="fl">o Monto del producto ($)</label>
@@ -478,39 +479,62 @@ function detectarTipo(pd){
   if (/notebook|tablet|consola|smartwatch|videojuego|computador|macbook|ipad|laptop/.test(crumbs)) return 'tec';
   return 'otro';
 }
+/* fetch con timeout compatible con navegadores antiguos (sin AbortSignal.timeout) */
+function fetchTimeout(url, opts, ms){
+  return new Promise((resolve, reject) => {
+    let ctrl, timer;
+    try { ctrl = new AbortController(); } catch(e){ ctrl = null; }
+    if (ctrl) timer = setTimeout(() => ctrl.abort(), ms);
+    fetch(url, Object.assign({}, opts, ctrl ? { signal: ctrl.signal } : {}))
+      .then(r => { clearTimeout(timer); resolve(r); })
+      .catch(e => { clearTimeout(timer); reject(e); });
+  });
+}
+let DIAG = [];
+function diag(msg){ DIAG.push(msg); const d=$('diagBox'); if(d){ d.style.display='block'; d.textContent = 'Diagnóstico: ' + DIAG.join('  →  '); } }
 async function buscarSku(){
   hideErr();
+  DIAG = []; const db=$('diagBox'); if(db){ db.style.display='none'; db.textContent=''; }
   const sku = extraerSku($('inSku').value.trim());
   if (!sku){ showErr('Escribe un SKU / código para buscar.'); return; }
   const btn = $('btnSku'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
   const apiDe = id => `https://www.falabella.com/s/browse/v3/product/cl?site=falabella-cl&productId=${id}`;
-  let pd = null, lastErr = '';
+  // proxies de respaldo por si el navegador bloquea la petición directa (CORS)
+  const rutas = [
+    { nombre:'directo', url: u => u },
+    { nombre:'allorigins', url: u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u) },
+    { nombre:'codetabs', url: u => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u) },
+    { nombre:'corsproxy', url: u => 'https://corsproxy.io/?url=' + encodeURIComponent(u) }
+  ];
   const consultar = async id => {
-    // 1) directo a la API pública de falabella.com (tiene CORS abierto)
-    try {
-      const r = await fetch(apiDe(id), { signal: AbortSignal.timeout(20000), headers: { 'accept':'application/json' } });
-      if (r.ok) return await r.json();
-      lastErr = 'HTTP ' + r.status;
-    } catch(e){ lastErr = e.name === 'TimeoutError' ? 'tiempo de espera agotado' : 'sin conexión con falabella.com'; }
-    // 2) respaldo vía proxy (por si algún día cierran el CORS)
-    try {
-      const r = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(apiDe(id)), { signal: AbortSignal.timeout(25000) });
-      if (r.ok) return await r.json();
-    } catch(e){}
+    for (const ruta of rutas){
+      try {
+        const r = await fetchTimeout(ruta.url(apiDe(id)), { headers:{ 'accept':'application/json' } }, 15000);
+        if (!r.ok){ diag(`${ruta.nombre} HTTP ${r.status}`); continue; }
+        const txt = await r.text();
+        try { return JSON.parse(txt); }
+        catch(e){ diag(`${ruta.nombre}: respuesta no-JSON`); continue; }
+      } catch(e){
+        diag(`${ruta.nombre}: ${e.name==='AbortError'?'tiempo agotado':(e.message||'falló')}`);
+      }
+    }
     return null;
   };
   // los SKU de variantes (color/capacidad) redirigen al producto padre vía altUrl
-  let id = sku;
-  for (let salto = 0; salto < 3; salto++){
+  let pd = null, id = sku, cadena = [sku];
+  for (let salto = 0; salto < 4; salto++){
     const j = await consultar(id);
-    const alt = j && j.data && j.data.altUrl && String(j.data.altUrl).match(/product\/(\d+)/);
-    if (alt && alt[1] !== id){ id = alt[1]; continue; }
-    pd = j && j.data && j.data.variants ? j.data : null;
+    if (!j){ break; }
+    const alt = j.data && j.data.altUrl && String(j.data.altUrl).match(/product\/(\d+)/);
+    if (alt && alt[1] !== id){ id = alt[1]; cadena.push(id); diag(`variante → producto ${id}`); continue; }
+    pd = j.data && j.data.variants ? j.data : null;
+    if (!pd && j.data) diag('respuesta sin variantes/precios');
     break;
   }
   btn.disabled = false; btn.textContent = 'Buscar';
   if (!pd){
-    showErr(`No se pudo consultar el SKU ${sku} (${lastErr || 'sin respuesta'}). Verifica el código o ingresa el monto manualmente.`);
+    showErr(`No se pudo obtener el SKU ${sku}. Revisa el diagnóstico abajo, verifica el código, o ingresa el monto manualmente.`);
+    diag('sin datos utilizables');
     return;
   }
   try {
