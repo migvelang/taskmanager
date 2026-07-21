@@ -68,6 +68,8 @@ Luego en la página:
 1. **Cargar Excel** → verás la vista previa con el texto de cada ticket.
 2. **Crear tickets** (dos modos, ver abajo).
 3. **Descargar** el Excel con los N° de ticket en la columna E.
+4. **🔄 Reiniciar / Subir otro archivo** cuando quieras empezar con otro Excel
+   (recuerda descargar antes; no se reinicia solo para no perder datos).
 
 ---
 
@@ -84,43 +86,32 @@ Es el modo recomendado para empezar hoy mismo.
 
 La app abre un navegador controlado, tú inicias sesión + 2FA una vez, y luego
 crea **todos** los tickets pendientes sola, leyendo el número que devuelve cada
-uno. Requiere indicarle **dónde** están el campo de descripción, el botón de
-enviar y el número resultante dentro del formulario (los "selectores"), porque
-ese portal es interno y no conocemos su HTML de antemano.
+uno. Solo necesita saber, la primera vez, **dónde** están el campo de
+descripción, el botón de enviar y el número de ticket en el portal.
 
-#### Capturar los selectores (una sola vez)
+#### Configuración con el detector integrado (sin Terminal)
 
-1. Copia la plantilla de config:
-   ```bash
-   cp config.example.json config.json
-   ```
-2. Con la app instalada, lanza el inspector de Playwright sobre el portal:
-   ```bash
-   ./.venv/bin/python -m playwright codegen "https://pantallaunica.falabella.com/#/sac"
-   ```
-   Inicia sesión, ve al formulario de creación de ticket y haz clic en el campo
-   de descripción y en el botón de enviar. Playwright te muestra el selector de
-   cada elemento.
-3. Pega esos selectores en `config.json`:
-   ```json
-   {
-     "selectors": {
-       "description_input": "textarea#descripcion",
-       "submit_button": "button:has-text('Enviar')",
-       "ticket_result": ".numero-ticket",
-       "logged_in_marker": ""
-     }
-   }
-   ```
-   - `description_input`: el campo donde va el texto del ticket.
-   - `submit_button`: el botón que envía/crea el ticket.
-   - `ticket_result`: el elemento que muestra el N° de ticket tras enviar.
-   - `logged_in_marker` (opcional): algo que solo aparece con sesión iniciada
-     (permite detectar el login sin apretar «Ya inicié sesión»).
-4. Reinicia la app. El **Modo automático** quedará habilitado.
+En la pestaña **Modo automático** hay un detector paso a paso:
 
-> Si el portal cambia su diseño, basta con volver a capturar y actualizar
-> `config.json`.
+1. **Abrir portal** → se abre un navegador controlado.
+2. Inicia sesión + 2FA y ve al formulario de crear ticket. Presiona
+   **Ya inicié sesión**.
+3. **1) Marcar descripción** → haz clic en el campo de texto del ticket.
+4. **2) Marcar botón enviar** → haz clic en el botón que crea el ticket
+   (no se envía nada; solo se registra dónde está).
+5. Crea **un** ticket de prueba a mano; cuando aparezca el número, presiona
+   **3) Marcar N° ticket** y haz clic sobre ese número.
+6. **Guardar configuración**. Queda todo en `config.json` y el modo automático
+   se habilita.
+
+> Si el portal cambia su diseño y algo deja de funcionar, vuelve a correr el
+> detector: sobrescribe la configuración.
+
+#### (Alternativa avanzada) Editar `config.json` a mano
+
+También puedes copiar `config.example.json` a `config.json` y escribir los
+selectores tú mismo (`description_input`, `submit_button`, `ticket_result`,
+y el opcional `logged_in_marker`).
 
 ---
 

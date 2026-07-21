@@ -12,6 +12,8 @@ tu navegación normal al portal de Falabella. Sirve una UI para:
 
 from __future__ import annotations
 
+import json
+import queue
 import threading
 from typing import Optional
 
@@ -20,11 +22,18 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 import os
 
-from ticketgen.config import load_config, Config
+from ticketgen.config import load_config, Config, CONFIG_PATH
 from ticketgen.excel import TicketWorkbook
 from ticketgen import bot as botmod
 
 BASE_DIR = os.path.dirname(__file__)
+
+# Nombre de campo (UI) -> clave en config.selectors
+FIELD_MAP = {
+    "description": "description_input",
+    "submit": "submit_button",
+    "result": "ticket_result",
+}
 
 app = FastAPI(title="Generador de Tickets")
 
@@ -40,6 +49,17 @@ class AppState:
         self.auto_status: dict = {"running": False}
         self.continue_event = threading.Event()
         self.cancel_flag = False
+        # --- estado del detector de campos (configuración de selectores) ---
+        self.setup_thread: Optional[threading.Thread] = None
+        self.setup_status: dict = {"running": False}
+        self.setup_continue = threading.Event()
+        self.setup_cancel = False
+        self.setup_queue: "queue.Queue[str]" = queue.Queue()
+
+    def reset_data(self):
+        """Olvida el Excel cargado para empezar de cero con otro archivo."""
+        self.wb = None
+        self.filename = "tickets.xlsx"
 
 
 state = AppState()
@@ -200,6 +220,133 @@ def auto_cancel():
 @app.get("/api/auto/status")
 def auto_status():
     return JSONResponse(state.auto_status)
+
+
+# ------------------------------------------------------------------ reiniciar
+@app.post("/api/reset")
+def reset():
+    state.reset_data()
+    return {"ok": True}
+
+
+# ------------------------------------------------------------------ detector de campos (config del modo automático)
+def _setup_worker():
+    """Abre el portal y captura los selectores que el usuario va marcando."""
+    st = state.setup_status
+    try:
+        bot = botmod.PortalBot(state.config)
+    except Exception as exc:
+        st.update(running=False, error=str(exc))
+        return
+    try:
+        bot.start()
+        st.update(phase="login", message="Inicia sesión y completa el 2FA en la ventana, luego presiona «Ya inicié sesión».")
+        while not state.setup_continue.is_set():
+            if state.setup_cancel:
+                st.update(phase="cancelado")
+                bot.close()
+                st.update(running=False)
+                return
+            if bot.is_logged_in():
+                break
+            state.setup_continue.wait(timeout=0.5)
+
+        st.update(phase="ready", message="Sesión lista. Marca cada campo cuando la app te lo pida.")
+        st.setdefault("selectors", {})
+        while True:
+            if state.setup_cancel:
+                break
+            try:
+                cmd = state.setup_queue.get(timeout=0.5)
+            except queue.Empty:
+                continue
+            if cmd == "stop":
+                break
+            if cmd.startswith("capture:"):
+                field = cmd.split(":", 1)[1]
+                st.update(capturing=field, message=f"Haz clic en el elemento en el navegador…")
+                try:
+                    bot.arm_capture()
+                    sel = bot.wait_capture()
+                    st["selectors"][field] = sel
+                    st.update(capturing=None, message=f"Capturado «{field}»: {sel}")
+                except Exception as exc:
+                    st.update(capturing=None, message=f"No se pudo capturar «{field}»: {exc}")
+    except Exception as exc:
+        st.update(error=str(exc))
+    finally:
+        bot.close()
+        st.update(running=False, phase="closed")
+
+
+@app.post("/api/auto/setup/start")
+def setup_start():
+    if not botmod.PLAYWRIGHT_AVAILABLE:
+        raise HTTPException(400, "Playwright no está instalado. Revisa el README.")
+    if state.setup_status.get("running") or state.auto_status.get("running"):
+        raise HTTPException(409, "Ya hay un proceso de navegador en curso.")
+    state.setup_continue.clear()
+    state.setup_cancel = False
+    state.setup_queue = queue.Queue()
+    state.setup_status = {"running": True, "phase": "starting", "selectors": {}}
+    state.setup_thread = threading.Thread(target=_setup_worker, daemon=True)
+    state.setup_thread.start()
+    return {"ok": True}
+
+
+@app.post("/api/auto/setup/continue")
+def setup_continue():
+    state.setup_continue.set()
+    return {"ok": True}
+
+
+@app.post("/api/auto/setup/capture")
+def setup_capture(field: str = Form(...)):
+    key = FIELD_MAP.get(field)
+    if not key:
+        raise HTTPException(400, f"Campo desconocido: {field}")
+    if not state.setup_status.get("running"):
+        raise HTTPException(400, "El detector no está activo.")
+    state.setup_queue.put(f"capture:{key}")
+    return {"ok": True, "field": key}
+
+
+@app.post("/api/auto/setup/save")
+def setup_save():
+    sels = state.setup_status.get("selectors", {})
+    if not all(sels.get(k) for k in ("description_input", "submit_button", "ticket_result")):
+        raise HTTPException(400, "Faltan campos por capturar (descripción, enviar y número de ticket).")
+    # Escribir/actualizar config.json conservando el resto de la config.
+    data = {
+        "portal_url": state.config.portal_url,
+        "suffix": state.config.suffix,
+        "output_column": state.config.output_column,
+        "user_data_dir": state.config.user_data_dir,
+        "selectors": {
+            "description_input": sels.get("description_input", ""),
+            "submit_button": sels.get("submit_button", ""),
+            "ticket_result": sels.get("ticket_result", ""),
+            "logged_in_marker": sels.get("logged_in_marker", ""),
+        },
+    }
+    with open(CONFIG_PATH, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, ensure_ascii=False, indent=2)
+    # Cerrar el detector y recargar la config.
+    state.setup_queue.put("stop")
+    state.config = load_config()
+    return {"ok": True, "automatic_ready": state.config.automatic_ready, "selectors": data["selectors"]}
+
+
+@app.post("/api/auto/setup/cancel")
+def setup_cancel():
+    state.setup_cancel = True
+    state.setup_queue.put("stop")
+    return {"ok": True}
+
+
+@app.get("/api/auto/setup/status")
+def setup_status():
+    return JSONResponse(state.setup_status)
 
 
 if __name__ == "__main__":

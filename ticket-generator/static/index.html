@@ -131,13 +131,46 @@
 
     <!-- AUTOMÁTICO -->
     <div id="autoPane" class="hidden">
-      <div id="autoNotReady" class="warnbox hidden">
-        El modo automático necesita los <b>selectores</b> del formulario del portal (config.json).
-        Mientras no estén, usa el modo asistido. Ver el README, sección «Capturar selectores».
+
+      <!-- Configuración (detectar campos) -->
+      <div id="autoConfig">
+        <div id="autoNotReady" class="warnbox">
+          El modo automático necesita saber <b>dónde</b> están el campo de descripción, el botón de enviar y el
+          número de ticket en el portal. Configúralo una sola vez con el detector de abajo. Mientras tanto, el
+          modo asistido funciona igual.
+        </div>
+        <div class="step" style="margin-top:10px;">
+          <b style="color:var(--heading)">🔧 Detector de campos (una sola vez)</b>
+          <ol class="muted" style="margin:8px 0 8px 18px; line-height:1.7;">
+            <li>Presiona <b>Abrir portal</b> → se abre un navegador controlado.</li>
+            <li>Inicia sesión + 2FA y ve al formulario de crear ticket. Luego presiona <b>Ya inicié sesión</b>.</li>
+            <li>Presiona <b>1) Marcar descripción</b> y luego haz clic en el campo de texto del ticket.</li>
+            <li>Presiona <b>2) Marcar botón enviar</b> y haz clic en el botón que crea el ticket.</li>
+            <li>Crea <b>un</b> ticket de prueba a mano; cuando aparezca el número, presiona <b>3) Marcar N° ticket</b> y haz clic sobre ese número.</li>
+            <li>Presiona <b>Guardar configuración</b>. ¡Listo!</li>
+          </ol>
+          <div class="row" style="gap:8px;">
+            <button class="btn go" id="setStart">Abrir portal</button>
+            <button class="btn" id="setContinue" disabled>Ya inicié sesión</button>
+          </div>
+          <div class="row" style="gap:8px; margin-top:8px;">
+            <button class="btn" id="setCap1" disabled>1) Marcar descripción</button>
+            <button class="btn" id="setCap2" disabled>2) Marcar botón enviar</button>
+            <button class="btn" id="setCap3" disabled>3) Marcar N° ticket</button>
+          </div>
+          <div class="row" style="gap:8px; margin-top:8px;">
+            <button class="btn go" id="setSave" disabled>💾 Guardar configuración</button>
+            <button class="btn warn" id="setCancel" disabled>Cerrar detector</button>
+          </div>
+          <div id="setMsg" class="muted" style="margin-top:8px;"></div>
+          <div id="setSel" class="muted mono" style="margin-top:6px; font-size:11px;"></div>
+        </div>
       </div>
+
+      <!-- Ejecución (crear tickets) -->
       <div id="autoReady" class="hidden">
         <p class="muted" style="margin-bottom:10px;">
-          Abre el navegador controlado, inicia sesión + 2FA una vez, y la app crea todos los tickets pendientes.
+          ✅ Configurado. Abre el navegador, inicia sesión + 2FA una vez, y la app crea todos los tickets pendientes.
         </p>
         <div class="row">
           <button class="btn go" id="autoStart">▶ Iniciar</button>
@@ -153,8 +186,11 @@
   <!-- 4. Descargar -->
   <div class="card hidden" id="dlCard">
     <h2>4 · Descargar Excel actualizado</h2>
-    <p class="muted" style="margin-bottom:10px;">Los N° de ticket se escriben en la columna E. Descarga el archivo para conservarlos.</p>
-    <a class="btn go" href="/api/download">⬇ Descargar .xlsx</a>
+    <p class="muted" style="margin-bottom:10px;">Los N° de ticket se escriben en la columna E. Descarga el archivo para conservarlos y, cuando quieras, reinicia para cargar otro.</p>
+    <div class="row">
+      <a class="btn go" href="/api/download" id="dlBtn">⬇ Descargar .xlsx</a>
+      <button class="btn" id="resetBtn">🔄 Reiniciar / Subir otro archivo</button>
+    </div>
   </div>
 
 <script>
@@ -257,10 +293,67 @@ document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
   $('#assistPane').classList.toggle('hidden', auto);
 });
 
+/* ---------- Reiniciar ---------- */
+$('#resetBtn').onclick = async () => {
+  if(!confirm('¿Reiniciar? Se limpia el archivo actual para cargar otro. Asegúrate de haber descargado el Excel.')) return;
+  await fetch('/api/reset', { method:'POST' });
+  location.reload();
+};
+
 /* ---------- Modo automático ---------- */
 function setupAuto(){
-  $('#autoNotReady').classList.toggle('hidden', autoReadyFlag);
+  // Si ya está configurado, mostrar ejecución; si no, mostrar el detector.
+  $('#autoConfig').classList.toggle('hidden', autoReadyFlag);
   $('#autoReady').classList.toggle('hidden', !autoReadyFlag);
+}
+
+/* ---------- Detector de campos (configuración) ---------- */
+let setupTimer = null;
+$('#setStart').onclick = async () => {
+  const r = await fetch('/api/auto/setup/start', { method:'POST' });
+  if(!r.ok){ $('#setMsg').textContent = 'Error: ' + await r.text(); return; }
+  $('#setStart').disabled = true;
+  $('#setContinue').disabled = false;
+  $('#setCancel').disabled = false;
+  setupTimer = setInterval(pollSetup, 1000);
+};
+$('#setContinue').onclick = async () => {
+  await fetch('/api/auto/setup/continue', { method:'POST' });
+  $('#setCap1').disabled = false; $('#setCap2').disabled = false;
+  $('#setCap3').disabled = false; $('#setSave').disabled = false;
+};
+async function cap(field){
+  const fd = new FormData(); fd.append('field', field);
+  await fetch('/api/auto/setup/capture', { method:'POST', body:fd });
+}
+$('#setCap1').onclick = () => cap('description');
+$('#setCap2').onclick = () => cap('submit');
+$('#setCap3').onclick = () => cap('result');
+$('#setSave').onclick = async () => {
+  const r = await fetch('/api/auto/setup/save', { method:'POST' });
+  if(!r.ok){ $('#setMsg').textContent = 'Error: ' + await r.text(); return; }
+  const data = await r.json();
+  autoReadyFlag = data.automatic_ready;
+  clearInterval(setupTimer);
+  $('#setMsg').innerHTML = '✅ Configuración guardada. Ya puedes usar el modo automático.';
+  setupAuto();
+};
+$('#setCancel').onclick = async () => {
+  await fetch('/api/auto/setup/cancel', { method:'POST' });
+  clearInterval(setupTimer);
+};
+async function pollSetup(){
+  const s = await (await fetch('/api/auto/setup/status')).json();
+  $('#setMsg').innerHTML = esc(s.message || s.phase || '') + (s.error ? ` · <span style="color:#F09595">${esc(s.error)}</span>` : '');
+  const sel = s.selectors || {};
+  $('#setSel').innerHTML = Object.keys(sel).length
+    ? Object.entries(sel).map(([k,v]) => `${esc(k)} = ${esc(v)}`).join('<br>') : '';
+  if(!s.running){
+    clearInterval(setupTimer);
+    $('#setStart').disabled = false; $('#setContinue').disabled = true;
+    $('#setCap1').disabled = true; $('#setCap2').disabled = true; $('#setCap3').disabled = true;
+    $('#setCancel').disabled = true;
+  }
 }
 let pollTimer = null;
 $('#autoStart').onclick = async () => {

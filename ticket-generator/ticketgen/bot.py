@@ -106,3 +106,61 @@ class PortalBot:
     def goto_new_ticket(self):
         """Vuelve a la pantalla base para crear el siguiente ticket."""
         self._page.goto(self.config.portal_url, wait_until="domcontentloaded")
+
+    # ---------- detector de campos (para configurar los selectores) ----------
+    def arm_capture(self):
+        """Deja el próximo clic del usuario "armado" para capturar su selector.
+
+        Instala un listener en fase de captura que intercepta el siguiente clic
+        (sin dejar que dispare la acción real: evita enviar el formulario al
+        capturar el botón), calcula un selector CSS del elemento y lo deja en
+        `window.__capturedSelector`.
+        """
+        self._page.evaluate(
+            """() => {
+              window.__captured = false;
+              window.__capturedSelector = '';
+              function cssPath(el){
+                if(!(el instanceof Element)) return '';
+                // Atributos estables preferidos (típicos en portales Angular).
+                function stable(node){
+                  const tag = node.tagName.toLowerCase();
+                  if(node.id) return '#' + CSS.escape(node.id);
+                  for(const a of ['formcontrolname','data-testid','name']){
+                    const v = node.getAttribute && node.getAttribute(a);
+                    if(v) return tag + '[' + a + '="' + v + '"]';
+                  }
+                  return null;
+                }
+                const own = stable(el);
+                if(own) return own;
+                const parts = [];
+                while(el && el.nodeType === 1 && el.tagName.toLowerCase() !== 'html'){
+                  const s = stable(el);
+                  if(s){ parts.unshift(s); break; }
+                  let sel = el.tagName.toLowerCase();
+                  const parent = el.parentNode;
+                  if(parent){
+                    const sibs = Array.from(parent.children).filter(c => c.tagName === el.tagName);
+                    if(sibs.length > 1){ sel += ':nth-of-type(' + (sibs.indexOf(el) + 1) + ')'; }
+                  }
+                  parts.unshift(sel);
+                  el = el.parentElement;
+                }
+                return parts.join(' > ');
+              }
+              const handler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.__capturedSelector = cssPath(e.target);
+                window.__captured = true;
+                window.removeEventListener('click', handler, true);
+              };
+              window.addEventListener('click', handler, true);
+            }"""
+        )
+
+    def wait_capture(self, timeout_ms: int = 120000) -> str:
+        """Espera a que el usuario haga clic y devuelve el selector capturado."""
+        self._page.wait_for_function("window.__captured === true", timeout=timeout_ms)
+        return self._page.evaluate("window.__capturedSelector")
