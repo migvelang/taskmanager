@@ -63,6 +63,24 @@ chmod +x run.sh      # solo la primera vez
 `run.sh` crea el entorno virtual, instala dependencias y abre
 `http://127.0.0.1:8000` en tu navegador. Para detener: `Ctrl+C`.
 
+### Atajo: ícono en el Escritorio (doble clic, sin Terminal)
+
+Para no volver a escribir rutas, crea un acceso directo en el Escritorio con
+este comando (una sola vez):
+
+```bash
+DIR="$(dirname "$(find ~ -name run.sh -path '*ticket-generator*' 2>/dev/null | head -1)")"; printf '#!/bin/bash\ncd "%s"\n./run.sh\n' "$DIR" > ~/Desktop/Iniciar-Generador-Tickets.command; chmod +x ~/Desktop/Iniciar-Generador-Tickets.command; open ~/Desktop
+```
+
+Aparecerá `Iniciar-Generador-Tickets.command` en el Escritorio. De ahí en
+adelante, **doble clic** y la app arranca sola. (La primera vez, si macOS lo
+bloquea: clic derecho → **Abrir** → **Abrir**.) También puedes arrastrarlo al
+Dock.
+
+> La carpeta del proyecto incluye `Iniciar-Generador-Tickets.command`, que hace
+> lo mismo si lo dejas dentro de `ticket-generator/`. El comando de arriba crea
+> una copia en el Escritorio con la ruta ya fijada.
+
 Luego en la página:
 
 1. **Cargar Excel** → verás la vista previa con el texto de cada ticket.
