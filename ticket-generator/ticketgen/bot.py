@@ -121,7 +121,39 @@ class PortalBot:
                 f"Envié pero no apareció el número de ticket (selector '{sel.ticket_result}')."
             )
         text = page.locator(sel.ticket_result).first.inner_text().strip()
+
+        # 4) Cerrar el modal de confirmación ("Entendido") para dejar el
+        #    formulario limpio y poder crear el siguiente ticket.
+        self._dismiss_confirmation()
         return text
+
+    def _dismiss_confirmation(self):
+        """Cierra el modal de éxito tras enviar (best-effort, no falla la corrida).
+
+        Primero intenta un selector configurado (opcional) y luego botones
+        comunes por texto: «Entendido», «Aceptar», «OK», «Cerrar».
+        """
+        page = self._page
+        configurado = getattr(self.config.selectors, "confirm_button", "") or ""
+        if configurado:
+            try:
+                page.locator(configurado).first.click(timeout=5000)
+                page.wait_for_timeout(600)
+                return
+            except Exception:
+                pass
+        for etiqueta in ("Entendido", "Aceptar", "Aceptar ", "OK", "Cerrar"):
+            try:
+                page.get_by_role("button", name=etiqueta, exact=False).first.click(timeout=1500)
+                page.wait_for_timeout(600)
+                return
+            except Exception:
+                try:
+                    page.get_by_text(etiqueta, exact=True).first.click(timeout=1200)
+                    page.wait_for_timeout(600)
+                    return
+                except Exception:
+                    continue
 
     def save_screenshot(self, path: str):
         """Guarda una captura de la página actual (para diagnosticar fallos)."""
