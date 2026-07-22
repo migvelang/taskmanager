@@ -151,6 +151,15 @@ y el opcional `logged_in_marker`).
 
 ---
 
+## Historial
+
+Cada ticket generado (asistido o automático) queda registrado en
+`historial.json` (en tu equipo), con OST/F11/GD/SN, N° de ticket y fecha.
+Sobrevive cierres o reinicios inesperados, así no se pierde el registro aunque
+no alcances a descargar el Excel — útil para no duplicar tickets. En la sección
+**Historial** puedes **buscar por OST o F11** y **eliminar** registros ya usados.
+Al **agregar un caso** cuya OST ya existe en el historial, la app te avisa.
+
 ## Estructura del proyecto
 
 ```

@@ -24,9 +24,11 @@ import os
 
 from ticketgen.config import load_config, Config, CONFIG_PATH
 from ticketgen.excel import TicketWorkbook
+from ticketgen.history import HistoryStore
 from ticketgen import bot as botmod
 
 BASE_DIR = os.path.dirname(__file__)
+history = HistoryStore(os.path.join(BASE_DIR, "historial.json"))
 
 # Nombre de campo (UI) -> clave en config.selectors
 FIELD_MAP = {
@@ -128,13 +130,28 @@ async def add_row(
         state.filename = "tickets.xlsx"
     state.wb.add_row(ost, f11, gd, sn)
     rows = [r.to_dict() for r in state.wb.rows()]
+    # Aviso de duplicado: ¿esta OST ya tiene ticket en el historial?
+    dup = history.find_by_ost(ost) if ost else []
     return {
         "count": len(rows),
         "pending": sum(1 for r in rows if not r["ticket"]),
         "rows": rows,
         "filename": state.filename,
         "output_column": state.wb.output_column,
+        "duplicate": [{"ost": d["ost"], "ticket": d["ticket"]} for d in dup],
     }
+
+
+# ------------------------------------------------------------------ historial
+@app.get("/api/history")
+def history_list(q: str = ""):
+    return {"items": history.list(q)}
+
+
+@app.post("/api/history/delete")
+def history_delete(id: str = Form(...)):
+    ok = history.delete(id)
+    return {"ok": ok}
 
 
 @app.post("/api/ticket")
@@ -145,6 +162,9 @@ async def set_ticket(excel_row: int = Form(...), ticket_number: str = Form(...))
     if not ticket_number:
         raise HTTPException(400, "El número de ticket está vacío.")
     state.wb.set_ticket(excel_row, ticket_number)
+    # Registrar en el historial persistente.
+    vals = state.wb.row_values(excel_row)
+    history.add(ticket=ticket_number, **vals)
     return {"ok": True, "excel_row": excel_row, "ticket_number": ticket_number}
 
 
@@ -199,6 +219,11 @@ def _auto_worker(rows: list[dict]):
                     row["description"], should_cancel=lambda: state.cancel_flag
                 )
                 state.wb.set_ticket(row["excel_row"], ticket)
+                history.add(
+                    ost=row.get("ost", ""), f11=row.get("f11", ""),
+                    gd=row.get("gd", ""), sn=row.get("sn", ""),
+                    ticket=ticket, description=row.get("description", ""),
+                )
                 st.setdefault("results", []).append(
                     {"excel_row": row["excel_row"], "ticket": ticket, "ok": True}
                 )

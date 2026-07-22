@@ -131,6 +131,15 @@ class TicketWorkbook:
         """Escribe el número de ticket en la columna de salida (E por defecto)."""
         self._ws.cell(row=excel_row, column=self.output_col_idx).value = ticket_number
 
+    def row_values(self, excel_row: int) -> dict:
+        """Devuelve OST/F11/GD/SN de una fila (para registrar en el historial)."""
+        return {
+            "ost": _cell_str(self._ws.cell(row=excel_row, column=1).value),
+            "f11": _cell_str(self._ws.cell(row=excel_row, column=2).value),
+            "gd": _cell_str(self._ws.cell(row=excel_row, column=3).value),
+            "sn": _cell_str(self._ws.cell(row=excel_row, column=4).value),
+        }
+
     def add_row(self, ost: str, f11: str, gd: str, sn: str = "") -> int:
         """Agrega un caso nuevo al final (columnas A–D) y devuelve su fila."""
         # Buscar la primera fila realmente vacía (evita huecos al final).

@@ -229,6 +229,23 @@
     </div>
   </div>
 
+  <!-- 5. Historial -->
+  <div class="card">
+    <h2>📋 Historial de tickets generados</h2>
+    <p class="muted" style="margin-bottom:10px;">Queda guardado en tu equipo aunque cierres la app o no descargues el Excel (evita duplicar tickets). Elimina un registro cuando ya usaste esa información.</p>
+    <div class="row" style="margin-bottom:8px;">
+      <input type="text" id="histSearch" placeholder="Buscar por OST o F11…" class="mono" style="flex:1; min-width:220px;">
+      <button class="btn" id="histRefresh">↻ Actualizar</button>
+    </div>
+    <div style="overflow:auto; max-height:360px;">
+      <table id="histTbl">
+        <thead><tr><th>Fecha</th><th>OST</th><th>F11</th><th>GD</th><th>SN</th><th>N° Ticket</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="histMsg" class="muted" style="margin-top:8px;"></div>
+  </div>
+
 <script>
 let rows = [];
 let assistQueue = [];
@@ -276,7 +293,12 @@ $('#rAdd').onclick = async () => {
   const data = await r.json();
   applyData(data);
   $('#rOst').value=''; $('#rF11').value=''; $('#rGd').value=''; $('#rSn').value='';
-  $('#rMsg').innerHTML = `✅ Caso agregado. Total: ${data.count} · pendientes: ${data.pending}`;
+  let msg = `✅ Caso agregado. Total: ${data.count} · pendientes: ${data.pending}`;
+  if(data.duplicate && data.duplicate.length){
+    const t = data.duplicate.map(d => esc(d.ticket)).join(', ');
+    msg += ` · <span style="color:var(--amber)">⚠️ Esta OST ya tiene ticket en el historial: ${t}</span>`;
+  }
+  $('#rMsg').innerHTML = msg;
   $('#rOst').focus();
 };
 ['rOst','rF11','rGd','rSn'].forEach(id => $('#'+id).addEventListener('keydown', e => { if(e.key==='Enter') $('#rAdd').click(); }));
@@ -335,6 +357,7 @@ $('#asSave').onclick = async () => {
   const orig = rows.find(x=>x.excel_row===r.excel_row);
   if(orig) orig.ticket = num;
   renderPreview();
+  loadHistory();
   assistIdx++;
   showAssist();
 };
@@ -349,6 +372,34 @@ document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
   $('#autoPane').classList.toggle('hidden', !auto);
   $('#assistPane').classList.toggle('hidden', auto);
 });
+
+/* ---------- Historial ---------- */
+async function loadHistory(){
+  const q = $('#histSearch').value.trim();
+  const r = await fetch('/api/history?q=' + encodeURIComponent(q));
+  const data = await r.json();
+  const items = data.items || [];
+  const tb = $('#histTbl tbody');
+  tb.innerHTML = items.map(it => `
+    <tr>
+      <td class="mono" style="white-space:nowrap; color:var(--muted); font-size:11px;">${esc(it.created_at)}</td>
+      <td class="mono">${esc(it.ost)}</td><td class="mono">${esc(it.f11)}</td>
+      <td class="mono">${esc(it.gd)}</td><td class="mono">${esc(it.sn)}</td>
+      <td><span class="pill ok mono">${esc(it.ticket)}</span></td>
+      <td><button class="btn warn histDel" data-id="${esc(it.id)}" style="padding:4px 8px;">🗑</button></td>
+    </tr>`).join('');
+  $('#histMsg').textContent = items.length ? `${items.length} registro(s)` : (q ? 'Sin coincidencias.' : 'Aún no hay tickets registrados.');
+  tb.querySelectorAll('.histDel').forEach(btn => btn.onclick = async () => {
+    if(!confirm('¿Eliminar este registro del historial? (no borra el ticket ya creado en el portal)')) return;
+    const fd = new FormData(); fd.append('id', btn.dataset.id);
+    await fetch('/api/history/delete', { method:'POST', body:fd });
+    loadHistory();
+  });
+}
+$('#histRefresh').onclick = loadHistory;
+let histTimer = null;
+$('#histSearch').addEventListener('input', () => { clearTimeout(histTimer); histTimer = setTimeout(loadHistory, 250); });
+loadHistory();  // al abrir
 
 /* ---------- Reiniciar ---------- */
 $('#resetBtn').onclick = async () => {
@@ -465,6 +516,7 @@ async function pollAuto(){
     $('#autoStart').disabled = false;
     $('#autoContinue').disabled = true;
     $('#autoCancel').disabled = true;
+    loadHistory();  // reflejar lo generado en el historial
   }
 }
 </script>

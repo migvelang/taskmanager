@@ -15,3 +15,7 @@ config.json
 
 # Captura del último error del modo automático (diagnóstico)
 ultimo-error.png
+
+# Historial persistente de tickets generados (datos locales del usuario)
+historial.json
+historial.json.tmp
