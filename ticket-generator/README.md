@@ -123,9 +123,12 @@ En la pestaña **Modo automático**, el detector tiene 3 pasos:
 
 **Paso 2 — Grabar el formulario fijo**
 3. **● Empezar a grabar**.
-4. En el portal, llena **todos los campos fijos** como siempre, incluidas las
-   **listas desplegables**. **No** llenes aún la descripción.
-5. **■ Terminar grabación** (verás "N pasos grabados").
+4. **Lo primero**: haz clic en la pestaña **«Formulario tienda»** (aunque ya
+   estés en ella). Así la app sabe cómo volver al formulario en cada ticket
+   sin recargar la página.
+5. Luego llena **todos los campos fijos** como siempre, incluidas las **listas
+   desplegables**. **No** llenes aún la descripción.
+6. **■ Terminar grabación** (verás "N pasos grabados").
 
 **Paso 3 — Marcar descripción, enviar y resultado**
 6. **1) Marcar descripción** → clic en el recuadro de la descripción.

@@ -252,13 +252,14 @@ class PortalBot:
         return cleaned
 
     def goto_new_ticket(self):
-        """Vuelve a la pantalla base para crear el siguiente ticket.
+        """Prepara el siguiente ticket SIN recargar la página.
 
-        Da un margen para que la app Angular termine de montar antes de que la
-        reproducción de pasos empiece a hacer clics.
+        Recargar el portal (SPA de Angular) volvía a la pestaña por defecto y
+        podía perder la sesión. En vez de eso, la navegación a «Formulario
+        tienda» se reproduce como primer paso grabado (form_steps), que hace
+        clic en esa pestaña. Aquí solo damos un pequeño respiro entre tickets.
         """
-        self._page.goto(self.config.portal_url, wait_until="domcontentloaded")
-        self._page.wait_for_timeout(2500)
+        self._page.wait_for_timeout(800)
 
     # ---------- detector de campos (para configurar los selectores) ----------
     def arm_capture(self):
