@@ -228,11 +228,16 @@ class PortalBot:
         self._page.evaluate(
             """() => {
               window.__rec = [];
+              // IDs que la página genera al vuelo y cambian entre tickets
+              // (rc-select, Angular/Material/CDK, React useId, sufijos _N…).
+              function isDynId(id){
+                return /^(rc_|rc-|cdk-|mat-|ng-|:r)/i.test(id) || /_\\d+$/.test(id) || /^[A-Za-z]+\\d+$/.test(id);
+              }
               function cssPath(el){
                 if(!(el instanceof Element)) return '';
                 function stable(node){
                   const tag = node.tagName.toLowerCase();
-                  if(node.id) return '#' + CSS.escape(node.id);
+                  if(node.id && !isDynId(node.id)) return '#' + CSS.escape(node.id);
                   for(const a of ['formcontrolname','data-testid','name']){
                     const v = node.getAttribute && node.getAttribute(a);
                     if(v) return tag + '[' + a + '="' + v + '"]';
@@ -254,7 +259,27 @@ class PortalBot:
                 }
                 return parts.join(' > ');
               }
-              const textOf = (el) => (el.innerText || el.textContent || '').trim().replace(/\\s+/g,' ').slice(0,80);
+              // Texto estable para respaldar el clic: innerText, aria-label,
+              // placeholder, o el placeholder del desplegable más cercano
+              // (clave para los desplegables tipo rc-select de Falabella).
+              function textOf(el){
+                let t = (el.innerText || el.textContent || '').trim().replace(/\\s+/g,' ');
+                if(t) return t.slice(0,80);
+                if(el.getAttribute){
+                  const al = el.getAttribute('aria-label'); if(al) return al.trim().slice(0,80);
+                }
+                if(el.placeholder) return el.placeholder.trim().slice(0,80);
+                // Subir por los ancestros buscando el placeholder del desplegable.
+                let cont = el.parentElement;
+                for(let i = 0; i < 5 && cont; i++){
+                  const ph = cont.querySelector('[class*="placeholder"]');
+                  if(ph && ph.textContent.trim()) return ph.textContent.trim().replace(/\\s+/g,' ').slice(0,80);
+                  const inp = cont.querySelector('input[placeholder]');
+                  if(inp && inp.placeholder) return inp.placeholder.trim().slice(0,80);
+                  cont = cont.parentElement;
+                }
+                return '';
+              }
               window.__recInput = (e) => {
                 const el = e.target, tag = el.tagName.toLowerCase();
                 if((tag === 'input' || tag === 'textarea') && el.type !== 'checkbox' && el.type !== 'radio'){
