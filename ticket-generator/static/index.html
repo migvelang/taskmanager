@@ -140,25 +140,43 @@
           modo asistido funciona igual.
         </div>
         <div class="step" style="margin-top:10px;">
-          <b style="color:var(--heading)">🔧 Detector de campos (una sola vez)</b>
-          <ol class="muted" style="margin:8px 0 8px 18px; line-height:1.7;">
+          <b style="color:var(--heading)">🔧 Configurar el formulario (una sola vez)</b>
+
+          <div class="muted" style="margin:8px 0;"><b style="color:var(--teal)">Paso 1 · Abrir e iniciar sesión</b></div>
+          <ol class="muted" style="margin:0 0 6px 18px; line-height:1.6;">
             <li>Presiona <b>Abrir portal</b> → se abre un navegador controlado.</li>
-            <li>Inicia sesión + 2FA y ve al formulario de crear ticket. Luego presiona <b>Ya inicié sesión</b>.</li>
-            <li>Presiona <b>1) Marcar descripción</b> y luego haz clic en el campo de texto del ticket.</li>
-            <li>Presiona <b>2) Marcar botón enviar</b> y haz clic en el botón que crea el ticket.</li>
-            <li>Crea <b>un</b> ticket de prueba a mano; cuando aparezca el número, presiona <b>3) Marcar N° ticket</b> y haz clic sobre ese número.</li>
-            <li>Presiona <b>Guardar configuración</b>. ¡Listo!</li>
+            <li>Inicia sesión + 2FA y entra a la pestaña <b>Formulario tienda</b>. Luego presiona <b>Ya inicié sesión</b>.</li>
           </ol>
           <div class="row" style="gap:8px;">
             <button class="btn go" id="setStart">Abrir portal</button>
             <button class="btn" id="setContinue" disabled>Ya inicié sesión</button>
           </div>
-          <div class="row" style="gap:8px; margin-top:8px;">
+
+          <div class="muted" style="margin:14px 0 8px;"><b style="color:var(--teal)">Paso 2 · Grabar el formulario fijo</b></div>
+          <ol class="muted" style="margin:0 0 6px 18px; line-height:1.6;">
+            <li>Presiona <b>● Empezar a grabar</b>.</li>
+            <li>En el portal, llena <b>todos los campos fijos</b> tal como siempre (Tipo Seller, N1, N3, N4, tienda, comercio, contacto, Posee OC = NO, etc.). <b>Incluye las listas desplegables.</b></li>
+            <li><b>No llenes la descripción todavía</b> (esa se marca en el paso 3).</li>
+            <li>Cuando termines los campos fijos, presiona <b>■ Terminar grabación</b>.</li>
+          </ol>
+          <div class="row" style="gap:8px;">
+            <button class="btn" id="setRecStart" disabled>● Empezar a grabar</button>
+            <button class="btn warn" id="setRecStop" disabled>■ Terminar grabación</button>
+          </div>
+
+          <div class="muted" style="margin:14px 0 8px;"><b style="color:var(--teal)">Paso 3 · Marcar descripción, enviar y resultado</b></div>
+          <ol class="muted" style="margin:0 0 6px 18px; line-height:1.6;">
+            <li><b>1) Marcar descripción</b> → clic en el recuadro de la descripción.</li>
+            <li><b>2) Marcar botón enviar</b> → clic en el botón que crea el caso (no se envía).</li>
+            <li>Crea <b>un</b> ticket de prueba a mano; cuando aparezca el número, <b>3) Marcar N° ticket</b> → clic sobre ese número.</li>
+          </ol>
+          <div class="row" style="gap:8px;">
             <button class="btn" id="setCap1" disabled>1) Marcar descripción</button>
             <button class="btn" id="setCap2" disabled>2) Marcar botón enviar</button>
             <button class="btn" id="setCap3" disabled>3) Marcar N° ticket</button>
           </div>
-          <div class="row" style="gap:8px; margin-top:8px;">
+
+          <div class="row" style="gap:8px; margin-top:14px;">
             <button class="btn go" id="setSave" disabled>💾 Guardar configuración</button>
             <button class="btn warn" id="setCancel" disabled>Cerrar detector</button>
           </div>
@@ -319,8 +337,17 @@ $('#setStart').onclick = async () => {
 };
 $('#setContinue').onclick = async () => {
   await fetch('/api/auto/setup/continue', { method:'POST' });
+  $('#setRecStart').disabled = false;
   $('#setCap1').disabled = false; $('#setCap2').disabled = false;
   $('#setCap3').disabled = false; $('#setSave').disabled = false;
+};
+$('#setRecStart').onclick = async () => {
+  await fetch('/api/auto/setup/record/start', { method:'POST' });
+  $('#setRecStart').disabled = true; $('#setRecStop').disabled = false;
+};
+$('#setRecStop').onclick = async () => {
+  await fetch('/api/auto/setup/record/stop', { method:'POST' });
+  $('#setRecStart').disabled = false; $('#setRecStop').disabled = true;
 };
 async function cap(field){
   const fd = new FormData(); fd.append('field', field);
@@ -346,8 +373,10 @@ async function pollSetup(){
   const s = await (await fetch('/api/auto/setup/status')).json();
   $('#setMsg').innerHTML = esc(s.message || s.phase || '') + (s.error ? ` · <span style="color:#F09595">${esc(s.error)}</span>` : '');
   const sel = s.selectors || {};
-  $('#setSel').innerHTML = Object.keys(sel).length
-    ? Object.entries(sel).map(([k,v]) => `${esc(k)} = ${esc(v)}`).join('<br>') : '';
+  const steps = (s.form_steps || []).length;
+  let lines = Object.entries(sel).map(([k,v]) => `${esc(k)} = ${esc(v)}`);
+  if(steps) lines.unshift(`formulario fijo = ${steps} pasos grabados`);
+  $('#setSel').innerHTML = lines.join('<br>');
   if(!s.running){
     clearInterval(setupTimer);
     $('#setStart').disabled = false; $('#setContinue').disabled = true;

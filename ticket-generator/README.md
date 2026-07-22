@@ -107,23 +107,38 @@ crea **todos** los tickets pendientes sola, leyendo el número que devuelve cada
 uno. Solo necesita saber, la primera vez, **dónde** están el campo de
 descripción, el botón de enviar y el número de ticket en el portal.
 
+El formulario del portal tiene muchos campos que son **iguales en todos los
+tickets** (Tipo Seller, tipificación N1/N3/N4, tienda, comercio, datos de
+contacto, Posee OC, etc.) y solo cambia la **descripción**. El detector graba
+todo ese formulario fijo una vez y lo reproduce en cada ticket.
+
 #### Configuración con el detector integrado (sin Terminal)
 
-En la pestaña **Modo automático** hay un detector paso a paso:
+En la pestaña **Modo automático**, el detector tiene 3 pasos:
 
+**Paso 1 — Abrir e iniciar sesión**
 1. **Abrir portal** → se abre un navegador controlado.
-2. Inicia sesión + 2FA y ve al formulario de crear ticket. Presiona
+2. Inicia sesión + 2FA, entra a la pestaña **Formulario tienda** y presiona
    **Ya inicié sesión**.
-3. **1) Marcar descripción** → haz clic en el campo de texto del ticket.
-4. **2) Marcar botón enviar** → haz clic en el botón que crea el ticket
-   (no se envía nada; solo se registra dónde está).
-5. Crea **un** ticket de prueba a mano; cuando aparezca el número, presiona
-   **3) Marcar N° ticket** y haz clic sobre ese número.
-6. **Guardar configuración**. Queda todo en `config.json` y el modo automático
-   se habilita.
+
+**Paso 2 — Grabar el formulario fijo**
+3. **● Empezar a grabar**.
+4. En el portal, llena **todos los campos fijos** como siempre, incluidas las
+   **listas desplegables**. **No** llenes aún la descripción.
+5. **■ Terminar grabación** (verás "N pasos grabados").
+
+**Paso 3 — Marcar descripción, enviar y resultado**
+6. **1) Marcar descripción** → clic en el recuadro de la descripción.
+7. **2) Marcar botón enviar** → clic en el botón que crea el caso (no se envía).
+8. Crea **un** ticket de prueba a mano; cuando aparezca el número, **3) Marcar
+   N° ticket** → clic sobre ese número.
+9. **Guardar configuración**. Queda todo en `config.json` (selectores +
+   `form_steps`) y el modo automático se habilita.
 
 > Si el portal cambia su diseño y algo deja de funcionar, vuelve a correr el
-> detector: sobrescribe la configuración.
+> detector: sobrescribe la configuración. Los campos fijos y desplegables se
+> reproducen por texto/selector, con reintento por el texto visible de cada
+> opción (más robusto para menús Angular).
 
 #### (Alternativa avanzada) Editar `config.json` a mano
 

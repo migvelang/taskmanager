@@ -262,6 +262,15 @@ def _setup_worker():
                 continue
             if cmd == "stop":
                 break
+            if cmd == "record_start":
+                bot.start_recording()
+                st.update(recording=True, message="Grabando el formulario fijo… llena todos los campos en el navegador.")
+                continue
+            if cmd == "record_stop":
+                steps = bot.stop_recording()
+                st["form_steps"] = steps
+                st.update(recording=False, message=f"Formulario grabado: {len(steps)} pasos.")
+                continue
             if cmd.startswith("capture:"):
                 field = cmd.split(":", 1)[1]
                 st.update(capturing=field, message=f"Haz clic en el elemento en el navegador…")
@@ -288,9 +297,25 @@ def setup_start():
     state.setup_continue.clear()
     state.setup_cancel = False
     state.setup_queue = queue.Queue()
-    state.setup_status = {"running": True, "phase": "starting", "selectors": {}}
+    state.setup_status = {"running": True, "phase": "starting", "selectors": {}, "form_steps": []}
     state.setup_thread = threading.Thread(target=_setup_worker, daemon=True)
     state.setup_thread.start()
+    return {"ok": True}
+
+
+@app.post("/api/auto/setup/record/start")
+def setup_record_start():
+    if not state.setup_status.get("running"):
+        raise HTTPException(400, "El detector no está activo.")
+    state.setup_queue.put("record_start")
+    return {"ok": True}
+
+
+@app.post("/api/auto/setup/record/stop")
+def setup_record_stop():
+    if not state.setup_status.get("running"):
+        raise HTTPException(400, "El detector no está activo.")
+    state.setup_queue.put("record_stop")
     return {"ok": True}
 
 
@@ -328,6 +353,7 @@ def setup_save():
             "ticket_result": sels.get("ticket_result", ""),
             "logged_in_marker": sels.get("logged_in_marker", ""),
         },
+        "form_steps": state.setup_status.get("form_steps", []),
     }
     with open(CONFIG_PATH, "w", encoding="utf-8") as fh:
         json.dump(data, fh, ensure_ascii=False, indent=2)

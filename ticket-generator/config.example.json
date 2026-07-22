@@ -8,5 +8,6 @@
     "submit_button": "",
     "ticket_result": "",
     "logged_in_marker": ""
-  }
+  },
+  "form_steps": []
 }

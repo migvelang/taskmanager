@@ -78,10 +78,12 @@ class PortalBot:
 
     # ---------- creación de un ticket ----------
     def create_ticket(self, description: str, timeout_ms: int = 30000) -> str:
-        """Rellena la descripción, envía y devuelve el número de ticket.
+        """Rellena el formulario completo, envía y devuelve el número de ticket.
 
-        Requiere que los selectores estén configurados en config.json.
-        Lanza una excepción si algo falla (la orquestación la captura).
+        1) Reproduce los pasos grabados del formulario fijo (form_steps): campos
+           de texto y listas desplegables que son iguales en todos los tickets.
+        2) Escribe la descripción (lo único que varía por fila).
+        3) Presiona enviar y lee el número de ticket.
         """
         sel = self.config.selectors
         if not self.config.automatic_ready:
@@ -91,17 +93,163 @@ class PortalBot:
             )
 
         page = self._page
+        # 1) Formulario fijo (incluye pestañas y desplegables).
+        if self.config.form_steps:
+            self.replay_steps(self.config.form_steps)
+
+        # 2) Descripción.
         page.wait_for_selector(sel.description_input, timeout=timeout_ms)
         field = page.locator(sel.description_input).first
         field.click()
         field.fill(description)
 
+        # 3) Enviar y leer el número resultante.
         page.locator(sel.submit_button).first.click()
-
-        # Esperar a que aparezca el número de ticket resultante.
         page.wait_for_selector(sel.ticket_result, timeout=timeout_ms)
         text = page.locator(sel.ticket_result).first.inner_text().strip()
         return text
+
+    # ---------- reproducción de pasos grabados (formulario fijo) ----------
+    def replay_steps(self, steps: list, step_wait_ms: int = 450):
+        """Ejecuta en orden los pasos grabados del formulario fijo.
+
+        Tipos de paso:
+          - fill:   escribir texto en un input/textarea.
+          - select: elegir opción en un <select> nativo (por su texto).
+          - check:  marcar/desmarcar un checkbox/radio.
+          - click:  hacer clic (abrir desplegable personalizado y elegir opción).
+        Los clics usan primero el selector CSS y, si falla, caen a buscar por
+        el texto visible (más robusto para opciones de menús Angular).
+        """
+        page = self._page
+        for st in steps:
+            kind = st.get("kind")
+            sel = st.get("selector", "")
+            try:
+                if kind == "fill":
+                    page.fill(sel, st.get("value", ""), timeout=8000)
+                elif kind == "select":
+                    page.select_option(sel, label=st.get("value", ""), timeout=8000)
+                elif kind == "check":
+                    loc = page.locator(sel).first
+                    loc.check(timeout=8000) if st.get("value") else loc.uncheck(timeout=8000)
+                elif kind == "click":
+                    self._click_step(st)
+            except Exception:
+                # Reintento por texto visible (útil para opciones de desplegables).
+                if kind == "click":
+                    self._click_step(st, force_text=True)
+                else:
+                    raise
+            page.wait_for_timeout(step_wait_ms)
+
+    def _click_step(self, st: dict, force_text: bool = False):
+        page = self._page
+        sel = st.get("selector", "")
+        text = (st.get("text") or "").strip()
+        if not force_text and sel:
+            try:
+                page.locator(sel).first.click(timeout=4000)
+                return
+            except Exception:
+                pass
+        if text:
+            page.get_by_text(text, exact=True).first.click(timeout=4000)
+            return
+        if sel:
+            page.locator(sel).first.click(timeout=4000)
+
+    # ---------- grabador del formulario fijo ----------
+    def start_recording(self):
+        """Empieza a grabar lo que el usuario hace en el formulario.
+
+        Registra en orden: textos escritos, selects nativos, checkboxes y clics
+        (incluye abrir desplegables personalizados y elegir su opción). NO
+        interfiere con la navegación: los clics funcionan normalmente para que
+        el usuario pueda llenar el formulario de verdad.
+        """
+        self._page.evaluate(
+            """() => {
+              window.__rec = [];
+              function cssPath(el){
+                if(!(el instanceof Element)) return '';
+                function stable(node){
+                  const tag = node.tagName.toLowerCase();
+                  if(node.id) return '#' + CSS.escape(node.id);
+                  for(const a of ['formcontrolname','data-testid','name']){
+                    const v = node.getAttribute && node.getAttribute(a);
+                    if(v) return tag + '[' + a + '="' + v + '"]';
+                  }
+                  return null;
+                }
+                const own = stable(el); if(own) return own;
+                const parts = [];
+                while(el && el.nodeType === 1 && el.tagName.toLowerCase() !== 'html'){
+                  const s = stable(el);
+                  if(s){ parts.unshift(s); break; }
+                  let sel = el.tagName.toLowerCase();
+                  const parent = el.parentNode;
+                  if(parent){
+                    const sibs = Array.from(parent.children).filter(c => c.tagName === el.tagName);
+                    if(sibs.length > 1){ sel += ':nth-of-type(' + (sibs.indexOf(el) + 1) + ')'; }
+                  }
+                  parts.unshift(sel); el = el.parentElement;
+                }
+                return parts.join(' > ');
+              }
+              const textOf = (el) => (el.innerText || el.textContent || '').trim().replace(/\\s+/g,' ').slice(0,80);
+              window.__recInput = (e) => {
+                const el = e.target, tag = el.tagName.toLowerCase();
+                if((tag === 'input' || tag === 'textarea') && el.type !== 'checkbox' && el.type !== 'radio'){
+                  window.__rec.push({kind:'fill', selector: cssPath(el), value: el.value});
+                }
+              };
+              window.__recChange = (e) => {
+                const el = e.target, tag = el.tagName.toLowerCase();
+                if(tag === 'select'){
+                  const opt = el.options[el.selectedIndex];
+                  window.__rec.push({kind:'select', selector: cssPath(el), value: opt ? opt.text.trim() : el.value});
+                } else if((tag === 'input' || tag === 'textarea') && (el.type === 'checkbox' || el.type === 'radio')){
+                  window.__rec.push({kind:'check', selector: cssPath(el), value: el.checked});
+                }
+              };
+              window.__recClick = (e) => {
+                const el = e.target, tag = el.tagName.toLowerCase();
+                if(tag === 'input' || tag === 'textarea' || tag === 'select') return;
+                window.__rec.push({kind:'click', selector: cssPath(el), text: textOf(el)});
+              };
+              document.addEventListener('input', window.__recInput, true);
+              document.addEventListener('change', window.__recChange, true);
+              document.addEventListener('click', window.__recClick, true);
+            }"""
+        )
+
+    def stop_recording(self) -> list:
+        """Detiene la grabación y devuelve la lista de pasos (colapsando fills
+        repetidos del mismo campo para quedarse con el último valor)."""
+        steps = self._page.evaluate(
+            """() => {
+              try {
+                document.removeEventListener('input', window.__recInput, true);
+                document.removeEventListener('change', window.__recChange, true);
+                document.removeEventListener('click', window.__recClick, true);
+              } catch(e) {}
+              return window.__rec || [];
+            }"""
+        )
+        # Colapsar 'fill'/'select'/'check' consecutivos sobre el mismo selector.
+        cleaned = []
+        for st in steps:
+            if (
+                st.get("kind") in ("fill", "select", "check")
+                and cleaned
+                and cleaned[-1].get("kind") == st.get("kind")
+                and cleaned[-1].get("selector") == st.get("selector")
+            ):
+                cleaned[-1] = st
+            else:
+                cleaned.append(st)
+        return cleaned
 
     def goto_new_ticket(self):
         """Vuelve a la pantalla base para crear el siguiente ticket."""

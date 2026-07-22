@@ -42,6 +42,9 @@ class Config:
     # Carpeta donde Playwright guarda la sesión (cookies) para no repetir login.
     user_data_dir: str = ".browser-session"
     selectors: Selectors = field(default_factory=Selectors)
+    # Pasos grabados del formulario fijo (textos, desplegables, pestañas…).
+    # Se reproducen antes de escribir la descripción de cada ticket.
+    form_steps: list = field(default_factory=list)
 
     @property
     def automatic_ready(self) -> bool:
