@@ -105,7 +105,7 @@
     </div>
     <div style="overflow:auto; max-height:340px;">
       <table id="tbl">
-        <thead><tr><th>Fila</th><th>OST</th><th>F11</th><th>GD</th><th>SN</th><th>Descripción del ticket</th><th>N° Ticket</th></tr></thead>
+        <thead><tr><th>Fila</th><th>OST</th><th>F11</th><th>GD</th><th>SN</th><th>Descripción del ticket</th><th>N° Ticket</th><th></th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -272,6 +272,7 @@ $('#loadBtn').onclick = async () => {
 };
 
 function applyData(data){
+  if(typeof data.automatic_ready !== 'undefined') autoReadyFlag = data.automatic_ready;
   rows = data.rows;
   renderPreview();
   buildAssistQueue();
@@ -280,6 +281,13 @@ function applyData(data){
   $('#createCard').classList.remove('hidden');
   $('#dlCard').classList.remove('hidden');
 }
+
+/* La configuración del modo automático se guarda en disco (config.json).
+   Al abrir, consultamos si ya está configurado para no pedir reconfigurar. */
+fetch('/api/config-status').then(r=>r.json()).then(d => {
+  autoReadyFlag = !!d.automatic_ready;
+  if(!$('#createCard').classList.contains('hidden')) setupAuto();
+}).catch(()=>{});
 
 /* ---------- Agregar caso manual ---------- */
 $('#rAdd').onclick = async () => {
@@ -294,29 +302,45 @@ $('#rAdd').onclick = async () => {
   applyData(data);
   $('#rOst').value=''; $('#rF11').value=''; $('#rGd').value=''; $('#rSn').value='';
   let msg = `✅ Caso agregado. Total: ${data.count} · pendientes: ${data.pending}`;
-  if(data.duplicate && data.duplicate.length){
-    const t = data.duplicate.map(d => esc(d.ticket)).join(', ');
-    msg += ` · <span style="color:var(--amber)">⚠️ Esta OST ya tiene ticket en el historial: ${t}</span>`;
+  if(data.warnings && data.warnings.length){
+    msg += `<div style="color:var(--amber); margin-top:4px;">⚠️ ${data.warnings.map(esc).join('<br>⚠️ ')}</div>`;
   }
   $('#rMsg').innerHTML = msg;
   $('#rOst').focus();
 };
 ['rOst','rF11','rGd','rSn'].forEach(id => $('#'+id).addEventListener('keydown', e => { if(e.key==='Enter') $('#rAdd').click(); }));
 
+function dupValues(field){
+  // valores que aparecen más de una vez en la lista (para resaltar duplicados)
+  const seen = {}, dup = new Set();
+  rows.forEach(r => { const v = (r[field]||'').trim().toLowerCase(); if(!v) return; if(seen[v]) dup.add(v); seen[v]=1; });
+  return dup;
+}
 function renderPreview(){
   const done = rows.filter(r=>r.ticket).length;
   $('#stTotal').textContent = rows.length;
   $('#stDone').textContent = done;
   $('#stPend').textContent = rows.length - done;
+  const dOst=dupValues('ost'), dF11=dupValues('f11'), dGd=dupValues('gd'), dSn=dupValues('sn');
+  const mark = (v,set) => (v && set.has((v||'').trim().toLowerCase())) ? ' style="color:var(--amber)" title="Repetido en la lista"' : '';
   const tb = $('#tbl tbody');
   tb.innerHTML = rows.map(r => `
     <tr>
       <td class="mono">${r.excel_row}</td>
-      <td class="mono">${esc(r.ost)}</td><td class="mono">${esc(r.f11)}</td>
-      <td class="mono">${esc(r.gd)}</td><td class="mono">${esc(r.sn)}</td>
+      <td class="mono"${mark(r.ost,dOst)}>${esc(r.ost)}</td><td class="mono"${mark(r.f11,dF11)}>${esc(r.f11)}</td>
+      <td class="mono"${mark(r.gd,dGd)}>${esc(r.gd)}</td><td class="mono"${mark(r.sn,dSn)}>${esc(r.sn)}</td>
       <td class="desc">${esc(r.description)}</td>
       <td>${ r.ticket ? `<span class="pill ok mono">${esc(r.ticket)}</span>` : `<span class="pill pend">pendiente</span>` }</td>
+      <td><button class="btn warn prevDel" data-row="${r.excel_row}" style="padding:4px 8px;">🗑</button></td>
     </tr>`).join('');
+  tb.querySelectorAll('.prevDel').forEach(btn => btn.onclick = () => deletePreviewRow(parseInt(btn.dataset.row)));
+}
+async function deletePreviewRow(excelRow){
+  if(!confirm('¿Eliminar este caso de la lista? (no afecta el historial ni tickets ya creados)')) return;
+  const fd = new FormData(); fd.append('excel_row', excelRow);
+  const r = await fetch('/api/row/delete', { method:'POST', body:fd });
+  if(!r.ok){ alert('Error: ' + await r.text()); return; }
+  applyData(await r.json());
 }
 
 /* ---------- Modo asistido ---------- */

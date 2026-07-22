@@ -130,16 +130,63 @@ async def add_row(
         state.filename = "tickets.xlsx"
     state.wb.add_row(ost, f11, gd, sn)
     rows = [r.to_dict() for r in state.wb.rows()]
-    # Aviso de duplicado: ¿esta OST ya tiene ticket en el historial?
-    dup = history.find_by_ost(ost) if ost else []
+    warnings = _dup_warnings(rows, ost, f11, gd, sn)
     return {
         "count": len(rows),
         "pending": sum(1 for r in rows if not r["ticket"]),
         "rows": rows,
         "filename": state.filename,
         "output_column": state.wb.output_column,
-        "duplicate": [{"ost": d["ost"], "ticket": d["ticket"]} for d in dup],
+        "automatic_ready": state.config.automatic_ready,
+        "warnings": warnings,
     }
+
+
+def _dup_warnings(rows: list, ost: str, f11: str, gd: str, sn: str) -> list:
+    """Avisos si OST/F11/GD/SN ya están en la vista previa o en el historial."""
+    hist = history.list()
+    avisos = []
+    for value, key, label in (
+        (ost, "ost", "OST"), (f11, "f11", "F11"),
+        (gd, "gd", "GD"), (sn, "sn", "SN"),
+    ):
+        if not value:
+            continue
+        v = value.strip().lower()
+        # En la lista actual (más de una coincidencia = repetido, contando el recién agregado).
+        en_lista = sum(1 for r in rows if str(r.get(key, "")).strip().lower() == v)
+        if en_lista > 1:
+            avisos.append(f"{label} {value} ya está en la lista de esta sesión")
+        # En el historial persistente.
+        h = [x for x in hist if str(x.get(key, "")).strip().lower() == v]
+        if h:
+            tickets = ", ".join(sorted({x["ticket"] for x in h if x.get("ticket")}))
+            avisos.append(
+                f"{label} {value} ya fue ingresado (historial: {tickets})" if tickets
+                else f"{label} {value} ya está en el historial"
+            )
+    return avisos
+
+
+@app.post("/api/row/delete")
+async def delete_row(excel_row: int = Form(...)):
+    if state.wb is None:
+        raise HTTPException(400, "No hay Excel cargado.")
+    state.wb.delete_row(excel_row)
+    rows = [r.to_dict() for r in state.wb.rows()]
+    return {
+        "count": len(rows),
+        "pending": sum(1 for r in rows if not r["ticket"]),
+        "rows": rows,
+        "filename": state.filename,
+        "output_column": state.wb.output_column,
+        "automatic_ready": state.config.automatic_ready,
+    }
+
+
+@app.get("/api/config-status")
+def config_status():
+    return {"automatic_ready": state.config.automatic_ready}
 
 
 # ------------------------------------------------------------------ historial

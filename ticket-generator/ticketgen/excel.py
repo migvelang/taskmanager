@@ -131,6 +131,10 @@ class TicketWorkbook:
         """Escribe el número de ticket en la columna de salida (E por defecto)."""
         self._ws.cell(row=excel_row, column=self.output_col_idx).value = ticket_number
 
+    def delete_row(self, excel_row: int) -> None:
+        """Elimina una fila del Excel (las de abajo suben una posición)."""
+        self._ws.delete_rows(excel_row, 1)
+
     def row_values(self, excel_row: int) -> dict:
         """Devuelve OST/F11/GD/SN de una fila (para registrar en el historial)."""
         return {
