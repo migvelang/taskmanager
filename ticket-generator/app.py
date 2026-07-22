@@ -194,8 +194,10 @@ def auto_start():
         raise HTTPException(400, "Faltan selectores en config.json. Usa el modo asistido o revisa el README.")
     if state.auto_status.get("running"):
         raise HTTPException(409, "Ya hay un proceso automático en curso.")
+    if state.setup_status.get("running"):
+        raise HTTPException(409, "El detector de campos está abierto. Ciérralo con «Cerrar detector» antes de iniciar.")
 
-    pending = [r.to_dict() for r in state.wb.rows() if not r["ticket"]]
+    pending = [r.to_dict() for r in state.wb.rows() if not r.ticket]
     state.continue_event.clear()
     state.cancel_flag = False
     state.auto_status = {"running": True, "phase": "starting", "total": len(pending), "current": 0, "results": []}
