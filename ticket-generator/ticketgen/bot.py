@@ -149,15 +149,15 @@ class PortalBot:
         text = (st.get("text") or "").strip()
         if not force_text and sel:
             try:
-                page.locator(sel).first.click(timeout=4000)
+                page.locator(sel).first.click(timeout=8000)
                 return
             except Exception:
                 pass
         if text:
-            page.get_by_text(text, exact=True).first.click(timeout=4000)
+            page.get_by_text(text, exact=True).first.click(timeout=8000)
             return
         if sel:
-            page.locator(sel).first.click(timeout=4000)
+            page.locator(sel).first.click(timeout=8000)
 
     # ---------- grabador del formulario fijo ----------
     def start_recording(self):
@@ -252,8 +252,13 @@ class PortalBot:
         return cleaned
 
     def goto_new_ticket(self):
-        """Vuelve a la pantalla base para crear el siguiente ticket."""
+        """Vuelve a la pantalla base para crear el siguiente ticket.
+
+        Da un margen para que la app Angular termine de montar antes de que la
+        reproducción de pasos empiece a hacer clics.
+        """
         self._page.goto(self.config.portal_url, wait_until="domcontentloaded")
+        self._page.wait_for_timeout(2500)
 
     # ---------- detector de campos (para configurar los selectores) ----------
     def arm_capture(self):

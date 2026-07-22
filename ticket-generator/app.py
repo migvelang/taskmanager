@@ -109,6 +109,34 @@ async def upload(
 
 
 # ------------------------------------------------------------------ guardar ticket (modo asistido)
+@app.post("/api/row")
+async def add_row(
+    ost: str = Form(""),
+    f11: str = Form(""),
+    gd: str = Form(""),
+    sn: str = Form(""),
+):
+    """Agrega un caso nuevo (OST/F11/GD/SN) al Excel desde la página."""
+    ost, f11, gd, sn = ost.strip(), f11.strip(), gd.strip(), sn.strip()
+    if not any([ost, f11, gd]):
+        raise HTTPException(400, "Ingresa al menos OST, F11 o GD.")
+    if state.wb is None:
+        # Sin archivo cargado: empezamos un Excel nuevo en blanco.
+        state.wb = TicketWorkbook.blank(
+            output_column=state.config.output_column, suffix=state.config.suffix
+        )
+        state.filename = "tickets.xlsx"
+    state.wb.add_row(ost, f11, gd, sn)
+    rows = [r.to_dict() for r in state.wb.rows()]
+    return {
+        "count": len(rows),
+        "pending": sum(1 for r in rows if not r["ticket"]),
+        "rows": rows,
+        "filename": state.filename,
+        "output_column": state.wb.output_column,
+    }
+
+
 @app.post("/api/ticket")
 async def set_ticket(excel_row: int = Form(...), ticket_number: str = Form(...)):
     if state.wb is None:
@@ -172,10 +200,13 @@ def _auto_worker(rows: list[dict]):
                 st.setdefault("results", []).append(
                     {"excel_row": row["excel_row"], "ticket": ticket, "ok": True}
                 )
+                print(f"[auto] fila {row['excel_row']}: OK -> {ticket}")
             except Exception as exc:
+                msg = str(exc).splitlines()[0] if str(exc) else repr(exc)
                 st.setdefault("results", []).append(
-                    {"excel_row": row["excel_row"], "ok": False, "error": str(exc)}
+                    {"excel_row": row["excel_row"], "ok": False, "error": msg}
                 )
+                print(f"[auto] fila {row['excel_row']}: ERROR -> {msg}")
         st.update(phase="done", message="Proceso finalizado.")
     except Exception as exc:
         st.update(error=str(exc))

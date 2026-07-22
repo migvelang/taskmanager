@@ -81,6 +81,20 @@
     <div id="loadMsg" class="muted" style="margin-top:8px;"></div>
   </div>
 
+  <!-- 1b. Agregar caso manual -->
+  <div class="card">
+    <h2>➕ Agregar caso</h2>
+    <p class="muted" style="margin-bottom:10px;">Suma casos a la lista escribiéndolos aquí. Sirve con o sin Excel cargado; todo se guarda al descargar.</p>
+    <div class="row">
+      <div style="flex:1; min-width:110px;"><label>OST</label><input type="text" id="rOst" class="mono"></div>
+      <div style="flex:1; min-width:110px;"><label>F11</label><input type="text" id="rF11" class="mono"></div>
+      <div style="flex:1; min-width:110px;"><label>GD</label><input type="text" id="rGd" class="mono"></div>
+      <div style="flex:1; min-width:110px;"><label>SN (opcional)</label><input type="text" id="rSn" class="mono"></div>
+      <button class="btn go" id="rAdd">Agregar</button>
+    </div>
+    <div id="rMsg" class="muted" style="margin-top:8px;"></div>
+  </div>
+
   <!-- 2. Vista previa -->
   <div class="card hidden" id="previewCard">
     <h2>2 · Vista previa</h2>
@@ -197,6 +211,7 @@
         </div>
         <div class="prog"><div id="autoBar"></div></div>
         <div id="autoMsg" class="muted"></div>
+        <div id="autoResults" style="margin-top:8px; font-size:12px; max-height:220px; overflow:auto;"></div>
       </div>
     </div>
   </div>
@@ -231,16 +246,37 @@ $('#loadBtn').onclick = async () => {
   const r = await fetch('/api/upload', { method:'POST', body:fd });
   if(!r.ok){ $('#loadMsg').textContent = 'Error: ' + (await r.text()); return; }
   const data = await r.json();
-  rows = data.rows;
   autoReadyFlag = data.automatic_ready;
   $('#loadMsg').innerHTML = `Cargado <b>${esc(data.filename)}</b> · encabezado: ${data.has_header?'sí':'no'} · salida: columna ${data.output_column}`;
+  applyData(data);
+};
+
+function applyData(data){
+  rows = data.rows;
   renderPreview();
   buildAssistQueue();
   setupAuto();
   $('#previewCard').classList.remove('hidden');
   $('#createCard').classList.remove('hidden');
   $('#dlCard').classList.remove('hidden');
+}
+
+/* ---------- Agregar caso manual ---------- */
+$('#rAdd').onclick = async () => {
+  const fd = new FormData();
+  fd.append('ost', $('#rOst').value);
+  fd.append('f11', $('#rF11').value);
+  fd.append('gd', $('#rGd').value);
+  fd.append('sn', $('#rSn').value);
+  const r = await fetch('/api/row', { method:'POST', body:fd });
+  if(!r.ok){ $('#rMsg').textContent = 'Error: ' + await r.text(); return; }
+  const data = await r.json();
+  applyData(data);
+  $('#rOst').value=''; $('#rF11').value=''; $('#rGd').value=''; $('#rSn').value='';
+  $('#rMsg').innerHTML = `✅ Caso agregado. Total: ${data.count} · pendientes: ${data.pending}`;
+  $('#rOst').focus();
 };
+['rOst','rF11','rGd','rSn'].forEach(id => $('#'+id).addEventListener('keydown', e => { if(e.key==='Enter') $('#rAdd').click(); }));
 
 function renderPreview(){
   const done = rows.filter(r=>r.ticket).length;
@@ -399,9 +435,13 @@ async function pollAuto(){
   const s = await (await fetch('/api/auto/status')).json();
   $('#autoMsg').innerHTML = esc(s.message || s.phase || '') + (s.error ? ` · <span style="color:#F09595">${esc(s.error)}</span>` : '');
   if(s.total){ $('#autoBar').style.width = Math.round(100*(s.current||0)/s.total) + '%'; }
-  if(s.results){ // reflejar en tabla
+  if(s.results){ // reflejar en tabla + mostrar detalle/errores
     s.results.forEach(res => { if(res.ok){ const o = rows.find(x=>x.excel_row===res.excel_row); if(o) o.ticket = res.ticket; } });
     renderPreview();
+    $('#autoResults').innerHTML = s.results.map(res => res.ok
+      ? `<div style="color:var(--teal)">✅ fila ${res.excel_row}: ${esc(res.ticket)}</div>`
+      : `<div style="color:#F09595">❌ fila ${res.excel_row}: ${esc(res.error||'error')}</div>`
+    ).join('');
   }
   if(!s.running){
     clearInterval(pollTimer);

@@ -15,7 +15,7 @@ import io
 from dataclasses import dataclass, asdict
 from typing import Optional
 
-from openpyxl import load_workbook
+from openpyxl import load_workbook, Workbook
 from openpyxl.utils import column_index_from_string
 
 from .text import build_description, DEFAULT_SUFFIX
@@ -52,6 +52,16 @@ class TicketRow:
 
 class TicketWorkbook:
     """Envuelve un workbook de openpyxl y expone las filas de tickets."""
+
+    @classmethod
+    def blank(cls, output_column: str = "E", suffix: str = DEFAULT_SUFFIX) -> "TicketWorkbook":
+        """Crea un Excel nuevo en blanco con encabezados A–D."""
+        wb = Workbook()
+        ws = wb.active
+        ws.append(["OST", "F11", "GD", "SN"])
+        buf = io.BytesIO()
+        wb.save(buf)
+        return cls(buf.getvalue(), has_header=True, output_column=output_column, suffix=suffix)
 
     def __init__(
         self,
@@ -120,6 +130,20 @@ class TicketWorkbook:
     def set_ticket(self, excel_row: int, ticket_number: str) -> None:
         """Escribe el número de ticket en la columna de salida (E por defecto)."""
         self._ws.cell(row=excel_row, column=self.output_col_idx).value = ticket_number
+
+    def add_row(self, ost: str, f11: str, gd: str, sn: str = "") -> int:
+        """Agrega un caso nuevo al final (columnas A–D) y devuelve su fila."""
+        # Buscar la primera fila realmente vacía (evita huecos al final).
+        r = self.first_data_row
+        while any(
+            _cell_str(self._ws.cell(row=r, column=c).value) for c in (1, 2, 3, 4)
+        ):
+            r += 1
+        self._ws.cell(row=r, column=1).value = ost
+        self._ws.cell(row=r, column=2).value = f11
+        self._ws.cell(row=r, column=3).value = gd
+        self._ws.cell(row=r, column=4).value = sn
+        return r
 
     def to_bytes(self) -> bytes:
         buf = io.BytesIO()
