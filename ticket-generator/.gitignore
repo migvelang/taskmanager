@@ -12,3 +12,6 @@ config.json
 # Archivos de trabajo
 *.xlsx
 !ejemplo*.xlsx
+
+# Captura del último error del modo automático (diagnóstico)
+ultimo-error.png
