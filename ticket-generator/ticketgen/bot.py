@@ -226,6 +226,10 @@ class PortalBot:
               window.__recInput = (e) => {
                 const el = e.target, tag = el.tagName.toLowerCase();
                 if((tag === 'input' || tag === 'textarea') && el.type !== 'checkbox' && el.type !== 'radio'){
+                  // No grabar "fill" en inputs de solo lectura/deshabilitados
+                  // (suelen ser el disparador de un desplegable): al reproducir
+                  // no se pueden escribir y darían error.
+                  if(el.readOnly || el.disabled) return;
                   window.__rec.push({kind:'fill', selector: cssPath(el), value: el.value});
                 }
               };
@@ -240,7 +244,11 @@ class PortalBot:
               };
               window.__recClick = (e) => {
                 const el = e.target, tag = el.tagName.toLowerCase();
-                if(tag === 'input' || tag === 'textarea' || tag === 'select') return;
+                // Los <select> nativos se registran por su cambio de valor.
+                if(tag === 'select') return;
+                // OJO: SÍ registramos clics sobre <input>/<textarea>, porque muchos
+                // desplegables de Angular se abren al hacer clic en un input (de solo
+                // lectura). Si no, se perdería el paso que abre la lista.
                 window.__rec.push({kind:'click', selector: cssPath(el), text: textOf(el)});
               };
               document.addEventListener('input', window.__recInput, true);
