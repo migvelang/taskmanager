@@ -209,10 +209,12 @@
           <button class="btn go" id="autoStart">▶ Iniciar</button>
           <button class="btn" id="autoContinue" disabled>Ya inicié sesión</button>
           <button class="btn warn" id="autoCancel" disabled>Cancelar</button>
+          <button class="btn" id="autoReconfig">🔧 Volver a grabar / reconfigurar</button>
         </div>
         <div class="prog"><div id="autoBar"></div></div>
         <div id="autoMsg" class="muted"></div>
         <div id="autoResults" style="margin-top:8px; font-size:12px; max-height:220px; overflow:auto;"></div>
+        <div id="autoShot" style="margin-top:10px;"></div>
       </div>
     </div>
   </div>
@@ -423,6 +425,8 @@ async function pollSetup(){
 }
 let pollTimer = null;
 $('#autoStart').onclick = async () => {
+  $('#autoResults').innerHTML = ''; $('#autoShot').innerHTML = ''; $('#autoShot').dataset.shown = '';
+  $('#autoCancel').textContent = 'Cancelar';
   const r = await fetch('/api/auto/start', { method:'POST' });
   if(!r.ok){ $('#autoMsg').textContent = 'Error: ' + await r.text(); return; }
   $('#autoStart').disabled = true;
@@ -431,7 +435,14 @@ $('#autoStart').onclick = async () => {
   pollTimer = setInterval(pollAuto, 1000);
 };
 $('#autoContinue').onclick = () => fetch('/api/auto/continue', { method:'POST' });
-$('#autoCancel').onclick = () => fetch('/api/auto/cancel', { method:'POST' });
+$('#autoCancel').onclick = async () => {
+  $('#autoCancel').textContent = 'Cancelando…';
+  await fetch('/api/auto/cancel', { method:'POST' });
+};
+$('#autoReconfig').onclick = () => {
+  if(!confirm('¿Volver a grabar el formulario? Se abrirá de nuevo el detector para reconfigurar.')) return;
+  autoReadyFlag = false; setupAuto();
+};
 async function pollAuto(){
   const s = await (await fetch('/api/auto/status')).json();
   $('#autoMsg').innerHTML = esc(s.message || s.phase || '') + (s.error ? ` · <span style="color:#F09595">${esc(s.error)}</span>` : '');
@@ -443,6 +454,11 @@ async function pollAuto(){
       ? `<div style="color:var(--teal)">✅ fila ${res.excel_row}: ${esc(res.ticket)}</div>`
       : `<div style="color:#F09595">❌ fila ${res.excel_row}: ${esc(res.error||'error')}</div>`
     ).join('');
+  }
+  if(s.screenshot && !$('#autoShot').dataset.shown){
+    $('#autoShot').dataset.shown = '1';
+    $('#autoShot').innerHTML = `<div class="muted" style="margin-bottom:6px;">📸 Así se veía el navegador cuando falló:</div>
+      <img src="/api/auto/error-screenshot?t=${Date.now()}" style="max-width:100%; border:1px solid var(--border); border-radius:8px;">`;
   }
   if(!s.running){
     clearInterval(pollTimer);

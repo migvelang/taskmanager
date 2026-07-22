@@ -195,7 +195,9 @@ def _auto_worker(rows: list[dict]):
             st.update(current=i + 1, total=len(rows), current_row=row["excel_row"])
             try:
                 bot.goto_new_ticket()
-                ticket = bot.create_ticket(row["description"])
+                ticket = bot.create_ticket(
+                    row["description"], should_cancel=lambda: state.cancel_flag
+                )
                 state.wb.set_ticket(row["excel_row"], ticket)
                 st.setdefault("results", []).append(
                     {"excel_row": row["excel_row"], "ticket": ticket, "ok": True}
@@ -203,6 +205,11 @@ def _auto_worker(rows: list[dict]):
                 print(f"[auto] fila {row['excel_row']}: OK -> {ticket}")
             except Exception as exc:
                 msg = str(exc).splitlines()[0] if str(exc) else repr(exc)
+                # Guardar una captura del primer fallo para poder diagnosticar.
+                if not st.get("screenshot"):
+                    shot = os.path.join(BASE_DIR, "ultimo-error.png")
+                    if bot.save_screenshot(shot):
+                        st["screenshot"] = True
                 st.setdefault("results", []).append(
                     {"excel_row": row["excel_row"], "ok": False, "error": msg}
                 )
@@ -253,6 +260,16 @@ def auto_cancel():
 @app.get("/api/auto/status")
 def auto_status():
     return JSONResponse(state.auto_status)
+
+
+@app.get("/api/auto/error-screenshot")
+def auto_error_screenshot():
+    path = os.path.join(BASE_DIR, "ultimo-error.png")
+    if not os.path.exists(path):
+        raise HTTPException(404, "No hay captura de error.")
+    with open(path, "rb") as fh:
+        data = fh.read()
+    return Response(content=data, media_type="image/png")
 
 
 # ------------------------------------------------------------------ reiniciar

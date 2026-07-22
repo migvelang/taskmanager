@@ -77,7 +77,7 @@ class PortalBot:
             self._pw = None
 
     # ---------- creación de un ticket ----------
-    def create_ticket(self, description: str, timeout_ms: int = 30000) -> str:
+    def create_ticket(self, description: str, timeout_ms: int = 30000, should_cancel=None) -> str:
         """Rellena el formulario completo, envía y devuelve el número de ticket.
 
         1) Reproduce los pasos grabados del formulario fijo (form_steps): campos
@@ -95,22 +95,44 @@ class PortalBot:
         page = self._page
         # 1) Formulario fijo (incluye pestañas y desplegables).
         if self.config.form_steps:
-            self.replay_steps(self.config.form_steps)
+            self.replay_steps(self.config.form_steps, should_cancel=should_cancel)
 
         # 2) Descripción.
-        page.wait_for_selector(sel.description_input, timeout=timeout_ms)
+        try:
+            page.wait_for_selector(sel.description_input, timeout=12000)
+        except Exception:
+            raise RuntimeError(
+                f"No encontré el campo de descripción (selector '{sel.description_input}'). "
+                "Puede que el formulario no haya quedado abierto tras el paso anterior."
+            )
         field = page.locator(sel.description_input).first
         field.click()
         field.fill(description)
 
         # 3) Enviar y leer el número resultante.
-        page.locator(sel.submit_button).first.click()
-        page.wait_for_selector(sel.ticket_result, timeout=timeout_ms)
+        try:
+            page.locator(sel.submit_button).first.click(timeout=12000)
+        except Exception:
+            raise RuntimeError(f"No pude presionar enviar (selector '{sel.submit_button}').")
+        try:
+            page.wait_for_selector(sel.ticket_result, timeout=timeout_ms)
+        except Exception:
+            raise RuntimeError(
+                f"Envié pero no apareció el número de ticket (selector '{sel.ticket_result}')."
+            )
         text = page.locator(sel.ticket_result).first.inner_text().strip()
         return text
 
+    def save_screenshot(self, path: str):
+        """Guarda una captura de la página actual (para diagnosticar fallos)."""
+        try:
+            self._page.screenshot(path=path, full_page=True)
+            return True
+        except Exception:
+            return False
+
     # ---------- reproducción de pasos grabados (formulario fijo) ----------
-    def replay_steps(self, steps: list, step_wait_ms: int = 450):
+    def replay_steps(self, steps: list, step_wait_ms: int = 450, should_cancel=None):
         """Ejecuta en orden los pasos grabados del formulario fijo.
 
         Tipos de paso:
@@ -120,11 +142,17 @@ class PortalBot:
           - click:  hacer clic (abrir desplegable personalizado y elegir opción).
         Los clics usan primero el selector CSS y, si falla, caen a buscar por
         el texto visible (más robusto para opciones de menús Angular).
+
+        Si un paso falla, lanza un error que dice EXACTAMENTE qué paso fue.
         """
         page = self._page
-        for st in steps:
+        for i, st in enumerate(steps):
+            if should_cancel and should_cancel():
+                raise RuntimeError("Cancelado por el usuario.")
             kind = st.get("kind")
             sel = st.get("selector", "")
+            text = st.get("text", "") or ""
+            etiqueta = f"paso {i + 1} de {len(steps)} [{kind}] «{text or sel}»"
             try:
                 if kind == "fill":
                     page.fill(sel, st.get("value", ""), timeout=8000)
@@ -135,12 +163,9 @@ class PortalBot:
                     loc.check(timeout=8000) if st.get("value") else loc.uncheck(timeout=8000)
                 elif kind == "click":
                     self._click_step(st)
-            except Exception:
-                # Reintento por texto visible (útil para opciones de desplegables).
-                if kind == "click":
-                    self._click_step(st, force_text=True)
-                else:
-                    raise
+            except Exception as exc:
+                primera = str(exc).splitlines()[0] if str(exc) else repr(exc)
+                raise RuntimeError(f"Falló el {etiqueta}: {primera}")
             page.wait_for_timeout(step_wait_ms)
 
     def _click_step(self, st: dict, force_text: bool = False):
