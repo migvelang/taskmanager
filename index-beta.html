@@ -104,18 +104,40 @@ body::after{ content:''; position:fixed; inset:0; z-index:-1; pointer-events:non
 .seg button { background:none; border:none; color:var(--muted); padding:5px 12px; cursor:pointer; font-size:11px; letter-spacing:.5px; }
 .seg button.active { background:var(--teal); color:#06160f; font-weight:600; }
 :root[data-theme="light"] .seg button.active, .seg button.active { color:#06160f; }
-.week { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:5px; }
-.day { min-height:60px; border-radius:8px; padding:3px; background:var(--card2); }
-.day p { font-size:9px; color:var(--muted); text-align:center; margin-bottom:4px; letter-spacing:.5px; }
-.day.today { border:1px solid var(--teal); } .day.today p { color:var(--teal); font-weight:600; }
-.day.cal { min-height:42px; cursor:pointer; text-align:center; }
-.day.dim { opacity:.35; }
-.cal-dow { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:5px; margin-bottom:5px; }
-.cal-dow span { font-size:9px; color:var(--muted); text-align:center; letter-spacing:.5px; }
-.ev { border-radius:5px; padding:3px 4px; font-size:9px; margin-bottom:3px; line-height:1.25; overflow-wrap:anywhere; }
-.ev-ag { background:var(--evag-bg); color:var(--evag-text); } .ev-ics { background:var(--evics-bg); color:var(--evics-text); }
 .wknav { display:flex; gap:6px; align-items:center; }
 .wknav button { background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:3px 12px; cursor:pointer; font-size:14px; }
+
+/* selector de días (vista semana) */
+.daystrip { display:flex; gap:5px; }
+.dchip { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 2px 7px; border-radius:10px; background:var(--card2); border:1px solid transparent; cursor:pointer; color:var(--text); transition:background-color .15s ease; }
+.dchip .dw { font-size:8px; color:var(--muted); letter-spacing:.5px; }
+.dchip .dn { font-size:15px; font-weight:700; font-family:ui-monospace,monospace; line-height:1; }
+.dchip .ddot { width:4px; height:4px; border-radius:50%; background:var(--purple); }
+.dchip.today { border-color:var(--teal); }
+.dchip.today .dn { color:var(--teal); }
+.dchip.sel { background:var(--teal); }
+.dchip.sel .dw, .dchip.sel .dn { color:#06160f; }
+.dchip.sel .ddot { background:#06160f; }
+
+/* calendario mensual en grilla */
+.cal-dow { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; margin-bottom:4px; }
+.cal-dow span { font-size:9px; color:var(--muted); text-align:center; letter-spacing:.5px; }
+.monthcal { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; }
+.mcell { aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; border-radius:8px; background:var(--card2); font-size:11px; color:var(--text); cursor:pointer; position:relative; }
+.mcell.dim { opacity:.3; }
+.mcell.today { border:1px solid var(--teal); color:var(--teal); font-weight:700; }
+.mcell.sel { background:var(--teal); color:#06160f; font-weight:700; }
+.mcell .mdot { width:4px; height:4px; border-radius:50%; background:var(--purple); }
+.mcell.sel .mdot { background:#06160f; }
+
+/* lista de eventos del día seleccionado */
+.agenda-head { font-size:11px; color:var(--purple); letter-spacing:1px; margin:12px 0 6px; font-weight:600; }
+.agenda-empty { font-size:11px; color:var(--done); padding:2px 0 4px; }
+.evcard { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; background:var(--card2); border-left:3px solid var(--purple); margin-bottom:6px; }
+.evcard.src-ics { border-left-color:var(--evics-text); }
+.evtime { font-size:11px; font-weight:700; color:var(--heading); font-family:ui-monospace,monospace; flex:0 0 auto; min-width:36px; }
+.evtxt { font-size:12.5px; flex:1; overflow-wrap:anywhere; }
+.evtag { font-size:8px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; flex:none; }
 .quarter { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
 .qmonth { background:var(--card2); border-radius:8px; padding:8px; }
 .qmonth h4 { font-size:10px; text-align:center; color:var(--muted); margin-bottom:5px; letter-spacing:.5px; font-weight:600; }
@@ -147,12 +169,9 @@ details summary::before { content:'▸ '; } details[open] summary::before { cont
   .stat p{ font-size:8.5px; }
   .stat b{ font-size:17px; }
 
-  /* MI SEMANA: filas compactas tipo lista, no cajas vacías gigantes */
-  .week{ grid-template-columns:1fr; gap:4px; }
-  .day.wk{ display:flex; align-items:center; gap:8px; min-height:0; padding:6px 8px; flex-wrap:wrap; }
-  .day.wk p{ margin:0; flex:0 0 40px; text-align:left; font-size:9px; }
-  .day.wk .ev{ margin-bottom:0; }
-  .day.wk:not(.today) p{ color:var(--muted); }
+  .dchip .dw{ font-size:7.5px; }
+  .dchip .dn{ font-size:13px; }
+  .mcell{ font-size:10px; border-radius:6px; }
 
   .card{ padding:10px 12px; }
   .hdr h1{ font-size:16px; }
@@ -246,16 +265,17 @@ details summary::before { content:'▸ '; } details[open] summary::before { cont
   </div>
 
   <div id="weekWrap">
-    <div class="week" id="week"></div>
+    <div class="daystrip" id="daystrip"></div>
   </div>
   <div id="monthWrap" style="display:none">
     <p class="muted" id="monthLabel" style="text-align:center; margin-bottom:6px; letter-spacing:1px;"></p>
     <div class="cal-dow"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
-    <div class="week" id="monthgrid"></div>
+    <div class="monthcal" id="monthgrid"></div>
   </div>
 
-  <p class="muted" style="margin-top:6px">■ <span style="color:var(--evag-text)">agenda</span> · ■ <span style="color:var(--evics-text)">calendarios externos (Outlook / Apple / Google)</span></p>
-  <div class="detail" id="dayPanel" style="display:none"></div>
+  <p class="agenda-head" id="agendaHead"></p>
+  <div id="agendaList"></div>
+
   <div class="addrow">
     <input type="date" id="in-ev-date" style="flex:0 0 145px">
     <input type="time" id="in-ev-time" style="flex:0 0 100px">
@@ -292,6 +312,7 @@ const NOTIFY_THRESHOLD = 2;
 let S = { tareas:[], tareasCerradas:[], casos:[], cerrados:[], agenda:[] };
 let VIEW = 'semana';
 let WK = 0, MOFF = 0;
+let SELECTED = null;
 let ICS_BY_SRC = { outlook:[], apple:[], google:[] };
 const SRC_LABEL = { outlook:'outlook', apple:'apple', google:'google' };
 function allICS(){ return ICS_BY_SRC.outlook.concat(ICS_BY_SRC.apple, ICS_BY_SRC.google); }
@@ -440,6 +461,7 @@ async function conectar(){
   applyTheme(localStorage.getItem('dtm-theme') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light':'dark'));
   updateNotifBtn();
   renderLastSync();
+  SELECTED = hoy();
   $('in-ev-date').value = hoy();
 
   const local = localStorage.getItem('dtm-data');
@@ -602,6 +624,7 @@ function render(){
   $('monthWrap').style.display = VIEW==='mes' ? 'block':'none';
   $('wkTitle').textContent = VIEW==='semana' ? '▦ MI SEMANA' : '▦ MI MES';
   if(VIEW==='semana') renderWeek(); else renderMonth();
+  renderAgenda();
 
   const todosEventos = S.agenda.concat(allICS());
   let mS, mE;
@@ -648,13 +671,11 @@ function jumpToDate(ds){
   VIEW='mes';
   const target=new Date(ds+'T12:00:00'), now=new Date();
   MOFF=(target.getFullYear()-now.getFullYear())*12+(target.getMonth()-now.getMonth());
-  render();
-  showDayDetail(ds);
+  selectDay(ds);
   $('wkTitle').scrollIntoView({behavior:'smooth', block:'start'});
 }
 
-function evChip(e){ return '<div class="ev ev-ag">'+(e.hora?'<b>'+esc(e.hora)+'</b> ':'')+esc(e.t)+'</div>'; }
-function icsChip(e){ return '<div class="ev ev-ics">'+(e.hora?'<b>'+esc(e.hora)+'</b> ':'')+esc(e.t)+'</div>'; }
+function hasEv(ds){ return S.agenda.some(e=>e.d===ds) || allICS().some(e=>e.d===ds); }
 
 function renderWeek(){
   const mon=new Date(); mon.setDate(mon.getDate()-((mon.getDay()+6)%7)+WK*7);
@@ -662,11 +683,11 @@ function renderWeek(){
   for(let i=0;i<7;i++){
     const d=new Date(mon); d.setDate(mon.getDate()+i);
     const ds=fmt(d);
-    const lbl=d.toLocaleDateString('es-CL',{weekday:'short',day:'numeric'}).toUpperCase();
-    const evs=S.agenda.filter(e=>e.d===ds).map(evChip).join('') + allICS().filter(e=>e.d===ds).map(icsChip).join('');
-    wh+='<div class="day wk'+(ds===hoy()?' today':'')+'"><p>'+lbl+'</p>'+evs+'</div>';
+    const lbl=d.toLocaleDateString('es-CL',{weekday:'short'}).toUpperCase().replace('.','');
+    const cls='dchip'+(ds===hoy()?' today':'')+(ds===SELECTED?' sel':'');
+    wh+='<button class="'+cls+'" onclick="selectDay(\''+ds+'\')"><span class="dw">'+lbl+'</span><span class="dn">'+d.getDate()+'</span>'+(hasEv(ds)?'<span class="ddot"></span>':'')+'</button>';
   }
-  $('week').innerHTML=wh;
+  $('daystrip').innerHTML=wh;
 }
 
 function renderMonth(){
@@ -680,30 +701,43 @@ function renderMonth(){
     const d=new Date(start); d.setDate(start.getDate()+i);
     const ds=fmt(d);
     const inMonth = d.getMonth()===base.getMonth();
-    const n = S.agenda.filter(e=>e.d===ds).length + allICS().filter(e=>e.d===ds).length;
-    html+='<div class="day cal'+(ds===hoy()?' today':'')+(inMonth?'':' dim')+'" onclick="showDayDetail(\''+ds+'\')"><p>'+d.getDate()+'</p>'+(n?'<div class="ev ev-ag">'+n+' ●</div>':'')+'</div>';
+    const cls='mcell'+(ds===hoy()?' today':'')+(ds===SELECTED?' sel':'')+(inMonth?'':' dim');
+    html+='<div class="'+cls+'" onclick="selectDay(\''+ds+'\')">'+d.getDate()+(hasEv(ds)?'<span class="mdot"></span>':'')+'</div>';
   }
   $('monthgrid').innerHTML=html;
 }
 
-function showDayDetail(ds){
+function renderAgenda(){
+  const ds=SELECTED||hoy();
   const ag = S.agenda.filter(e=>e.d===ds);
   const ic = allICS().filter(e=>e.d===ds);
   const f=new Date(ds+'T12:00:00').toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
-  let h='<b style="color:var(--purple)">'+f.toUpperCase()+'</b><br>';
-  if(!ag.length && !ic.length) h+='<span class="muted">Sin eventos este día</span>';
-  else{
-    h += ag.map(e=>'<div>· '+(e.hora?esc(e.hora)+' — ':'')+esc(e.t)+'</div>').join('');
-    h += ic.map(e=>'<div style="color:var(--evics-text)">· '+(e.hora?esc(e.hora)+' — ':'')+esc(e.t)+' ('+esc(SRC_LABEL[e.src]||'calendario')+')</div>').join('');
+  $('agendaHead').textContent = f.toUpperCase();
+  if(!ag.length && !ic.length){
+    $('agendaList').innerHTML='<p class="agenda-empty">Sin eventos este día</p>';
+  } else {
+    $('agendaList').innerHTML =
+      ag.map(e=>'<div class="evcard"><span class="evtime">'+(e.hora?esc(e.hora):'—')+'</span><span class="evtxt">'+esc(e.t)+'</span></div>').join('') +
+      ic.map(e=>'<div class="evcard src-ics"><span class="evtime">'+(e.hora?esc(e.hora):'—')+'</span><span class="evtxt">'+esc(e.t)+'</span><span class="evtag">'+esc(SRC_LABEL[e.src]||'')+'</span></div>').join('');
   }
-  $('dayPanel').innerHTML=h; $('dayPanel').style.display='block';
   $('in-ev-date').value=ds;
 }
 
-function setView(v){ VIEW=v; $('dayPanel').style.display='none'; render(); }
+function selectDay(ds){ SELECTED=ds; render(); }
+
+function setView(v){ VIEW=v; render(); }
 function mvNav(n){
   if(VIEW==='semana'){ WK = n===0?0:WK+n; } else { MOFF = n===0?0:MOFF+n; }
-  $('dayPanel').style.display='none'; render();
+  const mon=new Date(); mon.setDate(mon.getDate()-((mon.getDay()+6)%7)+WK*7);
+  let rangeStart, rangeEnd;
+  if(VIEW==='semana'){ rangeStart=fmt(mon); rangeEnd=fmt(new Date(mon.getTime()+6*86400000)); }
+  else{
+    const base=new Date(); base.setDate(1); base.setMonth(base.getMonth()+MOFF);
+    rangeStart=fmt(new Date(base.getFullYear(),base.getMonth(),1));
+    rangeEnd=fmt(new Date(base.getFullYear(),base.getMonth()+1,0));
+  }
+  SELECTED = (hoy()>=rangeStart && hoy()<=rangeEnd) ? hoy() : rangeStart;
+  render();
 }
 
 function tgT(i){ const t=S.tareas[i]; t.done=!t.done; if(t.done) t.doneAt=Date.now(); else delete t.doneAt; render(); push(); }
