@@ -136,10 +136,26 @@ details summary::before { content:'▸ '; } details[open] summary::before { cont
 #toast { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); background:var(--card); border:1px solid var(--teal); color:var(--text); border-radius:10px; padding:10px 16px; font-size:12px; display:none; z-index:9; max-width:90%; box-shadow:var(--shadow); }
 .page { display:flex; flex-direction:column; }
 @media (max-width:640px){
-  .cols, .stats, .week { grid-template-columns:1fr; }
+  .cols { grid-template-columns:1fr; }
   .sec-stats{ order:1; } .sec-week{ order:2; } .sec-cols{ order:3; } .sec-quarter{ order:4; }
   .quarter{ grid-auto-flow:column; grid-auto-columns:78%; grid-template-columns:none; overflow-x:auto; scroll-snap-type:x mandatory; padding-bottom:4px; margin:0 -14px; padding-left:14px; padding-right:14px; }
   .qmonth{ scroll-snap-align:start; }
+
+  /* métricas compactas en 2x2 en vez de 4 tarjetas grandes apiladas */
+  .stats{ grid-template-columns:repeat(2,1fr); gap:6px; margin-bottom:8px; }
+  .stat{ padding:7px 10px; border-radius:8px; }
+  .stat p{ font-size:8.5px; }
+  .stat b{ font-size:17px; }
+
+  /* MI SEMANA: filas compactas tipo lista, no cajas vacías gigantes */
+  .week{ grid-template-columns:1fr; gap:4px; }
+  .day.wk{ display:flex; align-items:center; gap:8px; min-height:0; padding:6px 8px; flex-wrap:wrap; }
+  .day.wk p{ margin:0; flex:0 0 40px; text-align:left; font-size:9px; }
+  .day.wk .ev{ margin-bottom:0; }
+  .day.wk:not(.today) p{ color:var(--muted); }
+
+  .card{ padding:10px 12px; }
+  .hdr h1{ font-size:16px; }
 }
 </style>
 </head>
@@ -166,7 +182,17 @@ details summary::before { content:'▸ '; } details[open] summary::before { cont
   <input id="cfg-clave" placeholder="ej: miguel-x7k9m2p4q8">
   <label>URL ICS de tu calendario Outlook (opcional)</label>
   <input id="cfg-ics" placeholder="https://outlook.office365.com/owa/calendar/..../calendar.ics">
-  <p class="hint">Outlook Web → ⚙ Configuración → Calendario → Calendarios compartidos → Publicar un calendario → copia el enlace ICS. Se vuelve a leer automáticamente cada 15 min mientras tengas la app abierta.</p>
+  <p class="hint">Outlook Web → ⚙ Configuración → Calendario → Calendarios compartidos → Publicar un calendario → copia el enlace ICS.</p>
+
+  <label>URL ICS de tu calendario de Apple / iCloud (opcional)</label>
+  <input id="cfg-ics-apple" placeholder="https://p01-caldav.icloud.com/published/2/...">
+  <p class="hint">iCloud.com → Calendario → pásale el mouse al calendario en la barra lateral → ⋯ → "Calendario público" → activar y copiar enlace → cambia <b>webcal://</b> por <b>https://</b> al pegarlo aquí.</p>
+
+  <label>URL ICS de tu calendario de Google (opcional)</label>
+  <input id="cfg-ics-google" placeholder="https://calendar.google.com/calendar/ical/tu_correo/private-xxxx/basic.ics">
+  <p class="hint">calendar.google.com → ⚙ Configuración → elige tu calendario (columna izquierda) → "Integrar calendario" → copia la "Dirección secreta en formato iCal".</p>
+  <p class="hint">Los 3 calendarios son opcionales e independientes — se combinan y se vuelven a leer solos cada 15 min mientras tengas la app abierta.</p>
+
   <div style="display:flex; gap:8px; margin-top:12px;">
     <button class="btn go" onclick="saveCfg()">Guardar y conectar</button>
     <button class="btn" onclick="toggleSet()">Cerrar</button>
@@ -228,7 +254,7 @@ details summary::before { content:'▸ '; } details[open] summary::before { cont
     <div class="week" id="monthgrid"></div>
   </div>
 
-  <p class="muted" style="margin-top:6px">■ <span style="color:var(--evag-text)">agenda</span> · ■ <span style="color:var(--evics-text)">calendario outlook</span></p>
+  <p class="muted" style="margin-top:6px">■ <span style="color:var(--evag-text)">agenda</span> · ■ <span style="color:var(--evics-text)">calendarios externos (Outlook / Apple / Google)</span></p>
   <div class="detail" id="dayPanel" style="display:none"></div>
   <div class="addrow">
     <input type="date" id="in-ev-date" style="flex:0 0 145px">
@@ -266,7 +292,9 @@ const NOTIFY_THRESHOLD = 2;
 let S = { tareas:[], tareasCerradas:[], casos:[], cerrados:[], agenda:[] };
 let VIEW = 'semana';
 let WK = 0, MOFF = 0;
-let ICS = [];
+let ICS_BY_SRC = { outlook:[], apple:[], google:[] };
+const SRC_LABEL = { outlook:'outlook', apple:'apple', google:'google' };
+function allICS(){ return ICS_BY_SRC.outlook.concat(ICS_BY_SRC.apple, ICS_BY_SRC.google); }
 let ref = null, saveTimer = null;
 let editT = -1, editC = -1;
 
@@ -382,12 +410,18 @@ async function loadFirebase(){
 function cfg(){ try{ return JSON.parse(localStorage.getItem('dtm-cfg'))||null; }catch(e){ return null; } }
 function toggleSet(){
   const p=$('setPanel'); p.style.display = p.style.display==='block'?'none':'block';
-  const c=cfg(); if(c){ $('cfg-clave').value=c.clave; $('cfg-ics').value=c.ics||''; }
+  const c=cfg();
+  if(c){ $('cfg-clave').value=c.clave; $('cfg-ics').value=c.ics||''; $('cfg-ics-apple').value=c.icsApple||''; $('cfg-ics-google').value=c.icsGoogle||''; }
 }
 function saveCfg(){
   const clave=$('cfg-clave').value.trim();
   if(!clave){ toast('Escribe tu clave de sincronización'); return; }
-  localStorage.setItem('dtm-cfg', JSON.stringify({clave, ics:$('cfg-ics').value.trim()}));
+  localStorage.setItem('dtm-cfg', JSON.stringify({
+    clave,
+    ics:$('cfg-ics').value.trim(),
+    icsApple:$('cfg-ics-apple').value.trim(),
+    icsGoogle:$('cfg-ics-google').value.trim()
+  }));
   $('setPanel').style.display='none';
   location.reload();
 }
@@ -457,10 +491,16 @@ async function conectar(){
     toast('No se pudo conectar la sincronización: '+e.message);
   }
 
-  if(c.ics){
-    cargarICS(c.ics);
-    setInterval(()=>cargarICS(c.ics), 15*60*1000);
-    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) cargarICS(c.ics); });
+  const fuentes=[['ics','outlook'],['icsApple','apple'],['icsGoogle','google']];
+  const activas=fuentes.filter(([k])=>c[k]);
+  activas.forEach(([k,src])=>{
+    cargarICS(c[k], src);
+    setInterval(()=>cargarICS(c[k], src), 15*60*1000);
+  });
+  if(activas.length){
+    document.addEventListener('visibilitychange', ()=>{
+      if(!document.hidden) activas.forEach(([k,src])=>cargarICS(c[k], src));
+    });
   }
 }
 
@@ -475,7 +515,7 @@ function push(){
   },400);
 }
 
-async function cargarICS(url){
+async function cargarICS(url, src){
   const intentos=[url, 'https://corsproxy.io/?url='+encodeURIComponent(url)];
   for(const u of intentos){
     try{
@@ -487,13 +527,13 @@ async function cargarICS(url){
         const sm=(b.match(/SUMMARY[^:]*:(.*)/)||[])[1];
         if(dt[1]&&sm){
           const hora = dt[3] ? dt[3].slice(0,2)+':'+dt[3].slice(2,4) : '';
-          nuevos.push({d:dt[1].slice(0,4)+'-'+dt[1].slice(4,6)+'-'+dt[1].slice(6,8), hora, t:sm.trim().replace(/\\,/g,',')});
+          nuevos.push({d:dt[1].slice(0,4)+'-'+dt[1].slice(4,6)+'-'+dt[1].slice(6,8), hora, t:sm.trim().replace(/\\,/g,','), src});
         }
       }
-      ICS=nuevos; render(); return;
+      ICS_BY_SRC[src]=nuevos; render(); return;
     }catch(e){}
   }
-  toast('No pude leer el calendario ICS (revisa el enlace en ⚙ configuración)');
+  toast('No pude leer el calendario de '+src+' (revisa el enlace en ⚙ configuración)');
 }
 
 function diasSin(act){ if(!act) return 0; return Math.floor((new Date(hoy())-new Date(act))/86400000); }
@@ -563,7 +603,7 @@ function render(){
   $('wkTitle').textContent = VIEW==='semana' ? '▦ MI SEMANA' : '▦ MI MES';
   if(VIEW==='semana') renderWeek(); else renderMonth();
 
-  const todosEventos = S.agenda.concat(ICS);
+  const todosEventos = S.agenda.concat(allICS());
   let mS, mE;
   if(VIEW==='semana'){
     const mon=new Date(); mon.setDate(mon.getDate()-((mon.getDay()+6)%7)+WK*7);
@@ -596,7 +636,7 @@ function renderQuarter(){
       const d=new Date(start); d.setDate(start.getDate()+i);
       const ds=fmt(d);
       const inMonth=d.getMonth()===base.getMonth();
-      const has = S.agenda.some(e=>e.d===ds) || ICS.some(e=>e.d===ds);
+      const has = S.agenda.some(e=>e.d===ds) || allICS().some(e=>e.d===ds);
       cells+='<div class="qday'+(ds===hoy()?' today':'')+(inMonth?'':' dim')+'" onclick="jumpToDate(\''+ds+'\')">'+d.getDate()+(has?'<i></i>':'')+'</div>';
     }
     html+='<div class="qmonth"><h4>'+label+'</h4><div class="qgrid">'+cells+'</div></div>';
@@ -623,8 +663,8 @@ function renderWeek(){
     const d=new Date(mon); d.setDate(mon.getDate()+i);
     const ds=fmt(d);
     const lbl=d.toLocaleDateString('es-CL',{weekday:'short',day:'numeric'}).toUpperCase();
-    const evs=S.agenda.filter(e=>e.d===ds).map(evChip).join('') + ICS.filter(e=>e.d===ds).map(icsChip).join('');
-    wh+='<div class="day'+(ds===hoy()?' today':'')+'"><p>'+lbl+'</p>'+evs+'</div>';
+    const evs=S.agenda.filter(e=>e.d===ds).map(evChip).join('') + allICS().filter(e=>e.d===ds).map(icsChip).join('');
+    wh+='<div class="day wk'+(ds===hoy()?' today':'')+'"><p>'+lbl+'</p>'+evs+'</div>';
   }
   $('week').innerHTML=wh;
 }
@@ -640,7 +680,7 @@ function renderMonth(){
     const d=new Date(start); d.setDate(start.getDate()+i);
     const ds=fmt(d);
     const inMonth = d.getMonth()===base.getMonth();
-    const n = S.agenda.filter(e=>e.d===ds).length + ICS.filter(e=>e.d===ds).length;
+    const n = S.agenda.filter(e=>e.d===ds).length + allICS().filter(e=>e.d===ds).length;
     html+='<div class="day cal'+(ds===hoy()?' today':'')+(inMonth?'':' dim')+'" onclick="showDayDetail(\''+ds+'\')"><p>'+d.getDate()+'</p>'+(n?'<div class="ev ev-ag">'+n+' ●</div>':'')+'</div>';
   }
   $('monthgrid').innerHTML=html;
@@ -648,13 +688,13 @@ function renderMonth(){
 
 function showDayDetail(ds){
   const ag = S.agenda.filter(e=>e.d===ds);
-  const ic = ICS.filter(e=>e.d===ds);
+  const ic = allICS().filter(e=>e.d===ds);
   const f=new Date(ds+'T12:00:00').toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
   let h='<b style="color:var(--purple)">'+f.toUpperCase()+'</b><br>';
   if(!ag.length && !ic.length) h+='<span class="muted">Sin eventos este día</span>';
   else{
     h += ag.map(e=>'<div>· '+(e.hora?esc(e.hora)+' — ':'')+esc(e.t)+'</div>').join('');
-    h += ic.map(e=>'<div style="color:var(--evics-text)">· '+(e.hora?esc(e.hora)+' — ':'')+esc(e.t)+' (outlook)</div>').join('');
+    h += ic.map(e=>'<div style="color:var(--evics-text)">· '+(e.hora?esc(e.hora)+' — ':'')+esc(e.t)+' ('+esc(SRC_LABEL[e.src]||'calendario')+')</div>').join('');
   }
   $('dayPanel').innerHTML=h; $('dayPanel').style.display='block';
   $('in-ev-date').value=ds;
