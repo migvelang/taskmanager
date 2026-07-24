@@ -139,11 +139,12 @@ table.cfg input[type=checkbox] { width:18px; height:18px; accent-color:var(--lim
       </svg>
       <div class="tt">
         <b>Garantía Extendida</b>
-        <span>Calculadora de cuotas · <span id="verTag">v4</span></span>
+        <span>Calculadora de cuotas · <span id="verTag">v5</span></span>
       </div>
     </div>
     <div class="hdr-right">
       <div class="connect-box"><img id="connectLogo" src="" alt="Connect"></div>
+      <button class="gear" onclick="refrescar()" title="Refrescar página">⟳</button>
       <button class="gear" onclick="toggleCfg()" title="Configuración">⚙</button>
     </div>
   </div>
@@ -468,9 +469,11 @@ function parsePrecio(str){
   return isNaN(n) ? null : n;
 }
 function extraerSku(txt){
-  const m = String(txt).match(/product\/(\d+)/);      // link pegado
+  const m = String(txt).match(/product\/([A-Za-z0-9]+)/);   // link pegado (acepta IDs "prod…")
   if (m) return m[1];
-  return String(txt).replace(/[^\d]/g,'');            // solo dígitos
+  const t = String(txt).trim();
+  if (/^prod[A-Za-z0-9]+$/i.test(t)) return t;              // ID "prod…" escrito directo
+  return t.replace(/[^\d]/g,'');                            // SKU numérico
 }
 function detectarTipo(pd){
   const crumbs = (pd.breadCrumb||[]).map(b => (b.label||'') + ' ' + (b.name||'')).join(' ').toLowerCase()
@@ -525,7 +528,7 @@ async function buscarSku(){
   for (let salto = 0; salto < 4; salto++){
     const j = await consultar(id);
     if (!j){ break; }
-    const alt = j.data && j.data.altUrl && String(j.data.altUrl).match(/product\/(\d+)/);
+    const alt = j.data && j.data.altUrl && String(j.data.altUrl).match(/product\/([A-Za-z0-9]+)/);
     if (alt && alt[1] !== id){ id = alt[1]; cadena.push(id); diag(`variante → producto ${id}`); continue; }
     pd = j.data && j.data.variants ? j.data : null;
     if (!pd && j.data) diag('respuesta sin variantes/precios');
@@ -560,8 +563,10 @@ async function buscarSku(){
     ((pd.warrantyOptions||{}).fieldOptions||[]).forEach(o => {
       const v = parsePrecio(o.textPrice);
       if (v == null) return;
-      const my = (o.name||o.label||'').match(/(\d+)\s*año/i);
-      if (my) garantias[my[1]] = v;
+      const nm = (o.name||o.label||'');
+      // "1 año", "2 Años"  ó  abreviado "1A", "2 A"
+      const my = nm.match(/(\d+)\s*años?/i) || nm.match(/(?:^|\s)(\d+)\s*A(?=\s|$)/i);
+      if (my){ const yr = parseInt(my[1],10); if (yr >= 1 && yr <= 5) garantias[yr] = v; }
     });
     if (precios.cmr == null && precios.oferta == null && precios.normal == null) throw new Error('sin precios');
     PROD = { sku, name: pd.name, brand: pd.brandName, precios, garantias,
@@ -684,6 +689,7 @@ function calcular(){
 }
 
 /* ================== CONFIGURACIÓN ================== */
+function refrescar(){ location.replace(location.pathname + '?v=' + Date.now()); }
 let cfgOpen = false;
 function toggleCfg(){
   cfgOpen = !cfgOpen;
