@@ -113,7 +113,7 @@ def generar_alertas(db: Session, carga: Carga) -> int:
             alertas.append(Alerta(
                 carga_id=carga.id, tipo="envejecimiento", severidad="media",
                 ost_num=o.ost_num, cruce_tienda=o.cruce_tienda,
-                titulo=f"OST {o.ost_num} envejeció de tramo",
+                titulo=f"OST {o.ost_num} aumentó de antigüedad",
                 detalle=f"{o.prod_nombre or ''} · {o.ost_subestado or ''}",
                 valor_anterior=p["rango"], valor_actual=o.rango_sertec,
             ))
@@ -125,7 +125,7 @@ def generar_alertas(db: Session, carga: Carga) -> int:
             alertas.append(Alerta(
                 carga_id=carga.id, tipo="sf_no_cumple_matriz", severidad="media",
                 ss_nro=s.ss_nro, ost_num=s.ost_parseada, cruce_tienda=s.tienda_origen,
-                titulo=f"Caso SF {s.ss_nro} no cumple validación de matriz",
+                titulo=f"Caso PU {s.ss_nro} no cumple validación de matriz",
                 detalle=s.motivo_no_cumple or s.nivel_3,
                 valor_actual=s.validacion_matriz,
             ))
@@ -133,7 +133,7 @@ def generar_alertas(db: Session, carga: Carga) -> int:
             alertas.append(Alerta(
                 carga_id=carga.id, tipo="sf_error_creacion", severidad="media",
                 ss_nro=s.ss_nro, cruce_tienda=s.tienda_origen,
-                titulo=f"Caso SF {s.ss_nro} sin F11/OST (posible error de creación)",
+                titulo=f"Caso PU {s.ss_nro} sin F11/OST (posible error de creación)",
                 detalle=(s.descripcion or "")[:200],
                 valor_actual=s.estado,
             ))

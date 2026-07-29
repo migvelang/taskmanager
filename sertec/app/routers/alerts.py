@@ -5,7 +5,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..deps import require_user
+from ..deps import require_user, resolve_tienda
 from ..models import Alerta, User
 from ..services import stats
 from ..templating import templates
@@ -15,10 +15,10 @@ router = APIRouter()
 TIPOS = {
     "incumplimiento": "🔴 Nuevos incumplimientos",
     "cambio_estado": "🔄 Cambios de estado",
-    "envejecimiento": "⏳ Envejecimiento",
+    "envejecimiento": "⏳ Antigüedad",
     "sin_responsable": "⚠️ Sin responsable",
-    "sf_no_cumple_matriz": "🧩 SF no cumple matriz",
-    "sf_error_creacion": "✍️ SF error de creación",
+    "sf_no_cumple_matriz": "🧩 PU no cumple matriz",
+    "sf_error_creacion": "✍️ PU error de creación",
 }
 
 
@@ -27,16 +27,24 @@ def alertas(
     request: Request,
     tipo: str | None = None,
     gestion: str | None = None,
+    tienda: str | None = None,
     db: Session = Depends(get_db),
     user: User = Depends(require_user),
 ):
+    tienda = resolve_tienda(request, tienda)
     carga = stats.ultima_carga(db)
     ctx = {"request": request, "user": user, "carga": carga, "tipos": TIPOS,
-           "tipo_sel": tipo, "gestion_sel": gestion}
+           "tipo_sel": tipo, "gestion_sel": gestion, "tienda": tienda, "tiendas": []}
     if not carga:
         return templates.TemplateResponse("alerts.html", {**ctx, "vacio": True})
 
-    q = db.query(Alerta).filter(Alerta.carga_id == carga.id)
+    ctx["tiendas"] = stats.lista_tiendas(db, carga.id)
+
+    base = db.query(Alerta).filter(Alerta.carga_id == carga.id)
+    if tienda:
+        base = base.filter(Alerta.cruce_tienda == tienda)
+
+    q = base
     if tipo:
         q = q.filter(Alerta.tipo == tipo)
     if gestion:
@@ -46,12 +54,10 @@ def alertas(
     items = q.all()
     items.sort(key=lambda a: (orden.get(a.severidad, 3), a.tipo))
 
-    conteos = dict(
-        db.query(Alerta.tipo, func.count(Alerta.id))
-        .filter(Alerta.carga_id == carga.id)
-        .group_by(Alerta.tipo)
-        .all()
-    )
+    conteos_q = db.query(Alerta.tipo, func.count(Alerta.id)).filter(Alerta.carga_id == carga.id)
+    if tienda:
+        conteos_q = conteos_q.filter(Alerta.cruce_tienda == tienda)
+    conteos = dict(conteos_q.group_by(Alerta.tipo).all())
     return templates.TemplateResponse(
         "alerts.html",
         {**ctx, "vacio": False, "items": items[:500], "total": len(items), "conteos": conteos},

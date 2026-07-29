@@ -2,8 +2,25 @@
 {% block title %}Alertas · SERTEC{% endblock %}
 {% block content %}
 
-<h1 class="text-2xl font-bold text-slate-900 mb-1">Panel de alertas</h1>
-{% if carga %}<p class="text-sm text-slate-500 mb-4">Carga: <b>{{ carga.fecha_extraccion.strftime('%d-%m-%Y %H:%M') }}</b></p>{% endif %}
+<div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+  <div>
+    <h1 class="text-2xl font-bold text-slate-900">Panel de alertas</h1>
+    {% if carga %}<p class="text-sm text-slate-500">Carga: <b>{{ carga.fecha_extraccion.strftime('%d-%m-%Y %H:%M') }}</b>
+      {% if tienda %}· <span class="text-cyan-700 font-medium">{{ tienda }}</span>{% endif %}</p>{% endif %}
+  </div>
+  {% if not vacio %}
+  <form method="get" class="flex items-center gap-2">
+    {% if tipo_sel %}<input type="hidden" name="tipo" value="{{ tipo_sel }}">{% endif %}
+    <select name="tienda" onchange="this.form.submit()"
+      class="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
+      <option value="">Todas las tiendas</option>
+      {% for t in tiendas %}
+        <option value="{{ t }}" {{ 'selected' if t == tienda else '' }}>{{ t }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  {% endif %}
+</div>
 
 {% if vacio %}
   <div class="bg-white rounded-xl shadow p-10 text-center text-slate-500">No hay cargas para generar alertas todavía.</div>

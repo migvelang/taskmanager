@@ -40,7 +40,7 @@
   {{ kpi('Fuera de plazo', k.fuera_plazo, 'text-red-600') }}
   {{ kpi('Cerradas', k.cerradas, 'text-slate-900') }}
   {{ kpi('Canceladas', k.canceladas, 'text-slate-500') }}
-  {{ kpi('Casos SF abiertos', k.sf_abiertos, 'text-indigo-600') }}
+  {{ kpi('Casos PU abiertos', k.sf_abiertos, 'text-indigo-600') }}
 </div>
 
 <!-- Resumen de alertas -->
@@ -50,7 +50,7 @@
     <a href="/alertas" class="text-sm text-cyan-600 hover:underline">Ver panel completo →</a>
   </div>
   <div class="flex flex-wrap gap-2">
-    {% set labels = {'incumplimiento':'🔴 Incumplimientos','cambio_estado':'🔄 Cambios de estado','envejecimiento':'⏳ Envejecimiento','sin_responsable':'⚠️ Sin responsable','sf_no_cumple_matriz':'🧩 SF no cumple matriz','sf_error_creacion':'✍️ SF error creación'} %}
+    {% set labels = {'incumplimiento':'🔴 Incumplimientos','cambio_estado':'🔄 Cambios de estado','envejecimiento':'⏳ Antigüedad','sin_responsable':'⚠️ Sin responsable','sf_no_cumple_matriz':'🧩 PU no cumple matriz','sf_error_creacion':'✍️ PU error creación'} %}
     {% for tipo, lbl in labels.items() %}
       <a href="/alertas?tipo={{ tipo }}"
          class="px-3 py-2 rounded-lg border text-sm {{ 'bg-slate-50 border-slate-200 text-slate-400' if not data.alertas_por_tipo.get(tipo) else 'bg-white border-slate-300 hover:border-cyan-400' }}">

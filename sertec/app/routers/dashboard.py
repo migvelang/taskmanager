@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..deps import require_user
+from ..deps import require_user, resolve_tienda
 from ..models import User
 from ..services import stats
 from ..templating import templates
@@ -18,6 +18,7 @@ def dashboard(
     db: Session = Depends(get_db),
     user: User = Depends(require_user),
 ):
+    tienda = resolve_tienda(request, tienda)
     carga = stats.ultima_carga(db)
     ctx = {"request": request, "user": user, "carga": carga, "tienda": tienda}
     if not carga:

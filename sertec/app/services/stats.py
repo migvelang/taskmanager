@@ -42,10 +42,12 @@ def dashboard_data(db: Session, carga: Carga, tienda: str | None = None) -> dict
         "canceladas": contar(base.filter(OstSnapshot.ost_estado.like("%CANCELADA%"))),
     }
 
-    # Casos SF abiertos (sin fecha de cierre)
+    # Casos PU (Salesforce) abiertos (sin fecha de cierre), filtrados por tienda
     sf_q = db.query(func.count(SfSnapshot.id)).filter(
         SfSnapshot.carga_id == carga.id, SfSnapshot.fecha_cierre.is_(None)
     )
+    if tienda:
+        sf_q = sf_q.filter(SfSnapshot.tienda_origen == tienda)
     kpis["sf_abiertos"] = sf_q.scalar() or 0
 
     def agrupar(col, q=None, limite=None):
@@ -62,13 +64,11 @@ def dashboard_data(db: Session, carga: Carga, tienda: str | None = None) -> dict
     top_tiendas = agrupar(OstSnapshot.cruce_tienda, abiertas_q, limite=10) if not tienda else []
     por_marca = agrupar(OstSnapshot.prod_marca, abiertas_q, limite=10)
 
-    # Resumen de alertas por tipo
-    alertas_por_tipo = dict(
-        db.query(Alerta.tipo, func.count(Alerta.id))
-        .filter(Alerta.carga_id == carga.id)
-        .group_by(Alerta.tipo)
-        .all()
-    )
+    # Resumen de alertas por tipo (respetando el filtro de tienda)
+    alertas_q = db.query(Alerta.tipo, func.count(Alerta.id)).filter(Alerta.carga_id == carga.id)
+    if tienda:
+        alertas_q = alertas_q.filter(Alerta.cruce_tienda == tienda)
+    alertas_por_tipo = dict(alertas_q.group_by(Alerta.tipo).all())
 
     return {
         "kpis": kpis,
