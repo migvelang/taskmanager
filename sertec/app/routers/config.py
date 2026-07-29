@@ -33,7 +33,7 @@ def config_home(
         "config.html",
         {"request": request, "user": user, "reglas": reglas, "guardado": guardado,
          "estados": reglas_mod.ESTADOS, "subestados": reglas_mod.SUBESTADOS,
-         "gestiones": reglas_mod.GESTIONES},
+         "gestiones": reglas_mod.GESTIONES, "categorias": reglas_mod.CATEGORIAS},
     )
 
 
@@ -78,6 +78,7 @@ async def guardar_reglas(
         r.activa = form.get(f"activa_{r.id}") == "on"
         r.requiere_pu = form.get(f"requiere_pu_{r.id}") == "on"
         r.severidad = form.get(f"severidad_{r.id}") or r.severidad
+        r.categoria = form.get(f"categoria_{r.id}") or r.categoria
         r.ost_estado = form.get(f"ost_estado_{r.id}") or None
         r.subestado = form.get(f"subestado_{r.id}") or None
         r.gestion_producto = form.get(f"gestion_producto_{r.id}") or None
@@ -132,6 +133,7 @@ async def crear_regla(
         activa=True, solo_abierta=False,
         rango_min=rango_min, dias_min=dias_min,
         severidad=form.get("n_severidad") or "media",
+        categoria=form.get("n_categoria") or "pendiente_gestion",
         requiere_pu=form.get("n_requiere_pu") == "on",
         mensaje=(form.get("n_mensaje") or "").strip() or "Revisar.",
     ))

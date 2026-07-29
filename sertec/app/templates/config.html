@@ -28,6 +28,7 @@
         <th class="text-left px-2 py-3">OST Estado</th>
         <th class="text-left px-2 py-3">Subestado</th>
         <th class="text-left px-2 py-3">Gestión producto</th>
+        <th class="text-left px-2 py-3">Tipo alerta</th>
         <th class="px-2 py-3">¿Alerta?</th>
         <th class="px-2 py-3" title="Alerta cuando el tramo de días es ≥ este (1 = cualquiera)">Rango</th>
         <th class="px-2 py-3" title="Si se define, alerta cuando lleva ≥ estos días en SERTEC">Días</th>
@@ -43,6 +44,11 @@
         <td class="px-2 py-2">{{ sel('ost_estado_' ~ r.id, r.ost_estado, estados, disp_estado) }}</td>
         <td class="px-2 py-2">{{ sel('subestado_' ~ r.id, r.subestado, subestados, disp_subestado) }}</td>
         <td class="px-2 py-2">{{ sel('gestion_producto_' ~ r.id, r.gestion_producto, gestiones, disp_gestion) }}</td>
+        <td class="px-2 py-2">
+          <select name="categoria_{{ r.id }}" class="border border-slate-300 rounded px-1 py-1 text-xs bg-white">
+            {% for cval, clbl in categorias.items() %}<option value="{{ cval }}" {{ 'selected' if (r.categoria or 'pendiente_gestion') == cval else '' }}>{{ clbl }}</option>{% endfor %}
+          </select>
+        </td>
         <td class="px-2 py-2 text-center"><input type="checkbox" name="activa_{{ r.id }}" {{ 'checked' if r.activa else '' }} class="h-4 w-4"></td>
         <td class="px-2 py-2 text-center"><input type="number" min="1" max="6" name="rango_min_{{ r.id }}" value="{{ r.rango_min or 1 }}" class="w-12 border border-slate-300 rounded px-1 py-1 text-center"></td>
         <td class="px-2 py-2 text-center"><input type="number" min="0" name="dias_min_{{ r.id }}" value="{{ r.dias_min if r.dias_min is not none else '' }}" class="w-12 border border-slate-300 rounded px-1 py-1 text-center"></td>
@@ -92,7 +98,13 @@
       </div>
     </div>
     <div>
-      <label class="block text-xs uppercase text-slate-400 mb-1">Severidad</label>
+      <label class="block text-xs uppercase text-slate-400 mb-1">Tipo de alerta</label>
+      <select name="n_categoria" class="w-full border border-slate-300 rounded px-2 py-1.5">
+        {% for cval, clbl in categorias.items() %}<option value="{{ cval }}" {{ 'selected' if cval=='pendiente_gestion' else '' }}>{{ clbl }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs uppercase text-slate-400 mb-1">Prioridad</label>
       <div class="flex items-center gap-3">
         <select name="n_severidad" class="border border-slate-300 rounded px-2 py-1.5">
           {% for s in ['alta','media','baja'] %}<option value="{{ s }}" {{ 'selected' if s=='media' else '' }}>{{ s }}</option>{% endfor %}

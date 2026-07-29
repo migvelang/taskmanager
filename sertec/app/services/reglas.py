@@ -22,6 +22,14 @@ GESTIONES = [
     "FACTURACION_PROVEEDOR", "SINIESTRO_TRANSPORTE", "En gestión postventa tienda", "OTRO",
 ]
 
+# Categorías (tipos) de alerta del panel.
+CATEGORIAS = {
+    "incumplimiento": "Incumplimientos",
+    "posible_incumplimiento": "Posibles incumplimientos",
+    "facturacion": "Facturación a proveedor",
+    "pendiente_gestion": "Pendientes de gestión",
+}
+
 # Cada regla se identifica por la llave base del subestado (sin prefijo numérico).
 # campos: nombre, activa, rango_min, dias_min, sev_alta_desde_rango,
 #         gestion_prioridad, severidad, requiere_pu, mensaje
@@ -44,9 +52,11 @@ DEFAULTS = [
          mensaje="Con respuesta de ST: revisar (prioridad si está RECHAZADO)."),
     dict(subestado="RETORNANDO_A_TIENDA", nombre="Retornando a tienda", activa=True,
          rango_min=3, sev_alta_desde_rango=4, severidad="media", requiere_pu=True,
+         categoria="posible_incumplimiento",
          mensaje="Posible incumplimiento: crear PU para solicitar información de la OST."),
     dict(subestado="PRODUCTO_EN_ST", nombre="Producto en ST", activa=True,
          rango_min=3, sev_alta_desde_rango=4, severidad="media", requiere_pu=True,
+         categoria="posible_incumplimiento",
          mensaje="Posible incumplimiento: crear PU para solicitar información de la OST."),
     dict(subestado="PENDIENTE_DE_RETIRO_ASEGURADORA", nombre="Pendiente retiro aseguradora",
          activa=True, rango_min=4, severidad="media",
@@ -85,6 +95,16 @@ def seed_reglas(db: Session):
     if db.query(ReglaAlerta).count() == 0:
         for d in DEFAULTS:
             db.add(ReglaAlerta(**d))
+        db.commit()
+
+
+def backfill_categorias(db: Session):
+    """Asigna categoría a reglas viejas que aún la tienen en NULL."""
+    posibles = {"PRODUCTO_EN_ST", "RETORNANDO_A_TIENDA"}
+    reglas = db.query(ReglaAlerta).filter(ReglaAlerta.categoria.is_(None)).all()
+    for r in reglas:
+        r.categoria = "posible_incumplimiento" if r.subestado in posibles else "pendiente_gestion"
+    if reglas:
         db.commit()
 
 

@@ -86,6 +86,7 @@ def _seed_reglas_y_config():
     db = SessionLocal()
     try:
         reglas_mod.seed_reglas(db)
+        reglas_mod.backfill_categorias(db)
         if not db.query(AppConfig).filter(AppConfig.clave == "config_password_hash").first():
             db.add(AppConfig(clave="config_password_hash",
                              valor=hash_password(settings.CONFIG_PASSWORD)))

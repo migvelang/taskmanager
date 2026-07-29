@@ -1,25 +1,23 @@
 """Panel de alertas."""
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..deps import require_user, resolve_tienda
-from ..models import Alerta, User
+from ..models import Alerta, GestionOst, User
 from ..services import stats
 from ..templating import templates
 
 router = APIRouter()
 
+# Categorías (tipos) del panel, en orden de aparición.
 TIPOS = {
-    "regla": "📋 Gestión (reglas)",
-    "incumplimiento": "🔴 Nuevos incumplimientos",
-    "facturacion": "🧾 Facturación proveedor",
-    "cambio_estado": "🔄 Cambios de estado",
-    "envejecimiento": "⏳ Antigüedad",
-    "sf_no_cumple_matriz": "🧩 PU no cumple matriz",
-    "sf_error_creacion": "✍️ PU error de creación",
+    "incumplimiento": "🔴 Incumplimientos",
+    "posible_incumplimiento": "🟠 Posibles incumplimientos",
+    "facturacion": "🧾 Facturación a proveedor",
+    "pendiente_gestion": "📋 Pendientes de gestión",
 }
 
 
@@ -27,15 +25,18 @@ TIPOS = {
 def alertas(
     request: Request,
     tipo: str | None = None,
+    prioridad: str | None = None,
     gestion: str | None = None,
     tienda: str | None = None,
+    q: str | None = None,
     db: Session = Depends(get_db),
     user: User = Depends(require_user),
 ):
     tienda = resolve_tienda(request, tienda)
     carga = stats.ultima_carga(db)
     ctx = {"request": request, "user": user, "carga": carga, "tipos": TIPOS,
-           "tipo_sel": tipo, "gestion_sel": gestion, "tienda": tienda, "tiendas": []}
+           "tipo_sel": tipo, "prioridad_sel": prioridad, "gestion_sel": gestion,
+           "tienda": tienda, "q": q or "", "tiendas": []}
     if not carga:
         return templates.TemplateResponse("alerts.html", {**ctx, "vacio": True})
 
@@ -45,16 +46,22 @@ def alertas(
     if tienda:
         base = base.filter(Alerta.cruce_tienda == tienda)
 
-    q = base
+    q_alertas = base
     if tipo:
-        q = q.filter(Alerta.tipo == tipo)
+        q_alertas = q_alertas.filter(Alerta.tipo == tipo)
+    if prioridad:
+        q_alertas = q_alertas.filter(Alerta.severidad == prioridad)
     if gestion:
-        q = q.filter(Alerta.gestion == gestion)
+        q_alertas = q_alertas.filter(Alerta.gestion == gestion)
+    if q:
+        term = f"%{q.strip()}%"
+        q_alertas = q_alertas.filter(or_(Alerta.ost_num.ilike(term), Alerta.ss_nro.ilike(term)))
 
     orden = {"alta": 0, "media": 1, "baja": 2}
-    items = q.all()
+    items = q_alertas.all()
     items.sort(key=lambda a: (orden.get(a.severidad, 3), a.tipo))
 
+    # Conteos por tipo (respetando tienda), para las pestañas.
     conteos_q = db.query(Alerta.tipo, func.count(Alerta.id)).filter(Alerta.carga_id == carga.id)
     if tienda:
         conteos_q = conteos_q.filter(Alerta.cruce_tienda == tienda)
@@ -65,9 +72,23 @@ def alertas(
     )
 
 
+def _upsert_gestion(db: Session, ost_num: str, email: str, *, gestion=None, pu=None):
+    g = db.query(GestionOst).filter(GestionOst.ost_num == ost_num).first()
+    if not g:
+        g = GestionOst(ost_num=ost_num)
+        db.add(g)
+    if gestion is not None:
+        g.gestion = gestion
+    if pu is not None:
+        g.pu_manual = pu or None
+    g.actualizado_por = email
+    return g
+
+
 @router.post("/alertas/{alerta_id}/gestion")
 def cambiar_gestion(
     alerta_id: int,
+    request: Request,
     estado: str = Form(...),
     db: Session = Depends(get_db),
     user: User = Depends(require_user),
@@ -75,5 +96,24 @@ def cambiar_gestion(
     a = db.query(Alerta).filter(Alerta.id == alerta_id).first()
     if a and estado in ("nueva", "vista", "gestionada"):
         a.gestion = estado
+        if a.ost_num:  # recordar la gestión entre cargas
+            _upsert_gestion(db, a.ost_num, user.email, gestion=estado)
         db.commit()
-    return RedirectResponse("/alertas", status_code=303)
+    return RedirectResponse(request.headers.get("referer") or "/alertas", status_code=303)
+
+
+@router.post("/alertas/{alerta_id}/pu")
+def registrar_pu(
+    alerta_id: int,
+    request: Request,
+    pu: str = Form(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(require_user),
+):
+    a = db.query(Alerta).filter(Alerta.id == alerta_id).first()
+    if a and a.ost_num:
+        pu = pu.strip()
+        a.ss_nro = pu or a.ss_nro
+        _upsert_gestion(db, a.ost_num, user.email, pu=pu)
+        db.commit()
+    return RedirectResponse(request.headers.get("referer") or "/alertas", status_code=303)

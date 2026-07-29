@@ -10,7 +10,7 @@ import re
 
 from sqlalchemy.orm import Session
 
-from ..models import Alerta, Carga, OstSnapshot, SfSnapshot
+from ..models import Alerta, Carga, GestionOst, OstSnapshot, SfSnapshot
 from . import labels, reglas as reglas_mod
 
 
@@ -51,6 +51,12 @@ def generar_alertas(db: Session, carga: Carga) -> int:
     ).all():
         ost_to_pu.setdefault(ost_parseada, ss_nro)
 
+    # Memoria de gestión por OST (persiste entre cargas): gestión + PU registrada.
+    gestion_map: dict[str, tuple] = {
+        g.ost_num: (g.gestion, g.pu_manual)
+        for g in db.query(GestionOst.ost_num, GestionOst.gestion, GestionOst.pu_manual).all()
+    }
+
     # --- Índice de la carga anterior (solo campos necesarios) ---
     prev_map: dict[str, dict] = {}
     if prev:
@@ -85,60 +91,22 @@ def generar_alertas(db: Session, carga: Carga) -> int:
         if not p:
             continue  # el resto requiere carga anterior
 
-        # Nuevo incumplimiento
+        # Nuevo incumplimiento (cruzó a fuera de plazo)
         if o.flag_plazo == "Fuera de plazo" and p["flag_plazo"] != "Fuera de plazo" and _abierta(o.ost_estado):
             alertas.append(Alerta(
-                carga_id=carga.id, tipo="incumplimiento", severidad="alta",
-                ost_num=o.ost_num, cruce_tienda=o.cruce_tienda,
+                carga_id=carga.id, tipo="incumplimiento", severidad="alta", requiere_pu=False,
+                ost_num=o.ost_num, ss_nro=ost_to_pu.get(o.ost_num), cruce_tienda=o.cruce_tienda,
                 titulo=f"OST {o.ost_num} cruzó a FUERA DE PLAZO",
                 detalle=f"{o.prod_nombre or ''} · {labels.subestado(o.ost_subestado) or ''}",
                 valor_anterior=p["flag_plazo"] or "—", valor_actual="Fuera de plazo",
             ))
 
-        # Cambio de estado / subestado / gestión de producto
-        # (campo, valor_ant, valor_act, etiquetador)
-        cambios = []
-        if o.ost_estado != p["estado"]:
-            cambios.append(("Estado", p["estado"], o.ost_estado, labels.estado))
-        if o.ost_subestado != p["subestado"]:
-            cambios.append(("Subestado", p["subestado"], o.ost_subestado, labels.subestado))
-        if o.ost_estado_gestion_producto != p["gestion"]:
-            cambios.append(("Gestión producto", p["gestion"], o.ost_estado_gestion_producto, labels.gestion))
-        if cambios:
-            escalado = any(
-                x[2] and ("PROBLEMAS" in str(x[2]).upper() or "RECHAZ" in str(x[2]).upper()
-                          or "CANCELAR" in str(x[2]).upper())
-                for x in cambios
-            )
-            detalle = " | ".join(
-                f"{c}: {fn(a) or '—'} → {fn(b) or '—'}" for c, a, b, fn in cambios
-            )
-            _, va, vb, fn0 = cambios[0]
-            alertas.append(Alerta(
-                carga_id=carga.id, tipo="cambio_estado",
-                severidad="alta" if escalado else "media",
-                ost_num=o.ost_num, cruce_tienda=o.cruce_tienda,
-                titulo=f"OST {o.ost_num}: cambio de estado",
-                detalle=detalle,
-                valor_anterior=fn0(va), valor_actual=fn0(vb),
-            ))
-
-        # Envejecimiento: subió de tramo de días
-        if _abierta(o.ost_estado) and _tramo(o.rango_sertec) > _tramo(p["rango"]) > 0:
-            alertas.append(Alerta(
-                carga_id=carga.id, tipo="envejecimiento", severidad="media",
-                ost_num=o.ost_num, cruce_tienda=o.cruce_tienda,
-                titulo=f"OST {o.ost_num} aumentó de antigüedad",
-                detalle=f"{o.prod_nombre or ''} · {labels.subestado(o.ost_subestado) or ''}",
-                valor_anterior=p["rango"], valor_actual=o.rango_sertec,
-            ))
-
-    # --- Alertas de casos Salesforce (estado actual) ---
+    # --- Casos PU (Salesforce) que requieren gestión (estado actual) ---
     for s in db.query(SfSnapshot).filter(SfSnapshot.carga_id == carga.id).yield_per(1000):
         cerrado = bool(s.fecha_cierre) or (s.estado or "").lower() in ("cerrado", "closed")
         if s.validacion_matriz and "NO_CUMPLE" in s.validacion_matriz.upper():
             alertas.append(Alerta(
-                carga_id=carga.id, tipo="sf_no_cumple_matriz", severidad="media",
+                carga_id=carga.id, tipo="pendiente_gestion", severidad="media",
                 ss_nro=s.ss_nro, ost_num=s.ost_parseada, cruce_tienda=s.tienda_origen,
                 titulo=f"Caso PU {s.ss_nro} no cumple validación de matriz",
                 detalle=s.motivo_no_cumple or s.nivel_3,
@@ -146,12 +114,21 @@ def generar_alertas(db: Session, carga: Carga) -> int:
             ))
         if s.link_status == "error_creacion" and not cerrado:
             alertas.append(Alerta(
-                carga_id=carga.id, tipo="sf_error_creacion", severidad="media",
+                carga_id=carga.id, tipo="pendiente_gestion", severidad="media",
                 ss_nro=s.ss_nro, cruce_tienda=s.tienda_origen,
                 titulo=f"Caso PU {s.ss_nro} sin F11/OST (posible error de creación)",
                 detalle=(s.descripcion or "")[:200],
                 valor_actual=s.estado,
             ))
+
+    # --- Aplica la memoria de gestión/PU (persiste entre cargas) ---
+    for a in alertas:
+        if a.ost_num and a.ost_num in gestion_map:
+            gest, pu_manual = gestion_map[a.ost_num]
+            if gest:
+                a.gestion = gest
+            if not a.ss_nro and pu_manual:
+                a.ss_nro = pu_manual
 
     db.bulk_save_objects(alertas)
     db.flush()
@@ -196,7 +173,8 @@ def _evaluar_reglas(alertas: list, carga_id: int, o: OstSnapshot, reglas_lista: 
             sev = "alta"
 
         alertas.append(Alerta(
-            carga_id=carga_id, tipo="regla", severidad=sev, requiere_pu=bool(r.requiere_pu),
+            carga_id=carga_id, tipo=(r.categoria or "pendiente_gestion"),
+            severidad=sev, requiere_pu=bool(r.requiere_pu),
             ost_num=o.ost_num, ss_nro=ost_to_pu.get(o.ost_num), cruce_tienda=o.cruce_tienda,
             titulo=f"OST {o.ost_num} · {labels.subestado(o.ost_subestado)}",
             detalle=r.mensaje,

@@ -185,9 +185,27 @@ class ReglaAlerta(Base):
     sev_alta_desde_rango = Column(Integer)      # tramo desde el cual la severidad sube a alta
     gestion_prioridad = Column(String(60))      # si la gestión = este valor, severidad alta
 
-    severidad = Column(String(10), default="media")   # baja | media | alta
+    severidad = Column(String(10), default="media")   # baja | media | alta (prioridad)
     requiere_pu = Column(Boolean, default=False)
+    # incumplimiento | posible_incumplimiento | facturacion | pendiente_gestion
+    categoria = Column(String(30), default="pendiente_gestion")
     mensaje = Column(String(300))               # acción sugerida
+
+
+class GestionOst(Base):
+    """Memoria persistente de gestión por OST (sobrevive a cada carga de Excel).
+
+    Guarda si una OST ya fue gestionada y la PU asociada/creada, para que no se
+    pierda cuando la nueva carga aún no refleje el cambio o no traiga la PU.
+    """
+    __tablename__ = "gestion_ost"
+
+    ost_num = Column(String(30), primary_key=True)
+    gestion = Column(String(20), default="nueva")  # nueva | vista | gestionada
+    pu_manual = Column(String(40))                 # PU registrada/creada a mano
+    nota = Column(Text)
+    actualizado = Column(DateTime, default=dt.datetime.utcnow, onupdate=dt.datetime.utcnow)
+    actualizado_por = Column(String(160))
 
 
 class AppConfig(Base):
