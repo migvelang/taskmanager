@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Configuración · SERTEC{% endblock %}
+{% block content %}
+<div class="max-w-sm mx-auto mt-10">
+  <div class="bg-white rounded-2xl shadow-xl p-8">
+    <h1 class="text-xl font-bold text-slate-900 mb-1">🔒 Configuración</h1>
+    <p class="text-sm text-slate-500 mb-4">Ingresa la clave para editar las reglas de alerta.</p>
+    {% if error %}<div class="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{{ error }}</div>{% endif %}
+    <form method="post" action="/config/acceso" class="space-y-4">
+      <input name="clave" type="password" required autofocus placeholder="Clave de configuración"
+        class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-cyan-500 outline-none">
+      <button class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-lg py-2.5">Entrar</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

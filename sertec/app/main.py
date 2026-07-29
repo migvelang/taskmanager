@@ -13,7 +13,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from .config import settings
 from .db import Base, SessionLocal, engine
 from .models import User
-from .routers import alerts, auth, cargas, cases, dashboard, upload
+from .routers import alerts, auth, cargas, cases, config as config_router, dashboard, upload
 from .security import hash_password
 from .templating import TEMPLATES_DIR, templates  # noqa: F401
 
@@ -28,6 +28,7 @@ app.include_router(upload.router)
 app.include_router(alerts.router)
 app.include_router(cases.router)
 app.include_router(cargas.router)
+app.include_router(config_router.router)
 
 
 @app.exception_handler(StarletteHTTPException)
@@ -52,7 +53,24 @@ def startup():
     _init_db_con_reintentos()
     _migrar_columnas_faltantes()
     _seed_admin()
+    _seed_reglas_y_config()
     _avisar_backend_datos()
+
+
+def _seed_reglas_y_config():
+    """Crea las reglas de alerta por defecto y la clave de configuración."""
+    from .models import AppConfig
+    from .security import hash_password
+    from .services import reglas as reglas_mod
+    db = SessionLocal()
+    try:
+        reglas_mod.seed_reglas(db)
+        if not db.query(AppConfig).filter(AppConfig.clave == "config_password_hash").first():
+            db.add(AppConfig(clave="config_password_hash",
+                             valor=hash_password(settings.CONFIG_PASSWORD)))
+            db.commit()
+    finally:
+        db.close()
 
 
 def _migrar_columnas_faltantes():

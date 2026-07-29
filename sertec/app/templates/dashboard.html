@@ -23,7 +23,14 @@
         <option value="{{ t }}" {{ 'selected' if t == tienda else '' }}>{{ t }}</option>
       {% endfor %}
     </select>
-    {% if tienda %}<a href="/" class="text-sm text-slate-500 hover:underline">Limpiar</a>{% endif %}
+    <select name="garantia" onchange="this.form.submit()"
+      class="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
+      <option value="">Toda garantía</option>
+      {% for gtipo in garantias %}
+        <option value="{{ gtipo }}" {{ 'selected' if gtipo == garantia else '' }}>{{ gtipo }}</option>
+      {% endfor %}
+    </select>
+    {% if tienda or garantia %}<a href="/?tienda=" class="text-sm text-slate-500 hover:underline">Limpiar</a>{% endif %}
   </form>
 </div>
 
@@ -50,7 +57,7 @@
     <a href="/alertas" class="text-sm text-cyan-600 hover:underline">Ver panel completo →</a>
   </div>
   <div class="flex flex-wrap gap-2">
-    {% set labels = {'incumplimiento':'🔴 Incumplimientos','cambio_estado':'🔄 Cambios de estado','envejecimiento':'⏳ Antigüedad','sin_responsable':'⚠️ Sin responsable','sf_no_cumple_matriz':'🧩 PU no cumple matriz','sf_error_creacion':'✍️ PU error creación'} %}
+    {% set labels = {'regla':'📋 Gestión','incumplimiento':'🔴 Incumplimientos','facturacion':'🧾 Facturación','cambio_estado':'🔄 Cambios de estado','envejecimiento':'⏳ Antigüedad','sf_no_cumple_matriz':'🧩 PU no cumple matriz','sf_error_creacion':'✍️ PU error creación'} %}
     {% for tipo, lbl in labels.items() %}
       <a href="/alertas?tipo={{ tipo }}"
          class="px-3 py-2 rounded-lg border text-sm {{ 'bg-slate-50 border-slate-200 text-slate-400' if not data.alertas_por_tipo.get(tipo) else 'bg-white border-slate-300 hover:border-cyan-400' }}">

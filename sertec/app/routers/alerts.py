@@ -13,10 +13,11 @@ from ..templating import templates
 router = APIRouter()
 
 TIPOS = {
+    "regla": "📋 Gestión (reglas)",
     "incumplimiento": "🔴 Nuevos incumplimientos",
+    "facturacion": "🧾 Facturación proveedor",
     "cambio_estado": "🔄 Cambios de estado",
     "envejecimiento": "⏳ Antigüedad",
-    "sin_responsable": "⚠️ Sin responsable",
     "sf_no_cumple_matriz": "🧩 PU no cumple matriz",
     "sf_error_creacion": "✍️ PU error de creación",
 }

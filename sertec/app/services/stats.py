@@ -35,10 +35,24 @@ def _agregar_por_etiqueta(pares: list[tuple], fn) -> list[tuple]:
     return sorted(acc.items(), key=lambda x: x[1], reverse=True)
 
 
-def dashboard_data(db: Session, carga: Carga, tienda: str | None = None) -> dict:
+def lista_garantias(db: Session, carga_id: int) -> list[str]:
+    rows = (
+        db.query(OstSnapshot.prod_tipo_garantia)
+        .filter(OstSnapshot.carga_id == carga_id, OstSnapshot.prod_tipo_garantia.isnot(None))
+        .distinct()
+        .order_by(OstSnapshot.prod_tipo_garantia)
+        .all()
+    )
+    return [r[0] for r in rows]
+
+
+def dashboard_data(db: Session, carga: Carga, tienda: str | None = None,
+                   garantia: str | None = None) -> dict:
     base = db.query(OstSnapshot).filter(OstSnapshot.carga_id == carga.id)
     if tienda:
         base = base.filter(OstSnapshot.cruce_tienda == tienda)
+    if garantia:
+        base = base.filter(OstSnapshot.prod_tipo_garantia == garantia)
 
     def contar(q):
         return q.with_entities(func.count(OstSnapshot.id)).scalar() or 0

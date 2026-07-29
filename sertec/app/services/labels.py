@@ -21,6 +21,15 @@ def _base(v) -> str | None:
     return _PREFIX.sub("", str(v)).strip()
 
 
+def base(v) -> str | None:
+    """Llave normalizada de un estado/subestado (sin prefijo numérico).
+
+    Ej: '8. PRODUCTO_EN_ST' -> 'PRODUCTO_EN_ST'. Sirve como clave estable para
+    las reglas de alerta.
+    """
+    return _base(v)
+
+
 def _generic(v) -> str | None:
     b = _base(v)
     if b is None:

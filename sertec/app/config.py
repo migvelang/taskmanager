@@ -33,6 +33,9 @@ class Settings:
     ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", "admin@sertec.local")
     ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "admin1234")
 
+    # Clave para entrar a la pestaña de Configuración (editar reglas de alerta).
+    CONFIG_PASSWORD: str = os.getenv("CONFIG_PASSWORD", "config1234")
+
     # Umbral (días) para la alerta de "envejecimiento / sin avance".
     DIAS_SIN_AVANCE: int = int(os.getenv("DIAS_SIN_AVANCE", "5"))
 

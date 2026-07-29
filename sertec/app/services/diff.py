@@ -3,16 +3,15 @@
 Genera alertas de dos naturalezas:
   * De cambio (requieren carga previa): incumplimiento nuevo, cambio de estado,
     envejecimiento.
-  * De estado (se evalúan sobre la foto actual): sin responsable, SF que no
-    cumple matriz, SF con error de creación.
+  * De estado (se evalúan sobre la foto actual): reglas configurables por
+    subestado, facturación a proveedor, PU que no cumple matriz / error creación.
 """
 import re
 
 from sqlalchemy.orm import Session
 
-from ..config import settings
 from ..models import Alerta, Carga, OstSnapshot, SfSnapshot
-from . import labels
+from . import labels, reglas as reglas_mod
 
 
 def _abierta(estado: str | None) -> bool:
@@ -43,6 +42,7 @@ def generar_alertas(db: Session, carga: Carga) -> int:
 
     alertas: list[Alerta] = []
     prev = _carga_anterior(db, carga)
+    reglas_map = reglas_mod.cargar_reglas(db)
 
     # --- Índice de la carga anterior (solo campos necesarios) ---
     prev_map: dict[str, dict] = {}
@@ -63,14 +63,10 @@ def generar_alertas(db: Session, carga: Carga) -> int:
     for o in db.query(OstSnapshot).filter(OstSnapshot.carga_id == carga.id).yield_per(2000):
         p = prev_map.get(o.ost_num)
 
-        # Sin responsable (estado actual, solo abiertas)
-        if _abierta(o.ost_estado) and (not o.flag_responsable or o.flag_responsable == "Sin responsable"):
-            alertas.append(Alerta(
-                carga_id=carga.id, tipo="sin_responsable", severidad="media",
-                ost_num=o.ost_num, cruce_tienda=o.cruce_tienda,
-                titulo=f"OST {o.ost_num} sin responsable asignado",
-                detalle=o.prod_nombre, valor_actual=o.flag_responsable or "Sin responsable",
-            ))
+        # Reglas configurables por subestado (estado actual)
+        _evaluar_regla(alertas, carga.id, o, reglas_map)
+        # Facturación a proveedor por revisar (estado actual)
+        _evaluar_facturacion(alertas, carga.id, o)
 
         if not p:
             continue  # el resto requiere carga anterior
@@ -146,3 +142,53 @@ def generar_alertas(db: Session, carga: Carga) -> int:
     db.bulk_save_objects(alertas)
     db.flush()
     return len(alertas)
+
+
+def _evaluar_regla(alertas: list, carga_id: int, o: OstSnapshot, reglas_map: dict):
+    """Aplica la regla configurable del subestado de la OST, si corresponde."""
+    if not o.ost_subestado:
+        return
+    r = reglas_map.get(labels.base(o.ost_subestado))
+    if not r or not r.activa:
+        return
+    if r.solo_abierta and not _abierta(o.ost_estado):
+        return
+
+    tramo = _tramo(o.rango_sertec)
+    dias = o.dias_sertec or 0
+    if r.dias_min is not None:
+        if dias < r.dias_min:
+            return
+    elif tramo < (r.rango_min or 1):
+        return
+
+    sev = r.severidad or "media"
+    if r.sev_alta_desde_rango and tramo >= r.sev_alta_desde_rango:
+        sev = "alta"
+    if r.gestion_prioridad and labels.base(o.ost_estado_gestion_producto) == r.gestion_prioridad:
+        sev = "alta"
+    if o.f11_tipo_cliente == "Cliente":  # los clientes son prioridad
+        sev = "alta"
+
+    alertas.append(Alerta(
+        carga_id=carga_id, tipo="regla", severidad=sev, requiere_pu=bool(r.requiere_pu),
+        ost_num=o.ost_num, cruce_tienda=o.cruce_tienda,
+        titulo=f"OST {o.ost_num} · {labels.subestado(o.ost_subestado)}",
+        detalle=r.mensaje,
+        valor_actual=o.rango_sertec,
+    ))
+
+
+def _evaluar_facturacion(alertas: list, carga_id: int, o: OstSnapshot):
+    """Revisar facturación a proveedor: gestión FACTURACION_PROVEEDOR, transacción
+    DEVOLUCION/CAMBIO y sin F3 generado."""
+    if (labels.base(o.ost_estado_gestion_producto) == "FACTURACION_PROVEEDOR"
+            and (o.xtransac_full or "").upper() in ("DEVOLUCION", "CAMBIO")
+            and o.f11srx_status_f03 == "NO F3"):
+        alertas.append(Alerta(
+            carga_id=carga_id, tipo="facturacion", severidad="media",
+            ost_num=o.ost_num, cruce_tienda=o.cruce_tienda,
+            titulo=f"OST {o.ost_num} · Revisar facturación a proveedor",
+            detalle=f"{o.xtransac_full} · sin F3 · {o.prod_nombre or ''}",
+            valor_actual="NO F3",
+        ))

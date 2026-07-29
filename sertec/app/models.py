@@ -71,6 +71,10 @@ class OstSnapshot(Base):
     responsable_sac = Column(String(120))
     responsable_mini_big_ticket = Column(String(120))
 
+    xtransac_full = Column(String(60))         # DEVOLUCION | CAMBIO | ...
+    f11srx_status_f03 = Column(String(40))     # NO F3 | SI F3 | ...
+    f11_tipo_cliente = Column(String(40))      # Cliente | Empresa | ...
+
     fecha_creacion = Column(DateTime)
     fecha_compromiso = Column(DateTime)
     fecha_cierre = Column(DateTime)
@@ -138,7 +142,7 @@ class Alerta(Base):
     carga_id = Column(Integer, ForeignKey("cargas.id", ondelete="CASCADE"), nullable=False)
 
     tipo = Column(String(40), nullable=False, index=True)
-    # incumplimiento | cambio_estado | envejecimiento | sin_responsable |
+    # incumplimiento | cambio_estado | envejecimiento | regla | facturacion |
     # sf_no_cumple_matriz | sf_error_creacion
     severidad = Column(String(10), default="media")  # alta | media | baja
 
@@ -150,9 +154,41 @@ class Alerta(Base):
     detalle = Column(Text)
     valor_anterior = Column(String(200))
     valor_actual = Column(String(200))
+    requiere_pu = Column(Boolean, default=False)  # la alerta sugiere crear una PU
 
     gestion = Column(String(20), default="nueva")  # nueva | vista | gestionada
     asignado_a = Column(String(160))
     creado = Column(DateTime, default=dt.datetime.utcnow)
 
     carga = relationship("Carga", back_populates="alertas")
+
+
+class ReglaAlerta(Base):
+    """Regla configurable: define cuándo un subestado genera alerta.
+
+    Editable desde la pestaña de Configuración (protegida con clave).
+    """
+    __tablename__ = "reglas_alerta"
+
+    id = Column(Integer, primary_key=True)
+    subestado = Column(String(80), unique=True, nullable=False)  # llave base, ej "PRODUCTO_EN_ST"
+    nombre = Column(String(120))            # etiqueta legible
+    activa = Column(Boolean, default=True)  # si genera alerta o no
+    solo_abierta = Column(Boolean, default=True)
+
+    rango_min = Column(Integer, default=1)      # alerta si tramo de días >= este (1 = cualquiera)
+    dias_min = Column(Integer)                  # si se define, alerta cuando DIAS_SERTEC >= este
+    sev_alta_desde_rango = Column(Integer)      # tramo desde el cual la severidad sube a alta
+    gestion_prioridad = Column(String(60))      # si la gestión = este valor, severidad alta
+
+    severidad = Column(String(10), default="media")   # baja | media | alta
+    requiere_pu = Column(Boolean, default=False)
+    mensaje = Column(String(300))               # acción sugerida
+
+
+class AppConfig(Base):
+    """Pares clave/valor de configuración (p. ej. la clave de la pestaña Config)."""
+    __tablename__ = "app_config"
+
+    clave = Column(String(60), primary_key=True)
+    valor = Column(Text)
