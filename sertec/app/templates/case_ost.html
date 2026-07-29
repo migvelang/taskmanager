@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}OST {{ ost_num }} · SERTEC{% endblock %}
+{% block content %}
+
+<div class="flex items-center gap-3 mb-4">
+  <a href="/caso" class="text-slate-400 hover:text-slate-600">← Buscar</a>
+  <h1 class="text-2xl font-bold text-slate-900">OST {{ ost_num }}</h1>
+</div>
+
+{% if not actual %}
+  <div class="bg-white rounded-xl shadow p-8 text-center text-slate-500">Esta OST no aparece en la última carga.</div>
+{% else %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+  <!-- Ficha OST -->
+  <div class="lg:col-span-2 bg-white rounded-xl shadow p-5">
+    <div class="flex flex-wrap items-center gap-2 mb-3">
+      {% set ec = {'1. ABIERTA':'bg-amber-100 text-amber-700','2. CERRADA':'bg-emerald-100 text-emerald-700','3. CANCELADA':'bg-slate-100 text-slate-500'} %}
+      <span class="px-2.5 py-1 rounded-full text-xs font-semibold {{ ec.get(actual.ost_estado,'bg-slate-100 text-slate-600') }}">{{ actual.ost_estado }}</span>
+      {% if actual.flag_plazo == 'Fuera de plazo' %}<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">Fuera de plazo</span>
+      {% elif actual.flag_plazo == 'Dentro de plazo' %}<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Dentro de plazo</span>{% endif %}
+      {% if actual.dias_sertec is not none %}<span class="px-2.5 py-1 rounded-full text-xs bg-slate-100 text-slate-600">{{ actual.dias_sertec }} días</span>{% endif %}
+    </div>
+    <h2 class="font-semibold text-slate-800">{{ actual.prod_nombre or '—' }}</h2>
+    <p class="text-sm text-slate-500 mb-3">{{ actual.prod_marca or '' }} · {{ actual.desc_linea or '' }} / {{ actual.desc_sublinea or '' }}</p>
+
+    {% macro campo(label, val) %}
+      <div><dt class="text-xs uppercase text-slate-400">{{ label }}</dt><dd class="text-sm text-slate-800">{{ val or '—' }}</dd></div>
+    {% endmacro %}
+    <dl class="grid grid-cols-2 md:grid-cols-3 gap-3">
+      {{ campo('F11', actual.f11_num) }}
+      {{ campo('Subestado', actual.ost_subestado) }}
+      {{ campo('Gestión producto', actual.ost_estado_gestion_producto) }}
+      {{ campo('Responsable', actual.flag_responsable) }}
+      {{ campo('SKU', actual.prod_sku) }}
+      {{ campo('Serie', actual.raw.get('PROD_NUMERO_SERIE') if actual.raw else None) }}
+      {{ campo('Tienda', actual.cruce_tienda) }}
+      {{ campo('Región', actual.region) }}
+      {{ campo('Garantía', actual.prod_tipo_garantia) }}
+      {{ campo('Creación', actual.fecha_creacion.strftime('%d-%m-%Y') if actual.fecha_creacion else None) }}
+      {{ campo('Compromiso', actual.fecha_compromiso.strftime('%d-%m-%Y') if actual.fecha_compromiso else None) }}
+      {{ campo('Rango', actual.rango_sertec) }}
+    </dl>
+    {% if actual.desc_falla %}<div class="mt-3"><dt class="text-xs uppercase text-slate-400">Falla</dt><dd class="text-sm text-slate-700">{{ actual.desc_falla }}</dd></div>{% endif %}
+  </div>
+
+  <!-- Casos SF vinculados -->
+  <div class="bg-white rounded-xl shadow p-5">
+    <h3 class="font-semibold text-slate-800 mb-3">Casos Salesforce vinculados</h3>
+    {% if sf_links %}
+      <div class="space-y-3">
+        {% for s in sf_links %}
+        <a href="/caso/sf/{{ s.ss_nro }}" class="block border border-slate-200 rounded-lg p-3 hover:border-cyan-400">
+          <div class="flex items-center justify-between">
+            <span class="font-mono text-sm font-semibold text-cyan-700">{{ s.ss_nro }}</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{{ s.estado }}</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-1 line-clamp-2">{{ s.nivel_3 or s.nivel_2 }}</p>
+          {% if s.validacion_matriz and 'NO_CUMPLE' in s.validacion_matriz %}
+            <span class="inline-block mt-1 text-xs text-red-600">⚠ No cumple matriz</span>
+          {% endif %}
+        </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-sm text-slate-400">No hay casos SF vinculados a esta OST en la última carga.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Línea de tiempo -->
+<div class="bg-white rounded-xl shadow p-5 mt-4">
+  <h3 class="font-semibold text-slate-800 mb-3">Línea de tiempo (historial de cargas)</h3>
+  <div class="overflow-x-auto">
+  <table class="min-w-full text-sm">
+    <thead class="text-slate-400 uppercase text-xs">
+      <tr><th class="text-left py-2 pr-4">Fecha carga</th><th class="text-left py-2 pr-4">Estado</th><th class="text-left py-2 pr-4">Subestado</th><th class="text-left py-2 pr-4">Gestión prod.</th><th class="text-left py-2 pr-4">Plazo</th><th class="text-left py-2">Rango</th></tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% set ns = namespace(prev=None) %}
+      {% for o, fecha in timeline %}
+      <tr>
+        <td class="py-2 pr-4 whitespace-nowrap">{{ fecha.strftime('%d-%m %H:%M') }}</td>
+        <td class="py-2 pr-4">{{ o.ost_estado }}</td>
+        <td class="py-2 pr-4 {{ 'font-semibold text-cyan-700' if ns.prev and ns.prev != o.ost_subestado else '' }}">{{ o.ost_subestado }}</td>
+        <td class="py-2 pr-4">{{ o.ost_estado_gestion_producto or '—' }}</td>
+        <td class="py-2 pr-4">{{ o.flag_plazo or '—' }}</td>
+        <td class="py-2">{{ o.rango_sertec or '—' }}</td>
+      </tr>
+      {% set ns.prev = o.ost_subestado %}
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+{% endif %}
+{% endblock %}

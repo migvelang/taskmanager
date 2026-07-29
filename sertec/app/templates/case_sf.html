@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Caso SF {{ ss_nro }} · SERTEC{% endblock %}
+{% block content %}
+<div class="flex items-center gap-3 mb-4">
+  <a href="/caso" class="text-slate-400 hover:text-slate-600">← Buscar</a>
+  <h1 class="text-2xl font-bold text-slate-900">Caso SF {{ ss_nro }}</h1>
+</div>
+
+{% if not sf %}
+  <div class="bg-white rounded-xl shadow p-8 text-center text-slate-500">Este caso no aparece en la última carga.</div>
+{% else %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+  <div class="lg:col-span-2 bg-white rounded-xl shadow p-5">
+    <div class="flex flex-wrap items-center gap-2 mb-3">
+      <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">{{ sf.estado }}</span>
+      {% if sf.validacion_matriz and 'NO_CUMPLE' in sf.validacion_matriz %}<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">No cumple matriz</span>{% endif %}
+      {% if sf.link_status == 'error_creacion' %}<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Posible error de creación</span>{% endif %}
+    </div>
+    {% macro campo(label, val) %}<div><dt class="text-xs uppercase text-slate-400">{{ label }}</dt><dd class="text-sm text-slate-800">{{ val or '—' }}</dd></div>{% endmacro %}
+    <dl class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+      {{ campo('Nivel 1', sf.nivel_1) }}
+      {{ campo('Nivel 2', sf.nivel_2) }}
+      {{ campo('Nivel 3', sf.nivel_3) }}
+      {{ campo('Propietario', sf.nombre_propietario) }}
+      {{ campo('Tienda origen', sf.tienda_origen) }}
+      {{ campo('Creación', sf.fecha_creacion.strftime('%d-%m-%Y') if sf.fecha_creacion else None) }}
+      {{ campo('F11 detectado', sf.f11_parseado) }}
+      {{ campo('OST detectada', sf.ost_parseada) }}
+      {{ campo('Validación matriz', sf.validacion_matriz) }}
+    </dl>
+    {% if sf.motivo_no_cumple and sf.motivo_no_cumple != '-' %}<div class="mb-3"><dt class="text-xs uppercase text-slate-400">Motivo no cumple</dt><dd class="text-sm text-red-700">{{ sf.motivo_no_cumple }}</dd></div>{% endif %}
+    <div><dt class="text-xs uppercase text-slate-400">Descripción</dt><dd class="text-sm text-slate-700 whitespace-pre-line">{{ sf.descripcion }}</dd></div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow p-5">
+    <h3 class="font-semibold text-slate-800 mb-3">OST vinculada</h3>
+    {% if sf.ost_parseada %}
+      <a href="/caso/ost/{{ sf.ost_parseada }}" class="block border border-slate-200 rounded-lg p-3 hover:border-cyan-400">
+        <span class="font-semibold text-cyan-700">Ver OST {{ sf.ost_parseada }} →</span>
+      </a>
+    {% else %}
+      <p class="text-sm text-amber-600">Este caso no tiene OST ni F11 identificable en la descripción. Revisa si corresponde crear/asociar el caso.</p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

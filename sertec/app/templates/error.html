@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Error {{ code }} · SERTEC{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto bg-white rounded-xl shadow p-10 text-center mt-10">
+  <div class="text-4xl font-bold text-slate-800">{{ code }}</div>
+  <p class="text-slate-500 mt-2">{{ detail }}</p>
+  <a href="/" class="inline-block mt-4 text-cyan-600 hover:underline">Volver al inicio</a>
+</div>
+{% endblock %}

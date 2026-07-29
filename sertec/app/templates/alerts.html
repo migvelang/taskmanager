@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Alertas · SERTEC{% endblock %}
+{% block content %}
+
+<h1 class="text-2xl font-bold text-slate-900 mb-1">Panel de alertas</h1>
+{% if carga %}<p class="text-sm text-slate-500 mb-4">Carga: <b>{{ carga.fecha_extraccion.strftime('%d-%m-%Y %H:%M') }}</b></p>{% endif %}
+
+{% if vacio %}
+  <div class="bg-white rounded-xl shadow p-10 text-center text-slate-500">No hay cargas para generar alertas todavía.</div>
+{% else %}
+
+<div class="flex flex-wrap gap-2 mb-4">
+  <a href="/alertas" class="px-3 py-2 rounded-lg border text-sm {{ 'bg-cyan-600 text-white border-cyan-600' if not tipo_sel else 'bg-white border-slate-300' }}">Todas <b>{{ total }}</b></a>
+  {% for tipo, lbl in tipos.items() %}
+    <a href="/alertas?tipo={{ tipo }}"
+       class="px-3 py-2 rounded-lg border text-sm {{ 'bg-cyan-600 text-white border-cyan-600' if tipo_sel == tipo else 'bg-white border-slate-300 hover:border-cyan-400' }}">
+      {{ lbl }} <b>{{ conteos.get(tipo, 0) }}</b>
+    </a>
+  {% endfor %}
+</div>
+
+<div class="bg-white rounded-xl shadow overflow-hidden">
+  <div class="overflow-x-auto">
+  <table class="min-w-full text-sm">
+    <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+      <tr>
+        <th class="text-left px-4 py-3">Sev.</th>
+        <th class="text-left px-4 py-3">Alerta</th>
+        <th class="text-left px-4 py-3">Detalle</th>
+        <th class="text-left px-4 py-3">Tienda</th>
+        <th class="text-left px-4 py-3">Cambio</th>
+        <th class="text-left px-4 py-3">Gestión</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for a in items %}
+      <tr class="hover:bg-slate-50 {{ 'opacity-50' if a.gestion == 'gestionada' else '' }}">
+        <td class="px-4 py-3">
+          {% set c = {'alta':'bg-red-100 text-red-700','media':'bg-amber-100 text-amber-700','baja':'bg-slate-100 text-slate-600'} %}
+          <span class="px-2 py-0.5 rounded-full text-xs font-semibold {{ c.get(a.severidad,'') }}">{{ a.severidad }}</span>
+        </td>
+        <td class="px-4 py-3 font-medium text-slate-800">
+          {% if a.ost_num %}<a class="text-cyan-700 hover:underline" href="/caso/ost/{{ a.ost_num }}">{{ a.titulo }}</a>
+          {% elif a.ss_nro %}<a class="text-cyan-700 hover:underline" href="/caso/sf/{{ a.ss_nro }}">{{ a.titulo }}</a>
+          {% else %}{{ a.titulo }}{% endif %}
+        </td>
+        <td class="px-4 py-3 text-slate-600 max-w-xs truncate" title="{{ a.detalle }}">{{ a.detalle }}</td>
+        <td class="px-4 py-3 text-slate-600">{{ a.cruce_tienda or '—' }}</td>
+        <td class="px-4 py-3 text-slate-600">
+          {% if a.valor_anterior or a.valor_actual %}
+            <span class="text-slate-400">{{ a.valor_anterior or '—' }}</span> → <span class="font-medium">{{ a.valor_actual or '—' }}</span>
+          {% else %}—{% endif %}
+        </td>
+        <td class="px-4 py-3">
+          <form method="post" action="/alertas/{{ a.id }}/gestion" class="flex gap-1">
+            <select name="estado" class="border border-slate-300 rounded px-1.5 py-1 text-xs">
+              {% for g in ['nueva','vista','gestionada'] %}
+                <option value="{{ g }}" {{ 'selected' if a.gestion == g else '' }}>{{ g }}</option>
+              {% endfor %}
+            </select>
+            <button class="text-xs bg-slate-200 hover:bg-slate-300 rounded px-2">✓</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No hay alertas con este filtro.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% if total > 500 %}<p class="text-xs text-slate-400 mt-2">Mostrando 500 de {{ total }} alertas.</p>{% endif %}
+
+{% endif %}
+{% endblock %}

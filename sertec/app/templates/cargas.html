@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Historial de cargas · SERTEC{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold text-slate-900 mb-4">Historial de cargas</h1>
+
+{% if ok %}<div class="mb-4 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">✓ Carga #{{ ok }} procesada correctamente.</div>{% endif %}
+
+<div class="bg-white rounded-xl shadow overflow-hidden">
+  <div class="overflow-x-auto">
+  <table class="min-w-full text-sm">
+    <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+      <tr>
+        <th class="text-left px-4 py-3">#</th>
+        <th class="text-left px-4 py-3">Fecha extracción</th>
+        <th class="text-left px-4 py-3">Archivo</th>
+        <th class="text-left px-4 py-3">Subido por</th>
+        <th class="text-right px-4 py-3">OST</th>
+        <th class="text-right px-4 py-3">SF</th>
+        <th class="text-right px-4 py-3">Alertas</th>
+        <th class="px-4 py-3"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for c in cargas %}
+      <tr class="hover:bg-slate-50">
+        <td class="px-4 py-3 text-slate-400">{{ c.id }}</td>
+        <td class="px-4 py-3 font-medium">{{ c.fecha_extraccion.strftime('%d-%m-%Y %H:%M') }}</td>
+        <td class="px-4 py-3 text-slate-600 max-w-xs truncate" title="{{ c.archivo_nombre }}">{{ c.archivo_nombre }}</td>
+        <td class="px-4 py-3 text-slate-600">{{ c.subido_por }}</td>
+        <td class="px-4 py-3 text-right">{{ c.n_ost|miles }}</td>
+        <td class="px-4 py-3 text-right">{{ c.n_sf|miles }}</td>
+        <td class="px-4 py-3 text-right font-semibold text-amber-600">{{ c.n_alertas|miles }}</td>
+        <td class="px-4 py-3 text-right">
+          {% if user.rol == 'admin' %}
+          <form method="post" action="/cargas/{{ c.id }}/eliminar" onsubmit="return confirm('¿Eliminar esta carga y sus alertas?')">
+            <button class="text-xs text-red-600 hover:underline">Eliminar</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="px-4 py-8 text-center text-slate-400">Sin cargas todavía. <a href="/cargar" class="text-cyan-600 hover:underline">Sube la primera →</a></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}

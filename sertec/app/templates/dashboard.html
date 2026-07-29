@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · SERTEC{% endblock %}
+{% block content %}
+
+{% if vacio %}
+  <div class="bg-white rounded-xl shadow p-10 text-center">
+    <p class="text-lg font-semibold text-slate-700">Aún no hay datos cargados</p>
+    <p class="text-slate-500 mt-1">Sube tu primer Excel para ver el dashboard.</p>
+    <a href="/cargar" class="inline-block mt-4 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-lg px-5 py-2.5">Cargar Excel</a>
+  </div>
+{% else %}
+
+<div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+  <div>
+    <h1 class="text-2xl font-bold text-slate-900">Resumen operativo</h1>
+    <p class="text-sm text-slate-500">Última carga: <b>{{ carga.fecha_extraccion.strftime('%d-%m-%Y %H:%M') }}</b></p>
+  </div>
+  <form method="get" class="flex items-center gap-2">
+    <select name="tienda" onchange="this.form.submit()"
+      class="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
+      <option value="">Todas las tiendas</option>
+      {% for t in tiendas %}
+        <option value="{{ t }}" {{ 'selected' if t == tienda else '' }}>{{ t }}</option>
+      {% endfor %}
+    </select>
+    {% if tienda %}<a href="/" class="text-sm text-slate-500 hover:underline">Limpiar</a>{% endif %}
+  </form>
+</div>
+
+{% set k = data.kpis %}
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
+  {% macro kpi(label, val, color) %}
+    <div class="bg-white rounded-xl shadow p-4">
+      <div class="text-xs uppercase tracking-wide text-slate-400">{{ label }}</div>
+      <div class="text-2xl font-bold {{ color }}">{{ val|miles }}</div>
+    </div>
+  {% endmacro %}
+  {{ kpi('OST abiertas', k.abiertas, 'text-slate-900') }}
+  {{ kpi('En plazo', k.en_plazo, 'text-emerald-600') }}
+  {{ kpi('Fuera de plazo', k.fuera_plazo, 'text-red-600') }}
+  {{ kpi('Cerradas', k.cerradas, 'text-slate-900') }}
+  {{ kpi('Canceladas', k.canceladas, 'text-slate-500') }}
+  {{ kpi('Casos SF abiertos', k.sf_abiertos, 'text-indigo-600') }}
+</div>
+
+<!-- Resumen de alertas -->
+<div class="bg-white rounded-xl shadow p-4 mb-5">
+  <div class="flex items-center justify-between mb-2">
+    <h2 class="font-semibold text-slate-800">Alertas de esta carga</h2>
+    <a href="/alertas" class="text-sm text-cyan-600 hover:underline">Ver panel completo →</a>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    {% set labels = {'incumplimiento':'🔴 Incumplimientos','cambio_estado':'🔄 Cambios de estado','envejecimiento':'⏳ Envejecimiento','sin_responsable':'⚠️ Sin responsable','sf_no_cumple_matriz':'🧩 SF no cumple matriz','sf_error_creacion':'✍️ SF error creación'} %}
+    {% for tipo, lbl in labels.items() %}
+      <a href="/alertas?tipo={{ tipo }}"
+         class="px-3 py-2 rounded-lg border text-sm {{ 'bg-slate-50 border-slate-200 text-slate-400' if not data.alertas_por_tipo.get(tipo) else 'bg-white border-slate-300 hover:border-cyan-400' }}">
+        {{ lbl }} <b class="ml-1">{{ data.alertas_por_tipo.get(tipo, 0) }}</b>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  <div class="bg-white rounded-xl shadow p-4"><h3 class="font-semibold text-slate-800 mb-2">OST abiertas por rango de antigüedad</h3><div id="c_rango" style="height:280px"></div></div>
+  <div class="bg-white rounded-xl shadow p-4"><h3 class="font-semibold text-slate-800 mb-2">OST abiertas por subestado</h3><div id="c_sub" style="height:280px"></div></div>
+  <div class="bg-white rounded-xl shadow p-4"><h3 class="font-semibold text-slate-800 mb-2">Tipos de garantía</h3><div id="c_gar" style="height:280px"></div></div>
+  {% if data.top_tiendas %}
+  <div class="bg-white rounded-xl shadow p-4"><h3 class="font-semibold text-slate-800 mb-2">Top tiendas (OST abiertas)</h3><div id="c_tienda" style="height:280px"></div></div>
+  {% else %}
+  <div class="bg-white rounded-xl shadow p-4"><h3 class="font-semibold text-slate-800 mb-2">Top marcas (OST abiertas)</h3><div id="c_marca" style="height:280px"></div></div>
+  {% endif %}
+</div>
+
+<script>
+const PALETTE = ['#0891b2','#0e7490','#155e75','#6366f1','#f59e0b','#ef4444','#10b981','#8b5cf6'];
+function bar(id, data, horiz, color){
+  const el = document.getElementById(id); if(!el) return;
+  const chart = echarts.init(el);
+  const cats = data.map(d=>d[0]); const vals = data.map(d=>d[1]);
+  chart.setOption({
+    grid:{left: horiz?140:40, right:20, top:20, bottom:30},
+    tooltip:{trigger:'axis'},
+    xAxis: horiz?{type:'value'}:{type:'category', data:cats, axisLabel:{interval:0, rotate:30, fontSize:10}},
+    yAxis: horiz?{type:'category', data:cats, axisLabel:{fontSize:10}}:{type:'value'},
+    series:[{type:'bar', data:vals, itemStyle:{color: color||'#0891b2', borderRadius: horiz?[0,4,4,0]:[4,4,0,0]}, label:{show:true, position: horiz?'right':'top', fontSize:10}}]
+  });
+  window.addEventListener('resize', ()=>chart.resize());
+}
+function pie(id, data){
+  const el = document.getElementById(id); if(!el) return;
+  const chart = echarts.init(el);
+  chart.setOption({
+    tooltip:{trigger:'item', formatter:'{b}: {c} ({d}%)'},
+    legend:{bottom:0, textStyle:{fontSize:10}},
+    color: PALETTE,
+    series:[{type:'pie', radius:['40%','65%'], center:['50%','45%'], data: data.map(d=>({name:d[0], value:d[1]})), label:{fontSize:10}}]
+  });
+  window.addEventListener('resize', ()=>chart.resize());
+}
+bar('c_rango', {{ data.por_rango|tojson }}, false, '#0891b2');
+bar('c_sub', {{ data.por_subestado|tojson }}, true, '#6366f1');
+pie('c_gar', {{ data.por_garantia|tojson }});
+{% if data.top_tiendas %}bar('c_tienda', {{ data.top_tiendas|tojson }}, true, '#0e7490');{% else %}bar('c_marca', {{ data.por_marca|tojson }}, true, '#0e7490');{% endif %}
+</script>
+
+{% endif %}
+{% endblock %}

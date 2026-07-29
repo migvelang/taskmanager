@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ingresar · SERTEC</title>
+  <script src="/static/tailwind.js"></script>
+</head>
+<body class="bg-slate-900 min-h-screen flex items-center justify-center px-4">
+  <div class="w-full max-w-sm bg-white rounded-2xl shadow-xl p-8">
+    <div class="text-center mb-6">
+      <div class="text-3xl font-bold text-slate-900"><span class="text-cyan-500">◆</span> SERTEC</div>
+      <p class="text-slate-500 text-sm mt-1">Dashboard & Alertas de Servicio Técnico</p>
+    </div>
+    {% if error %}
+      <div class="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{{ error }}</div>
+    {% endif %}
+    <form method="post" action="/login" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Correo</label>
+        <input name="email" type="email" required autofocus
+          class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-cyan-500 outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Contraseña</label>
+        <input name="password" type="password" required
+          class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-cyan-500 outline-none">
+      </div>
+      <button class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-lg py-2.5">Ingresar</button>
+    </form>
+  </div>
+</body>
+</html>
