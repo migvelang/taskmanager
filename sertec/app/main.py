@@ -44,16 +44,28 @@ def startup():
 
 
 def _seed_admin():
-    """Crea el usuario administrador inicial si la tabla está vacía."""
+    """Garantiza el usuario admin definido por ADMIN_EMAIL/ADMIN_PASSWORD.
+
+    Es idempotente: en cada arranque asegura que exista un admin con ese correo
+    y sincroniza su contraseña con la variable de entorno. Así, cambiar
+    ADMIN_PASSWORD y redeployar siempre deja credenciales válidas, sin importar
+    el orden en que se configuraron las variables la primera vez.
+    """
     db = SessionLocal()
     try:
-        if db.query(User).count() == 0:
+        email = settings.ADMIN_EMAIL.lower().strip()
+        user = db.query(User).filter(User.email == email).first()
+        if user:
+            user.hashed_password = hash_password(settings.ADMIN_PASSWORD)
+            user.rol = "admin"
+            user.activo = True
+        else:
             db.add(User(
-                email=settings.ADMIN_EMAIL.lower(),
+                email=email,
                 nombre="Administrador",
                 hashed_password=hash_password(settings.ADMIN_PASSWORD),
                 rol="admin",
             ))
-            db.commit()
+        db.commit()
     finally:
         db.close()
