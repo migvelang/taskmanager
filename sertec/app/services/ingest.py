@@ -152,9 +152,6 @@ def _ingest_sertec(db: Session, ws, carga_id: int) -> int:
     for row in ws.iter_rows(min_row=2, values_only=True):
         if row is None or g(row, "OST_NUM") is None:
             continue
-        raw = {k: (row[i] if i < len(row) else None) for k, i in h.items()}
-        # normaliza datetimes del raw a ISO para que sea JSON-serializable
-        raw = {k: (v.isoformat() if isinstance(v, (dt.datetime, dt.date)) else v) for k, v in raw.items()}
         batch.append({
             "carga_id": carga_id,
             "ost_num": _s(g(row, "OST_NUM")),
@@ -177,6 +174,7 @@ def _ingest_sertec(db: Session, ws, carga_id: int) -> int:
             "prod_sku": _s(g(row, "PROD_SKU")),
             "prod_marca": _s(g(row, "PROD_MARCA")),
             "prod_modelo": _s(g(row, "PROD_MODELO")),
+            "prod_numero_serie": _s(g(row, "PROD_NUMERO_SERIE")),
             "prod_garantia_modalidad": _s(g(row, "PROD_GARANTIA_MODALIDAD")),
             "prod_tipo_garantia": _s(g(row, "PROD_TIPO_GARANTIA")),
             "desc_falla": _s(g(row, "OST_DESC_FALLA")),
@@ -187,7 +185,6 @@ def _ingest_sertec(db: Session, ws, carga_id: int) -> int:
             "desc_linea": _s(g(row, "F11SRX_DESC_LINEA")),
             "desc_sublinea": _s(g(row, "F11SRX_DESC_SUBLINEA")),
             "precio_vta": _as_float(g(row, "F11SRX_PRECIO_VTA")),
-            "raw": raw,
         })
         total += 1
         if len(batch) >= 2000:
@@ -211,8 +208,6 @@ def _ingest_sf(db: Session, ws, carga_id: int) -> int:
             continue
         descripcion = _s(g(row, "DESCRIPCION"))
         f11, ost = sf_link.parse_descripcion(descripcion)
-        raw = {k: (row[i] if i < len(row) else None) for k, i in h.items()}
-        raw = {k: (v.isoformat() if isinstance(v, (dt.datetime, dt.date)) else v) for k, v in raw.items()}
         batch.append({
             "carga_id": carga_id,
             "ss_nro": _s(g(row, "SS_NRO")),
@@ -233,7 +228,6 @@ def _ingest_sf(db: Session, ws, carga_id: int) -> int:
             "f11_parseado": f11,
             "ost_parseada": ost,
             "link_status": sf_link.link_status(f11, ost),
-            "raw": raw,
         })
         total += 1
         if len(batch) >= 1000:

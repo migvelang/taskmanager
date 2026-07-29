@@ -7,14 +7,19 @@
 
   {% if error %}<div class="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{{ error }}</div>{% endif %}
 
-  <form method="post" action="/cargar" enctype="multipart/form-data" class="bg-white rounded-xl shadow p-6">
+  <form method="post" action="/cargar" enctype="multipart/form-data" class="bg-white rounded-xl shadow p-6"
+        onsubmit="document.getElementById('btn').disabled=true; document.getElementById('proc').classList.remove('hidden'); document.getElementById('btn').textContent='Procesando…';">
     <label class="block border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:border-cyan-400">
       <input type="file" name="archivo" accept=".xlsx,.xlsm" required class="hidden" onchange="document.getElementById('fn').textContent = this.files[0]?.name || ''">
       <div class="text-slate-500">📄 Haz clic para elegir el archivo Excel</div>
       <div id="fn" class="text-sm font-medium text-cyan-700 mt-2"></div>
     </label>
-    <button class="mt-4 w-full bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-lg py-2.5">Procesar carga</button>
-    <p class="text-xs text-slate-400 mt-2">El procesamiento de ~40 mil filas puede tardar unos segundos.</p>
+    <button id="btn" class="mt-4 w-full bg-cyan-600 hover:bg-cyan-700 disabled:opacity-60 text-white font-semibold rounded-lg py-2.5">Procesar carga</button>
+    <div id="proc" class="hidden mt-3 text-sm text-cyan-700 flex items-center gap-2">
+      <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.4 0 0 5.4 0 12h4z"/></svg>
+      Procesando ~40 mil filas… puede tardar hasta 1-2 minutos. No cierres esta pestaña.
+    </div>
+    <p class="text-xs text-slate-400 mt-2">El procesamiento de ~40 mil filas puede tardar un poco la primera vez.</p>
   </form>
 </div>
 {% endblock %}

@@ -79,6 +79,7 @@ class OstSnapshot(Base):
     prod_sku = Column(String(60))
     prod_marca = Column(String(120))
     prod_modelo = Column(String(300))
+    prod_numero_serie = Column(String(120))
     prod_garantia_modalidad = Column(String(60))
     prod_tipo_garantia = Column(String(80))
     desc_falla = Column(Text)
@@ -90,8 +91,6 @@ class OstSnapshot(Base):
     desc_linea = Column(String(120))
     desc_sublinea = Column(String(120))
     precio_vta = Column(Float)
-
-    raw = Column(JSON)  # fila completa por si se necesita algún campo extra
 
     carga = relationship("Carga", back_populates="ost")
 
@@ -127,8 +126,6 @@ class SfSnapshot(Base):
     f11_parseado = Column(String(30), index=True)
     ost_parseada = Column(String(30), index=True)
     link_status = Column(String(30))  # vinculado | error_creacion
-
-    raw = Column(JSON)
 
     carga = relationship("Carga", back_populates="sf")
 

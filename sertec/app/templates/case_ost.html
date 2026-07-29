@@ -33,7 +33,7 @@
       {{ campo('Gestión producto', actual.ost_estado_gestion_producto|disp_gestion) }}
       {{ campo('Responsable', actual.flag_responsable) }}
       {{ campo('SKU', actual.prod_sku) }}
-      {{ campo('Serie', actual.raw.get('PROD_NUMERO_SERIE') if actual.raw else None) }}
+      {{ campo('Serie', actual.prod_numero_serie) }}
       {{ campo('Tienda', actual.cruce_tienda) }}
       {{ campo('Región', actual.region) }}
       {{ campo('Garantía', actual.prod_tipo_garantia) }}

@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request
 from sqlalchemy.exc import OperationalError
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import inspect as sa_inspect, text
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -49,8 +50,33 @@ def startup():
     # Nunca se hace drop_all: create_all solo crea tablas que falten, así que los
     # datos ya cargados sobreviven a cada redeploy.
     _init_db_con_reintentos()
+    _migrar_columnas_faltantes()
     _seed_admin()
     _avisar_backend_datos()
+
+
+def _migrar_columnas_faltantes():
+    """Agrega columnas nuevas del modelo que falten en las tablas ya creadas.
+
+    `create_all` no altera tablas existentes, así que al introducir un campo
+    nuevo (p. ej. prod_numero_serie) hay que añadirlo con ALTER TABLE. Esto se
+    hace sin borrar datos: solo agrega columnas faltantes, nunca elimina.
+    """
+    insp = sa_inspect(engine)
+    for tabla in Base.metadata.sorted_tables:
+        if not insp.has_table(tabla.name):
+            continue
+        existentes = {c["name"] for c in insp.get_columns(tabla.name)}
+        for col in tabla.columns:
+            if col.name in existentes:
+                continue
+            tipo = col.type.compile(dialect=engine.dialect)
+            try:
+                with engine.begin() as conn:
+                    conn.execute(text(f'ALTER TABLE "{tabla.name}" ADD COLUMN "{col.name}" {tipo}'))
+                logger.info("Migración: columna agregada %s.%s", tabla.name, col.name)
+            except Exception as e:  # noqa: BLE001
+                logger.warning("No se pudo agregar %s.%s: %s", tabla.name, col.name, e)
 
 
 def _init_db_con_reintentos(intentos: int = 12, espera: int = 3):
