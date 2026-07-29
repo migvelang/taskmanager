@@ -5,12 +5,19 @@
 <div class="flex items-center justify-between mb-4">
   <div>
     <h1 class="text-2xl font-bold text-slate-900">Configuración de alertas</h1>
-    <p class="text-sm text-slate-500">Define qué genera alerta según el subestado, el rango y los días.</p>
+    <p class="text-sm text-slate-500">Define qué genera alerta según el estado, subestado, gestión del producto, el rango y los días.</p>
   </div>
   <a href="/config/salir" class="text-sm text-slate-500 hover:underline">Bloquear 🔒</a>
 </div>
 
-{% if guardado %}<div class="mb-4 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">✓ Reglas guardadas. Se aplican en la próxima carga de Excel.</div>{% endif %}
+{% if guardado %}<div class="mb-4 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">✓ Guardado. Las reglas se aplican en la próxima carga de Excel.</div>{% endif %}
+
+{% macro sel(name, valor, opciones, filtro) %}
+  <select name="{{ name }}" class="border border-slate-300 rounded px-1 py-1 text-xs bg-white max-w-[150px]">
+    <option value="">Cualquiera</option>
+    {% for o in opciones %}<option value="{{ o }}" {{ 'selected' if o == valor else '' }}>{{ filtro(o) }}</option>{% endfor %}
+  </select>
+{% endmacro %}
 
 <form method="post" action="/config/reglas">
 <div class="bg-white rounded-xl shadow overflow-hidden">
@@ -18,47 +25,98 @@
   <table class="min-w-full text-sm">
     <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
       <tr>
-        <th class="text-left px-3 py-3">Subestado</th>
-        <th class="px-3 py-3">¿Alerta?</th>
-        <th class="px-3 py-3" title="Alerta cuando el tramo de días es ≥ este valor (1 = cualquiera)">Rango mín.</th>
-        <th class="px-3 py-3" title="Si se define, alerta cuando lleva ≥ estos días en SERTEC">Días mín.</th>
-        <th class="px-3 py-3">Severidad</th>
-        <th class="px-3 py-3" title="La alerta sugiere crear una PU">Crear PU</th>
-        <th class="text-left px-3 py-3">Mensaje / acción</th>
+        <th class="text-left px-2 py-3">OST Estado</th>
+        <th class="text-left px-2 py-3">Subestado</th>
+        <th class="text-left px-2 py-3">Gestión producto</th>
+        <th class="px-2 py-3">¿Alerta?</th>
+        <th class="px-2 py-3" title="Alerta cuando el tramo de días es ≥ este (1 = cualquiera)">Rango</th>
+        <th class="px-2 py-3" title="Si se define, alerta cuando lleva ≥ estos días en SERTEC">Días</th>
+        <th class="px-2 py-3">Severidad</th>
+        <th class="px-2 py-3">Crear PU</th>
+        <th class="text-left px-2 py-3">Mensaje / acción</th>
+        <th class="px-2 py-3"></th>
       </tr>
     </thead>
     <tbody class="divide-y divide-slate-100">
       {% for r in reglas %}
       <tr class="hover:bg-slate-50">
-        <td class="px-3 py-2 font-medium text-slate-800 whitespace-nowrap">{{ r.nombre }}</td>
-        <td class="px-3 py-2 text-center"><input type="checkbox" name="activa_{{ r.id }}" {{ 'checked' if r.activa else '' }} class="h-4 w-4"></td>
-        <td class="px-3 py-2 text-center"><input type="number" min="1" max="6" name="rango_min_{{ r.id }}" value="{{ r.rango_min or 1 }}" class="w-14 border border-slate-300 rounded px-1 py-1 text-center"></td>
-        <td class="px-3 py-2 text-center"><input type="number" min="0" name="dias_min_{{ r.id }}" value="{{ r.dias_min if r.dias_min is not none else '' }}" class="w-14 border border-slate-300 rounded px-1 py-1 text-center"></td>
-        <td class="px-3 py-2 text-center">
+        <td class="px-2 py-2">{{ sel('ost_estado_' ~ r.id, r.ost_estado, estados, disp_estado) }}</td>
+        <td class="px-2 py-2">{{ sel('subestado_' ~ r.id, r.subestado, subestados, disp_subestado) }}</td>
+        <td class="px-2 py-2">{{ sel('gestion_producto_' ~ r.id, r.gestion_producto, gestiones, disp_gestion) }}</td>
+        <td class="px-2 py-2 text-center"><input type="checkbox" name="activa_{{ r.id }}" {{ 'checked' if r.activa else '' }} class="h-4 w-4"></td>
+        <td class="px-2 py-2 text-center"><input type="number" min="1" max="6" name="rango_min_{{ r.id }}" value="{{ r.rango_min or 1 }}" class="w-12 border border-slate-300 rounded px-1 py-1 text-center"></td>
+        <td class="px-2 py-2 text-center"><input type="number" min="0" name="dias_min_{{ r.id }}" value="{{ r.dias_min if r.dias_min is not none else '' }}" class="w-12 border border-slate-300 rounded px-1 py-1 text-center"></td>
+        <td class="px-2 py-2 text-center">
           <select name="severidad_{{ r.id }}" class="border border-slate-300 rounded px-1 py-1">
             {% for s in ['alta','media','baja'] %}<option value="{{ s }}" {{ 'selected' if r.severidad == s else '' }}>{{ s }}</option>{% endfor %}
           </select>
         </td>
-        <td class="px-3 py-2 text-center"><input type="checkbox" name="requiere_pu_{{ r.id }}" {{ 'checked' if r.requiere_pu else '' }} class="h-4 w-4"></td>
-        <td class="px-3 py-2"><input type="text" name="mensaje_{{ r.id }}" value="{{ r.mensaje or '' }}" class="w-full min-w-[280px] border border-slate-300 rounded px-2 py-1"></td>
+        <td class="px-2 py-2 text-center"><input type="checkbox" name="requiere_pu_{{ r.id }}" {{ 'checked' if r.requiere_pu else '' }} class="h-4 w-4"></td>
+        <td class="px-2 py-2"><input type="text" name="mensaje_{{ r.id }}" value="{{ r.mensaje or '' }}" class="w-full min-w-[240px] border border-slate-300 rounded px-2 py-1"></td>
+        <td class="px-2 py-2 text-center">
+          <button type="submit" formaction="/config/reglas/{{ r.id }}/eliminar" formnovalidate
+                  onclick="return confirm('¿Eliminar esta regla?')" class="text-xs text-red-600 hover:underline">✕</button>
+        </td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
   </div>
 </div>
-<div class="mt-4 flex items-center gap-3">
-  <button class="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-lg px-5 py-2.5">Guardar reglas</button>
-  <span class="text-xs text-slate-400">Los cambios se aplican al procesar la próxima carga de Excel.</span>
+<div class="mt-4">
+  <button class="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-lg px-5 py-2.5">Guardar cambios</button>
 </div>
 </form>
+
+<!-- Nueva regla -->
+<div class="mt-6 bg-white rounded-xl shadow p-5">
+  <h2 class="font-semibold text-slate-800 mb-3">➕ Nueva regla</h2>
+  <form method="post" action="/config/reglas/nueva" class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+    <div>
+      <label class="block text-xs uppercase text-slate-400 mb-1">OST Estado</label>
+      {{ sel('n_ost_estado', '', estados, disp_estado) }}
+    </div>
+    <div>
+      <label class="block text-xs uppercase text-slate-400 mb-1">Subestado</label>
+      {{ sel('n_subestado', '', subestados, disp_subestado) }}
+    </div>
+    <div>
+      <label class="block text-xs uppercase text-slate-400 mb-1">Gestión producto</label>
+      {{ sel('n_gestion_producto', '', gestiones, disp_gestion) }}
+    </div>
+    <div>
+      <label class="block text-xs uppercase text-slate-400 mb-1">Rango mín. / Días mín.</label>
+      <div class="flex gap-2">
+        <input type="number" min="1" max="6" name="n_rango_min" value="1" class="w-16 border border-slate-300 rounded px-2 py-1.5" title="Rango mínimo">
+        <input type="number" min="0" name="n_dias_min" placeholder="días" class="w-20 border border-slate-300 rounded px-2 py-1.5" title="Días mínimos (opcional)">
+      </div>
+    </div>
+    <div>
+      <label class="block text-xs uppercase text-slate-400 mb-1">Severidad</label>
+      <div class="flex items-center gap-3">
+        <select name="n_severidad" class="border border-slate-300 rounded px-2 py-1.5">
+          {% for s in ['alta','media','baja'] %}<option value="{{ s }}" {{ 'selected' if s=='media' else '' }}>{{ s }}</option>{% endfor %}
+        </select>
+        <label class="text-xs flex items-center gap-1"><input type="checkbox" name="n_requiere_pu" class="h-4 w-4"> Crear PU</label>
+      </div>
+    </div>
+    <div class="md:col-span-2">
+      <label class="block text-xs uppercase text-slate-400 mb-1">Mensaje / acción</label>
+      <input type="text" name="n_mensaje" placeholder="Qué hacer con esta alerta" class="w-full border border-slate-300 rounded px-2 py-1.5">
+    </div>
+    <div>
+      <button class="w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-lg px-4 py-2">Agregar regla</button>
+    </div>
+  </form>
+  <p class="text-xs text-slate-400 mt-2">Deja un campo en «Cualquiera» para que no condicione. Debes elegir al menos una condición.</p>
+</div>
 
 <div class="mt-6 bg-white rounded-xl shadow p-4 text-sm text-slate-600">
   <p class="font-semibold text-slate-800 mb-1">Cómo se interpretan los campos</p>
   <ul class="list-disc pl-5 space-y-1">
-    <li><b>Rango mín.:</b> tramo de antigüedad (1=0-4, 2=5-7, 3=8-12, 4=13-20, 5=21-30, 6=31+). Alerta si el tramo es ≥ al valor.</li>
-    <li><b>Días mín.:</b> si se define, la alerta se dispara cuando la OST lleva ≥ esos días en SERTEC (tiene prioridad sobre el rango).</li>
-    <li><b>Crear PU:</b> marca las alertas que sugieren generar una PU (el botón se habilita en el panel de alertas).</li>
+    <li><b>Condiciones (Estado / Subestado / Gestión):</b> la alerta se genera solo si la OST coincide con las condiciones marcadas. «Cualquiera» = no filtra por ese campo.</li>
+    <li><b>Rango:</b> tramo de antigüedad (1=0-4, 2=5-7, 3=8-12, 4=13-20, 5=21-30, 6=31+). Alerta si el tramo es ≥ al valor.</li>
+    <li><b>Días:</b> si se define, la alerta se dispara cuando la OST lleva ≥ esos días en SERTEC (tiene prioridad sobre el rango).</li>
   </ul>
 </div>
 {% endblock %}

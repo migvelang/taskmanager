@@ -7,6 +7,7 @@ from ..db import get_db
 from ..deps import require_user
 from ..models import AppConfig, ReglaAlerta, User
 from ..security import verify_password
+from ..services import labels, reglas as reglas_mod
 from ..templating import templates
 
 router = APIRouter()
@@ -30,7 +31,9 @@ def config_home(
     reglas = db.query(ReglaAlerta).order_by(ReglaAlerta.nombre).all()
     return templates.TemplateResponse(
         "config.html",
-        {"request": request, "user": user, "reglas": reglas, "guardado": guardado},
+        {"request": request, "user": user, "reglas": reglas, "guardado": guardado,
+         "estados": reglas_mod.ESTADOS, "subestados": reglas_mod.SUBESTADOS,
+         "gestiones": reglas_mod.GESTIONES},
     )
 
 
@@ -75,6 +78,9 @@ async def guardar_reglas(
         r.activa = form.get(f"activa_{r.id}") == "on"
         r.requiere_pu = form.get(f"requiere_pu_{r.id}") == "on"
         r.severidad = form.get(f"severidad_{r.id}") or r.severidad
+        r.ost_estado = form.get(f"ost_estado_{r.id}") or None
+        r.subestado = form.get(f"subestado_{r.id}") or None
+        r.gestion_producto = form.get(f"gestion_producto_{r.id}") or None
 
         def _int(name):
             v = form.get(f"{name}_{r.id}")
@@ -88,5 +94,60 @@ async def guardar_reglas(
         mensaje = form.get(f"mensaje_{r.id}")
         if mensaje is not None:
             r.mensaje = mensaje.strip() or r.mensaje
+    db.commit()
+    return RedirectResponse("/config?guardado=1", status_code=303)
+
+
+@router.post("/config/reglas/nueva")
+async def crear_regla(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_user),
+):
+    if not _config_ok(request):
+        return RedirectResponse("/config", status_code=303)
+    form = await request.form()
+    est = form.get("n_ost_estado") or None
+    sub = form.get("n_subestado") or None
+    ges = form.get("n_gestion_producto") or None
+    if not (est or sub or ges):
+        return RedirectResponse("/config", status_code=303)  # al menos una condición
+
+    partes = [labels.estado(est) if est else None,
+              labels.subestado(sub) if sub else None,
+              labels.gestion(ges) if ges else None]
+    nombre = " · ".join(p for p in partes if p) or "Regla"
+    try:
+        rango_min = int(form.get("n_rango_min") or 1)
+    except ValueError:
+        rango_min = 1
+    dias_min = form.get("n_dias_min")
+    try:
+        dias_min = int(dias_min) if dias_min not in (None, "") else None
+    except ValueError:
+        dias_min = None
+
+    db.add(ReglaAlerta(
+        ost_estado=est, subestado=sub, gestion_producto=ges, nombre=nombre,
+        activa=True, solo_abierta=False,
+        rango_min=rango_min, dias_min=dias_min,
+        severidad=form.get("n_severidad") or "media",
+        requiere_pu=form.get("n_requiere_pu") == "on",
+        mensaje=(form.get("n_mensaje") or "").strip() or "Revisar.",
+    ))
+    db.commit()
+    return RedirectResponse("/config?guardado=1", status_code=303)
+
+
+@router.post("/config/reglas/{regla_id}/eliminar")
+def eliminar_regla(
+    regla_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_user),
+):
+    if not _config_ok(request):
+        return RedirectResponse("/config", status_code=303)
+    db.query(ReglaAlerta).filter(ReglaAlerta.id == regla_id).delete()
     db.commit()
     return RedirectResponse("/config?guardado=1", status_code=303)

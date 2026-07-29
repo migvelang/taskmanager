@@ -171,8 +171,11 @@ class ReglaAlerta(Base):
     __tablename__ = "reglas_alerta"
 
     id = Column(Integer, primary_key=True)
-    subestado = Column(String(80), unique=True, nullable=False)  # llave base, ej "PRODUCTO_EN_ST"
-    nombre = Column(String(120))            # etiqueta legible
+    # Condiciones (llave base sin prefijo numérico). Vacío = cualquiera.
+    ost_estado = Column(String(40))         # ABIERTA | CERRADA | CANCELADA | None
+    subestado = Column(String(80))          # ej "PRODUCTO_EN_ST" | None
+    gestion_producto = Column(String(80))   # ej "RECHAZADO" | None
+    nombre = Column(String(160))            # etiqueta legible
     activa = Column(Boolean, default=True)  # si genera alerta o no
     solo_abierta = Column(Boolean, default=True)
 

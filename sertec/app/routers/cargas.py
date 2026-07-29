@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from ..config import settings
 from ..db import get_db
 from ..deps import require_admin, require_user
-from ..models import Carga, User
+from ..models import Alerta, Carga, OstSnapshot, SfSnapshot, User
 from ..templating import templates
 
 router = APIRouter()
@@ -34,8 +34,10 @@ def eliminar(
     db: Session = Depends(get_db),
     user: User = Depends(require_admin),
 ):
-    carga = db.query(Carga).filter(Carga.id == carga_id).first()
-    if carga:
-        db.delete(carga)
-        db.commit()
+    # Borrado masivo (una sentencia por tabla) para que sea rápido incluso con
+    # ~40k filas; el ORM fila a fila era muy lento.
+    for modelo in (Alerta, OstSnapshot, SfSnapshot):
+        db.query(modelo).filter(modelo.carga_id == carga_id).delete(synchronize_session=False)
+    db.query(Carga).filter(Carga.id == carga_id).delete(synchronize_session=False)
+    db.commit()
     return RedirectResponse("/cargas", status_code=303)

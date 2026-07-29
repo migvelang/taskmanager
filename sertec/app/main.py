@@ -52,9 +52,30 @@ def startup():
     # datos ya cargados sobreviven a cada redeploy.
     _init_db_con_reintentos()
     _migrar_columnas_faltantes()
+    _migraciones_especiales()
     _seed_admin()
     _seed_reglas_y_config()
     _avisar_backend_datos()
+
+
+def _migraciones_especiales():
+    """Ajustes de esquema puntuales en bases ya creadas (solo PostgreSQL).
+
+    Las reglas de alerta pasaron de tener `subestado` único/obligatorio a ser
+    condiciones opcionales. En bases viejas hay que soltar esas restricciones.
+    """
+    if engine.dialect.name != "postgresql":
+        return
+    sentencias = [
+        "ALTER TABLE reglas_alerta DROP CONSTRAINT IF EXISTS reglas_alerta_subestado_key",
+        "ALTER TABLE reglas_alerta ALTER COLUMN subestado DROP NOT NULL",
+    ]
+    for s in sentencias:
+        try:
+            with engine.begin() as conn:
+                conn.execute(text(s))
+        except Exception as e:  # noqa: BLE001
+            logger.warning("Migración especial omitida (%s): %s", s, e)
 
 
 def _seed_reglas_y_config():

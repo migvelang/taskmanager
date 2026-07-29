@@ -7,12 +7,27 @@ from sqlalchemy.orm import Session
 
 from ..models import ReglaAlerta
 
+# Opciones para los desplegables de la configuración (llaves base).
+ESTADOS = ["ABIERTA", "CERRADA", "CANCELADA"]
+SUBESTADOS = [
+    "INGRESADO", "PENDIENTE_AGENDAMIENTO_VISITA_TECNICA", "VISITA_TECNICA_AGENDADA",
+    "VISITA_TECNICA_REALIZADA", "EMISION_DE_GUIA", "PRODUCTO_CON_GUIA", "EN_TRANSITO_A_ST",
+    "PRODUCTO_EN_ST", "CON_RESPUESTA_ST", "CON_RESPUESTA_ST_GC_0", "CON_RESPUESTA_ST_GC_1",
+    "DAR_SOLUCION_A_CLIENTE", "PENDIENTE_DE_RETIRO_ASEGURADORA", "RETORNANDO_A_TIENDA",
+    "PRODUCTO_EN_TIENDA", "SINIESTRO_TRANSPORTE", "ESPERA_RETIRO_CLIENTE",
+    "GESTION_FINALIZADA", "PROBLEMAS_OST", "CANCELAR",
+]
+GESTIONES = [
+    "SIN_FALLAS", "REPARADO", "RECHAZADO", "PRODUCTO_NUEVO", "REEMPLAZO_AUTORIZADO",
+    "FACTURACION_PROVEEDOR", "SINIESTRO_TRANSPORTE", "En gestión postventa tienda", "OTRO",
+]
+
 # Cada regla se identifica por la llave base del subestado (sin prefijo numérico).
 # campos: nombre, activa, rango_min, dias_min, sev_alta_desde_rango,
 #         gestion_prioridad, severidad, requiere_pu, mensaje
 DEFAULTS = [
-    dict(subestado="GESTION_FINALIZADA", nombre="Gestión finalizada", activa=True,
-         rango_min=1, severidad="alta", requiere_pu=True,
+    dict(subestado="GESTION_FINALIZADA", ost_estado="ABIERTA", nombre="Gestión finalizada",
+         activa=True, rango_min=1, severidad="alta", requiere_pu=True,
          mensaje="OST abierta con gestión finalizada: generar PU para cerrar la OST."),
     dict(subestado="CANCELAR", nombre="Cancelar", activa=True, rango_min=1,
          severidad="media", mensaje="Se generó CANCELAR: revisar."),
@@ -66,17 +81,13 @@ DEFAULTS = [
 
 
 def seed_reglas(db: Session):
-    """Crea las reglas por defecto si aún no existen (por subestado)."""
-    existentes = {r.subestado for r in db.query(ReglaAlerta.subestado).all()}
-    nuevas = 0
-    for d in DEFAULTS:
-        if d["subestado"] not in existentes:
+    """Crea las reglas por defecto una sola vez (si la tabla está vacía)."""
+    if db.query(ReglaAlerta).count() == 0:
+        for d in DEFAULTS:
             db.add(ReglaAlerta(**d))
-            nuevas += 1
-    if nuevas:
         db.commit()
 
 
-def cargar_reglas(db: Session) -> dict[str, ReglaAlerta]:
-    """Devuelve las reglas indexadas por subestado base."""
-    return {r.subestado: r for r in db.query(ReglaAlerta).all()}
+def cargar_reglas(db: Session) -> list[ReglaAlerta]:
+    """Devuelve todas las reglas (para evaluarlas por condiciones)."""
+    return db.query(ReglaAlerta).all()

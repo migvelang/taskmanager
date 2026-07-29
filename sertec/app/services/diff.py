@@ -42,7 +42,14 @@ def generar_alertas(db: Session, carga: Carga) -> int:
 
     alertas: list[Alerta] = []
     prev = _carga_anterior(db, carga)
-    reglas_map = reglas_mod.cargar_reglas(db)
+    reglas_lista = reglas_mod.cargar_reglas(db)
+
+    # Mapa OST -> PU vinculada (desde los casos SF de esta carga).
+    ost_to_pu: dict[str, str] = {}
+    for ss_nro, ost_parseada in db.query(SfSnapshot.ss_nro, SfSnapshot.ost_parseada).filter(
+        SfSnapshot.carga_id == carga.id, SfSnapshot.ost_parseada.isnot(None)
+    ).all():
+        ost_to_pu.setdefault(ost_parseada, ss_nro)
 
     # --- Índice de la carga anterior (solo campos necesarios) ---
     prev_map: dict[str, dict] = {}
@@ -63,10 +70,10 @@ def generar_alertas(db: Session, carga: Carga) -> int:
     for o in db.query(OstSnapshot).filter(OstSnapshot.carga_id == carga.id).yield_per(2000):
         p = prev_map.get(o.ost_num)
 
-        # Reglas configurables por subestado (estado actual)
-        _evaluar_regla(alertas, carga.id, o, reglas_map)
+        # Reglas configurables (estado + subestado + gestión) sobre la foto actual
+        _evaluar_reglas(alertas, carga.id, o, reglas_lista, ost_to_pu)
         # Facturación a proveedor por revisar (estado actual)
-        _evaluar_facturacion(alertas, carga.id, o)
+        _evaluar_facturacion(alertas, carga.id, o, ost_to_pu)
 
         if not p:
             continue  # el resto requiere carga anterior
@@ -144,42 +151,53 @@ def generar_alertas(db: Session, carga: Carga) -> int:
     return len(alertas)
 
 
-def _evaluar_regla(alertas: list, carga_id: int, o: OstSnapshot, reglas_map: dict):
-    """Aplica la regla configurable del subestado de la OST, si corresponde."""
-    if not o.ost_subestado:
-        return
-    r = reglas_map.get(labels.base(o.ost_subestado))
-    if not r or not r.activa:
-        return
-    if r.solo_abierta and not _abierta(o.ost_estado):
-        return
-
+def _evaluar_reglas(alertas: list, carga_id: int, o: OstSnapshot, reglas_lista: list,
+                    ost_to_pu: dict):
+    """Aplica todas las reglas cuyas condiciones (estado, subestado, gestión)
+    coincidan con la OST."""
+    est = labels.base(o.ost_estado)
+    sub = labels.base(o.ost_subestado)
+    ges = labels.base(o.ost_estado_gestion_producto)
     tramo = _tramo(o.rango_sertec)
     dias = o.dias_sertec or 0
-    if r.dias_min is not None:
-        if dias < r.dias_min:
-            return
-    elif tramo < (r.rango_min or 1):
-        return
 
-    sev = r.severidad or "media"
-    if r.sev_alta_desde_rango and tramo >= r.sev_alta_desde_rango:
-        sev = "alta"
-    if r.gestion_prioridad and labels.base(o.ost_estado_gestion_producto) == r.gestion_prioridad:
-        sev = "alta"
-    if o.f11_tipo_cliente == "Cliente":  # los clientes son prioridad
-        sev = "alta"
+    for r in reglas_lista:
+        if not r.activa:
+            continue
+        # Condiciones: si el campo de la regla está vacío, aplica a cualquiera.
+        if r.ost_estado and r.ost_estado != est:
+            continue
+        if r.subestado and r.subestado != sub:
+            continue
+        if r.gestion_producto and r.gestion_producto != ges:
+            continue
+        if r.solo_abierta and not _abierta(o.ost_estado):
+            continue
+        # Umbral por días o por rango.
+        if r.dias_min is not None:
+            if dias < r.dias_min:
+                continue
+        elif tramo < (r.rango_min or 1):
+            continue
 
-    alertas.append(Alerta(
-        carga_id=carga_id, tipo="regla", severidad=sev, requiere_pu=bool(r.requiere_pu),
-        ost_num=o.ost_num, cruce_tienda=o.cruce_tienda,
-        titulo=f"OST {o.ost_num} · {labels.subestado(o.ost_subestado)}",
-        detalle=r.mensaje,
-        valor_actual=o.rango_sertec,
-    ))
+        sev = r.severidad or "media"
+        if r.sev_alta_desde_rango and tramo >= r.sev_alta_desde_rango:
+            sev = "alta"
+        if r.gestion_prioridad and ges == r.gestion_prioridad:
+            sev = "alta"
+        if o.f11_tipo_cliente == "Cliente":  # los clientes son prioridad
+            sev = "alta"
+
+        alertas.append(Alerta(
+            carga_id=carga_id, tipo="regla", severidad=sev, requiere_pu=bool(r.requiere_pu),
+            ost_num=o.ost_num, ss_nro=ost_to_pu.get(o.ost_num), cruce_tienda=o.cruce_tienda,
+            titulo=f"OST {o.ost_num} · {labels.subestado(o.ost_subestado)}",
+            detalle=r.mensaje,
+            valor_actual=o.rango_sertec,
+        ))
 
 
-def _evaluar_facturacion(alertas: list, carga_id: int, o: OstSnapshot):
+def _evaluar_facturacion(alertas: list, carga_id: int, o: OstSnapshot, ost_to_pu: dict):
     """Revisar facturación a proveedor: gestión FACTURACION_PROVEEDOR, transacción
     DEVOLUCION/CAMBIO y sin F3 generado."""
     if (labels.base(o.ost_estado_gestion_producto) == "FACTURACION_PROVEEDOR"
@@ -187,7 +205,7 @@ def _evaluar_facturacion(alertas: list, carga_id: int, o: OstSnapshot):
             and o.f11srx_status_f03 == "NO F3"):
         alertas.append(Alerta(
             carga_id=carga_id, tipo="facturacion", severidad="media",
-            ost_num=o.ost_num, cruce_tienda=o.cruce_tienda,
+            ost_num=o.ost_num, ss_nro=ost_to_pu.get(o.ost_num), cruce_tienda=o.cruce_tienda,
             titulo=f"OST {o.ost_num} · Revisar facturación a proveedor",
             detalle=f"{o.xtransac_full} · sin F3 · {o.prod_nombre or ''}",
             valor_actual="NO F3",
