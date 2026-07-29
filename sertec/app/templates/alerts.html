@@ -99,6 +99,7 @@
               {% endfor %}
             </select>
           </form>
+          {% if a.gestion != 'nueva' and gestion_por.get(a.ost_num) %}<div class="text-[10px] text-slate-400 mt-0.5" title="Gestionó: {{ gestion_por.get(a.ost_num) }}">por {{ gestion_por.get(a.ost_num).split('@')[0] }}</div>{% endif %}
         </td>
       </tr>
       {% else %}

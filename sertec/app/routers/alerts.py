@@ -61,6 +61,12 @@ def alertas(
     items = q_alertas.all()
     items.sort(key=lambda a: (orden.get(a.severidad, 3), a.tipo))
 
+    # Auditoría: quién gestionó cada OST (desde la memoria persistente).
+    ctx["gestion_por"] = dict(
+        db.query(GestionOst.ost_num, GestionOst.actualizado_por)
+        .filter(GestionOst.actualizado_por.isnot(None)).all()
+    )
+
     # Conteos por tipo (respetando tienda), para las pestañas.
     conteos_q = db.query(Alerta.tipo, func.count(Alerta.id)).filter(Alerta.carga_id == carga.id)
     if tienda:

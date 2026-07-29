@@ -13,7 +13,9 @@ from starlette.middleware.sessions import SessionMiddleware
 from .config import settings
 from .db import Base, SessionLocal, engine
 from .models import User
-from .routers import alerts, auth, cargas, cases, config as config_router, dashboard, upload
+from .routers import (
+    alerts, auth, cargas, cases, config as config_router, dashboard, upload, usuarios,
+)
 from .security import hash_password
 from .templating import TEMPLATES_DIR, templates  # noqa: F401
 
@@ -29,6 +31,7 @@ app.include_router(alerts.router)
 app.include_router(cases.router)
 app.include_router(cargas.router)
 app.include_router(config_router.router)
+app.include_router(usuarios.router)
 
 
 @app.exception_handler(StarletteHTTPException)

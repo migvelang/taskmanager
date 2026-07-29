@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Usuarios · SERTEC{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold text-slate-900 mb-1">Usuarios</h1>
+<p class="text-sm text-slate-500 mb-4">Administra las cuentas que pueden entrar. Cada acción queda registrada con el usuario que la hizo.</p>
+
+{% if ok %}<div class="mb-4 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">✓ {{ ok }}.</div>{% endif %}
+{% if error %}<div class="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{{ error }}.</div>{% endif %}
+
+<div class="bg-white rounded-xl shadow overflow-hidden mb-6">
+  <div class="overflow-x-auto">
+  <table class="min-w-full text-sm">
+    <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+      <tr>
+        <th class="text-left px-4 py-3">Correo</th>
+        <th class="text-left px-4 py-3">Nombre</th>
+        <th class="text-left px-4 py-3">Rol</th>
+        <th class="text-left px-4 py-3">Activo</th>
+        <th class="text-left px-4 py-3">Nueva clave</th>
+        <th class="px-4 py-3"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for u in usuarios %}
+      <form method="post" action="/usuarios/{{ u.id }}/editar">
+      <tr class="hover:bg-slate-50 {{ 'opacity-50' if not u.activo else '' }}">
+        <td class="px-4 py-3 font-medium text-slate-800">{{ u.email }}{% if u.id == user.id %}<span class="ml-1 text-xs text-cyan-600">(tú)</span>{% endif %}</td>
+        <td class="px-4 py-3"><input name="nombre" value="{{ u.nombre or '' }}" class="border border-slate-300 rounded px-2 py-1 text-sm"></td>
+        <td class="px-4 py-3">
+          <select name="rol" class="border border-slate-300 rounded px-2 py-1 text-sm" {{ 'disabled' if u.id == user.id else '' }}>
+            <option value="visor" {{ 'selected' if u.rol == 'visor' else '' }}>visor</option>
+            <option value="admin" {{ 'selected' if u.rol == 'admin' else '' }}>admin</option>
+          </select>
+        </td>
+        <td class="px-4 py-3 text-center">
+          <input type="checkbox" name="activo" {{ 'checked' if u.activo else '' }} class="h-4 w-4" {{ 'disabled' if u.id == user.id else '' }}>
+        </td>
+        <td class="px-4 py-3"><input name="password" type="text" placeholder="dejar en blanco = sin cambio" class="border border-slate-300 rounded px-2 py-1 text-sm w-52"></td>
+        <td class="px-4 py-3 text-right whitespace-nowrap">
+          <button class="text-xs bg-cyan-600 hover:bg-cyan-700 text-white rounded px-3 py-1">Guardar</button>
+          {% if u.id != user.id %}
+          <button formaction="/usuarios/{{ u.id }}/eliminar" formnovalidate onclick="return confirm('¿Eliminar a {{ u.email }}?')"
+                  class="text-xs bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded px-2 py-1 ml-1">Eliminar</button>
+          {% endif %}
+        </td>
+      </tr>
+      </form>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="bg-white rounded-xl shadow p-5 max-w-2xl">
+  <h2 class="font-semibold text-slate-800 mb-3">➕ Nuevo usuario</h2>
+  <form method="post" action="/usuarios/nuevo" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <div>
+      <label class="block text-xs uppercase text-slate-400 mb-1">Correo</label>
+      <input name="email" type="email" required class="w-full border border-slate-300 rounded px-3 py-2">
+    </div>
+    <div>
+      <label class="block text-xs uppercase text-slate-400 mb-1">Nombre</label>
+      <input name="nombre" class="w-full border border-slate-300 rounded px-3 py-2">
+    </div>
+    <div>
+      <label class="block text-xs uppercase text-slate-400 mb-1">Clave</label>
+      <input name="password" type="text" required class="w-full border border-slate-300 rounded px-3 py-2">
+    </div>
+    <div>
+      <label class="block text-xs uppercase text-slate-400 mb-1">Rol</label>
+      <select name="rol" class="w-full border border-slate-300 rounded px-3 py-2">
+        <option value="visor">visor (solo ver y gestionar)</option>
+        <option value="admin">admin (además gestiona usuarios y reglas)</option>
+      </select>
+    </div>
+    <div class="md:col-span-2">
+      <button class="bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-lg px-5 py-2.5">Crear usuario</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
