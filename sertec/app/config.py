@@ -9,9 +9,22 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def _normalizar_db_url(url: str) -> str:
+    """Normaliza el DSN para SQLAlchemy + psycopg2.
+
+    Railway/Heroku entregan la URL como 'postgres://...' o 'postgresql://...';
+    SQLAlchemy con psycopg2 requiere el driver explícito 'postgresql+psycopg2://'.
+    """
+    if url.startswith("postgres://"):
+        url = "postgresql+psycopg2://" + url[len("postgres://"):]
+    elif url.startswith("postgresql://"):
+        url = "postgresql+psycopg2://" + url[len("postgresql://"):]
+    return url
+
+
 class Settings:
     # Base de datos: por defecto SQLite local; en prod se usa Postgres vía env.
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./sertec.db")
+    DATABASE_URL: str = _normalizar_db_url(os.getenv("DATABASE_URL", "sqlite:///./sertec.db"))
 
     # Clave para firmar las cookies de sesión. CAMBIAR en producción.
     SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-secret-cambiar-en-produccion")
