@@ -3,6 +3,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ..models import Alerta, Carga, OstSnapshot, SfSnapshot
+from . import labels
 
 
 def ultima_carga(db: Session) -> Carga | None:
@@ -23,6 +24,15 @@ def lista_tiendas(db: Session, carga_id: int) -> list[str]:
         .all()
     )
     return [r[0] for r in rows]
+
+
+def _agregar_por_etiqueta(pares: list[tuple], fn) -> list[tuple]:
+    """Aplica `fn` a la categoría y suma los conteos que comparten etiqueta."""
+    acc: dict[str, int] = {}
+    for k, v in pares:
+        etiqueta = fn(k) if k not in (None, "Sin dato") else "Sin dato"
+        acc[etiqueta] = acc.get(etiqueta, 0) + v
+    return sorted(acc.items(), key=lambda x: x[1], reverse=True)
 
 
 def dashboard_data(db: Session, carga: Carga, tienda: str | None = None) -> dict:
@@ -59,7 +69,8 @@ def dashboard_data(db: Session, carga: Carga, tienda: str | None = None) -> dict
     por_rango = agrupar(OstSnapshot.rango_sertec, abiertas_q)
     # ordenar por número de tramo
     por_rango = sorted(por_rango, key=lambda x: x[0])
-    por_subestado = agrupar(OstSnapshot.ost_subestado, abiertas_q)[:8]
+    # subestado con etiqueta legible, agregando los que comparten etiqueta
+    por_subestado = _agregar_por_etiqueta(agrupar(OstSnapshot.ost_subestado, abiertas_q), labels.subestado)[:8]
     por_garantia = agrupar(OstSnapshot.prod_tipo_garantia)
     top_tiendas = agrupar(OstSnapshot.cruce_tienda, abiertas_q, limite=10) if not tienda else []
     por_marca = agrupar(OstSnapshot.prod_marca, abiertas_q, limite=10)

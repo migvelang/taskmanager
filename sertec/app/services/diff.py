@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..models import Alerta, Carga, OstSnapshot, SfSnapshot
+from . import labels
 
 
 def _abierta(estado: str | None) -> bool:
@@ -80,32 +81,36 @@ def generar_alertas(db: Session, carga: Carga) -> int:
                 carga_id=carga.id, tipo="incumplimiento", severidad="alta",
                 ost_num=o.ost_num, cruce_tienda=o.cruce_tienda,
                 titulo=f"OST {o.ost_num} cruzó a FUERA DE PLAZO",
-                detalle=f"{o.prod_nombre or ''} · {o.ost_subestado or ''}",
+                detalle=f"{o.prod_nombre or ''} · {labels.subestado(o.ost_subestado) or ''}",
                 valor_anterior=p["flag_plazo"] or "—", valor_actual="Fuera de plazo",
             ))
 
         # Cambio de estado / subestado / gestión de producto
+        # (campo, valor_ant, valor_act, etiquetador)
         cambios = []
         if o.ost_estado != p["estado"]:
-            cambios.append(("Estado", p["estado"], o.ost_estado))
+            cambios.append(("Estado", p["estado"], o.ost_estado, labels.estado))
         if o.ost_subestado != p["subestado"]:
-            cambios.append(("Subestado", p["subestado"], o.ost_subestado))
+            cambios.append(("Subestado", p["subestado"], o.ost_subestado, labels.subestado))
         if o.ost_estado_gestion_producto != p["gestion"]:
-            cambios.append(("Gestión producto", p["gestion"], o.ost_estado_gestion_producto))
+            cambios.append(("Gestión producto", p["gestion"], o.ost_estado_gestion_producto, labels.gestion))
         if cambios:
             escalado = any(
                 x[2] and ("PROBLEMAS" in str(x[2]).upper() or "RECHAZ" in str(x[2]).upper()
                           or "CANCELAR" in str(x[2]).upper())
                 for x in cambios
             )
-            detalle = " | ".join(f"{c}: {a or '—'} → {b or '—'}" for c, a, b in cambios)
+            detalle = " | ".join(
+                f"{c}: {fn(a) or '—'} → {fn(b) or '—'}" for c, a, b, fn in cambios
+            )
+            _, va, vb, fn0 = cambios[0]
             alertas.append(Alerta(
                 carga_id=carga.id, tipo="cambio_estado",
                 severidad="alta" if escalado else "media",
                 ost_num=o.ost_num, cruce_tienda=o.cruce_tienda,
                 titulo=f"OST {o.ost_num}: cambio de estado",
                 detalle=detalle,
-                valor_anterior=cambios[0][1], valor_actual=cambios[0][2],
+                valor_anterior=fn0(va), valor_actual=fn0(vb),
             ))
 
         # Envejecimiento: subió de tramo de días
@@ -114,7 +119,7 @@ def generar_alertas(db: Session, carga: Carga) -> int:
                 carga_id=carga.id, tipo="envejecimiento", severidad="media",
                 ost_num=o.ost_num, cruce_tienda=o.cruce_tienda,
                 titulo=f"OST {o.ost_num} aumentó de antigüedad",
-                detalle=f"{o.prod_nombre or ''} · {o.ost_subestado or ''}",
+                detalle=f"{o.prod_nombre or ''} · {labels.subestado(o.ost_subestado) or ''}",
                 valor_anterior=p["rango"], valor_actual=o.rango_sertec,
             ))
 

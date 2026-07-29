@@ -16,7 +16,7 @@
   <div class="lg:col-span-2 bg-white rounded-xl shadow p-5">
     <div class="flex flex-wrap items-center gap-2 mb-3">
       {% set ec = {'1. ABIERTA':'bg-amber-100 text-amber-700','2. CERRADA':'bg-emerald-100 text-emerald-700','3. CANCELADA':'bg-slate-100 text-slate-500'} %}
-      <span class="px-2.5 py-1 rounded-full text-xs font-semibold {{ ec.get(actual.ost_estado,'bg-slate-100 text-slate-600') }}">{{ actual.ost_estado }}</span>
+      <span class="px-2.5 py-1 rounded-full text-xs font-semibold {{ ec.get(actual.ost_estado,'bg-slate-100 text-slate-600') }}">{{ actual.ost_estado|disp_estado }}</span>
       {% if actual.flag_plazo == 'Fuera de plazo' %}<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">Fuera de plazo</span>
       {% elif actual.flag_plazo == 'Dentro de plazo' %}<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Dentro de plazo</span>{% endif %}
       {% if actual.dias_sertec is not none %}<span class="px-2.5 py-1 rounded-full text-xs bg-slate-100 text-slate-600">{{ actual.dias_sertec }} días</span>{% endif %}
@@ -29,8 +29,8 @@
     {% endmacro %}
     <dl class="grid grid-cols-2 md:grid-cols-3 gap-3">
       {{ campo('F11', actual.f11_num) }}
-      {{ campo('Subestado', actual.ost_subestado) }}
-      {{ campo('Gestión producto', actual.ost_estado_gestion_producto) }}
+      {{ campo('Subestado', actual.ost_subestado|disp_subestado) }}
+      {{ campo('Gestión producto', actual.ost_estado_gestion_producto|disp_gestion) }}
       {{ campo('Responsable', actual.flag_responsable) }}
       {{ campo('SKU', actual.prod_sku) }}
       {{ campo('Serie', actual.raw.get('PROD_NUMERO_SERIE') if actual.raw else None) }}
@@ -81,9 +81,9 @@
       {% for o, fecha in timeline %}
       <tr>
         <td class="py-2 pr-4 whitespace-nowrap">{{ fecha.strftime('%d-%m %H:%M') }}</td>
-        <td class="py-2 pr-4">{{ o.ost_estado }}</td>
-        <td class="py-2 pr-4 {{ 'font-semibold text-cyan-700' if ns.prev and ns.prev != o.ost_subestado else '' }}">{{ o.ost_subestado }}</td>
-        <td class="py-2 pr-4">{{ o.ost_estado_gestion_producto or '—' }}</td>
+        <td class="py-2 pr-4">{{ o.ost_estado|disp_estado }}</td>
+        <td class="py-2 pr-4 {{ 'font-semibold text-cyan-700' if ns.prev and ns.prev != o.ost_subestado else '' }}">{{ o.ost_subestado|disp_subestado }}</td>
+        <td class="py-2 pr-4">{{ o.ost_estado_gestion_producto|disp_gestion or '—' }}</td>
         <td class="py-2 pr-4">{{ o.flag_plazo or '—' }}</td>
         <td class="py-2">{{ o.rango_sertec or '—' }}</td>
       </tr>
