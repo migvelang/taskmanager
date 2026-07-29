@@ -51,27 +51,36 @@
   <table class="min-w-full text-sm">
     <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
       <tr>
-        <th class="text-left px-4 py-3">Prioridad</th>
-        <th class="text-left px-4 py-3">Alerta</th>
-        <th class="text-left px-4 py-3">PU</th>
-        <th class="text-left px-4 py-3">Detalle</th>
-        <th class="text-left px-4 py-3">Tienda</th>
-        <th class="text-left px-4 py-3">Gestión</th>
+        <th class="text-left px-3 py-3">Prioridad</th>
+        <th class="text-left px-3 py-3">OST</th>
+        <th class="text-left px-3 py-3">F11</th>
+        <th class="text-left px-3 py-3">Subestado</th>
+        <th class="text-left px-3 py-3">Gestión prod.</th>
+        <th class="text-left px-3 py-3">Alerta</th>
+        <th class="text-left px-3 py-3">Acción</th>
+        <th class="text-left px-3 py-3">PU</th>
+        <th class="text-left px-3 py-3">Tienda</th>
+        <th class="text-left px-3 py-3">Gestión</th>
       </tr>
     </thead>
+    {% set catcol = {'incumplimiento':'bg-red-100 text-red-700','posible_incumplimiento':'bg-orange-100 text-orange-700','facturacion':'bg-indigo-100 text-indigo-700','pendiente_gestion':'bg-slate-100 text-slate-600'} %}
+    {% set catlbl = {'incumplimiento':'Incumplimiento','posible_incumplimiento':'Posible incumpl.','facturacion':'Facturación','pendiente_gestion':'Pendiente gestión'} %}
     <tbody class="divide-y divide-slate-100">
       {% for a in items %}
       <tr class="hover:bg-slate-50 {{ 'opacity-50' if a.gestion == 'gestionada' else '' }}">
-        <td class="px-4 py-3">
+        <td class="px-3 py-3">
           {% set c = {'alta':'bg-red-100 text-red-700','media':'bg-amber-100 text-amber-700','baja':'bg-slate-100 text-slate-600'} %}
           <span class="px-2 py-0.5 rounded-full text-xs font-semibold {{ c.get(a.severidad,'') }}">{{ a.severidad }}</span>
         </td>
-        <td class="px-4 py-3 font-medium text-slate-800">
-          {% if a.ost_num %}<a class="text-cyan-700 hover:underline" href="/caso/ost/{{ a.ost_num }}">{{ a.titulo }}</a>
-          {% elif a.ss_nro %}<a class="text-cyan-700 hover:underline" href="/caso/sf/{{ a.ss_nro }}">{{ a.titulo }}</a>
-          {% else %}{{ a.titulo }}{% endif %}
+        <td class="px-3 py-3 font-mono">
+          {% if a.ost_num %}<a class="text-cyan-700 hover:underline font-semibold" href="/caso/ost/{{ a.ost_num }}">{{ a.ost_num }}</a>{% else %}<span class="text-slate-300">—</span>{% endif %}
         </td>
-        <td class="px-4 py-3">
+        <td class="px-3 py-3 font-mono text-xs text-slate-600">{{ a.f11_num or '—' }}</td>
+        <td class="px-3 py-3 text-slate-700">{{ a.subestado|disp_subestado or '—' }}</td>
+        <td class="px-3 py-3 text-slate-700">{{ a.gestion_producto|disp_gestion or '—' }}</td>
+        <td class="px-3 py-3"><span class="px-2 py-0.5 rounded-full text-xs font-semibold {{ catcol.get(a.tipo,'') }}">{{ catlbl.get(a.tipo, a.tipo) }}</span></td>
+        <td class="px-3 py-3 text-slate-600 max-w-xs truncate" title="{{ a.detalle }}">{{ a.detalle }}</td>
+        <td class="px-3 py-3">
           {% if a.ss_nro %}<a class="font-mono text-xs text-indigo-700 hover:underline" href="/caso/sf/{{ a.ss_nro }}">{{ a.ss_nro }}</a>
           {% elif a.requiere_pu and a.ost_num %}
             <form method="post" action="/alertas/{{ a.id }}/pu" class="flex gap-1">
@@ -80,9 +89,8 @@
             </form>
           {% else %}<span class="text-xs text-slate-300">—</span>{% endif %}
         </td>
-        <td class="px-4 py-3 text-slate-600 max-w-xs truncate" title="{{ a.detalle }}">{{ a.detalle }}</td>
-        <td class="px-4 py-3 text-slate-600">{{ a.cruce_tienda or '—' }}</td>
-        <td class="px-4 py-3">
+        <td class="px-3 py-3 text-slate-600">{{ a.cruce_tienda or '—' }}</td>
+        <td class="px-3 py-3">
           <form method="post" action="/alertas/{{ a.id }}/gestion">
             <select name="estado" onchange="this.form.submit()" class="border border-slate-300 rounded px-1.5 py-1 text-xs
               {{ 'bg-emerald-50 border-emerald-300 text-emerald-700' if a.gestion == 'gestionada' else '' }}">
@@ -94,7 +102,7 @@
         </td>
       </tr>
       {% else %}
-      <tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No hay alertas con este filtro.</td></tr>
+      <tr><td colspan="10" class="px-4 py-8 text-center text-slate-400">No hay alertas con este filtro.</td></tr>
       {% endfor %}
     </tbody>
   </table>

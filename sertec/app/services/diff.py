@@ -74,10 +74,10 @@ def generar_alertas(db: Session, carga: Carga) -> int:
 
     # --- Recorre las OST de la carga actual (solo columnas necesarias) ---
     cols_ost = (
-        OstSnapshot.ost_num, OstSnapshot.ost_estado, OstSnapshot.ost_subestado,
-        OstSnapshot.ost_estado_gestion_producto, OstSnapshot.flag_plazo,
-        OstSnapshot.rango_sertec, OstSnapshot.dias_sertec, OstSnapshot.cruce_tienda,
-        OstSnapshot.prod_nombre, OstSnapshot.xtransac_full,
+        OstSnapshot.ost_num, OstSnapshot.f11_num, OstSnapshot.ost_estado,
+        OstSnapshot.ost_subestado, OstSnapshot.ost_estado_gestion_producto,
+        OstSnapshot.flag_plazo, OstSnapshot.rango_sertec, OstSnapshot.dias_sertec,
+        OstSnapshot.cruce_tienda, OstSnapshot.prod_nombre, OstSnapshot.xtransac_full,
         OstSnapshot.f11srx_status_f03, OstSnapshot.f11_tipo_cliente,
     )
     for o in db.query(*cols_ost).filter(OstSnapshot.carga_id == carga.id).yield_per(5000):
@@ -95,9 +95,11 @@ def generar_alertas(db: Session, carga: Carga) -> int:
         if o.flag_plazo == "Fuera de plazo" and p["flag_plazo"] != "Fuera de plazo" and _abierta(o.ost_estado):
             alertas.append(Alerta(
                 carga_id=carga.id, tipo="incumplimiento", severidad="alta", requiere_pu=False,
-                ost_num=o.ost_num, ss_nro=ost_to_pu.get(o.ost_num), cruce_tienda=o.cruce_tienda,
+                ost_num=o.ost_num, f11_num=o.f11_num, subestado=o.ost_subestado,
+                gestion_producto=o.ost_estado_gestion_producto,
+                ss_nro=ost_to_pu.get(o.ost_num), cruce_tienda=o.cruce_tienda,
                 titulo=f"OST {o.ost_num} cruzó a FUERA DE PLAZO",
-                detalle=f"{o.prod_nombre or ''} · {labels.subestado(o.ost_subestado) or ''}",
+                detalle=f"Cruzó a fuera de plazo · {o.prod_nombre or ''}",
                 valor_anterior=p["flag_plazo"] or "—", valor_actual="Fuera de plazo",
             ))
 
@@ -108,16 +110,16 @@ def generar_alertas(db: Session, carga: Carga) -> int:
             alertas.append(Alerta(
                 carga_id=carga.id, tipo="pendiente_gestion", severidad="media",
                 ss_nro=s.ss_nro, ost_num=s.ost_parseada, cruce_tienda=s.tienda_origen,
-                titulo=f"Caso PU {s.ss_nro} no cumple validación de matriz",
-                detalle=s.motivo_no_cumple or s.nivel_3,
+                titulo="PU no cumple validación de matriz",
+                detalle="PU no cumple matriz · " + (s.motivo_no_cumple or s.nivel_3 or ""),
                 valor_actual=s.validacion_matriz,
             ))
         if s.link_status == "error_creacion" and not cerrado:
             alertas.append(Alerta(
                 carga_id=carga.id, tipo="pendiente_gestion", severidad="media",
                 ss_nro=s.ss_nro, cruce_tienda=s.tienda_origen,
-                titulo=f"Caso PU {s.ss_nro} sin F11/OST (posible error de creación)",
-                detalle=(s.descripcion or "")[:200],
+                titulo="PU sin F11/OST (posible error de creación)",
+                detalle="PU posible error de creación · " + (s.descripcion or "")[:180],
                 valor_actual=s.estado,
             ))
 
@@ -175,8 +177,10 @@ def _evaluar_reglas(alertas: list, carga_id: int, o: OstSnapshot, reglas_lista: 
         alertas.append(Alerta(
             carga_id=carga_id, tipo=(r.categoria or "pendiente_gestion"),
             severidad=sev, requiere_pu=bool(r.requiere_pu),
-            ost_num=o.ost_num, ss_nro=ost_to_pu.get(o.ost_num), cruce_tienda=o.cruce_tienda,
-            titulo=f"OST {o.ost_num} · {labels.subestado(o.ost_subestado)}",
+            ost_num=o.ost_num, f11_num=o.f11_num, subestado=o.ost_subestado,
+            gestion_producto=o.ost_estado_gestion_producto,
+            ss_nro=ost_to_pu.get(o.ost_num), cruce_tienda=o.cruce_tienda,
+            titulo=labels.subestado(o.ost_subestado),
             detalle=r.mensaje,
             valor_actual=o.rango_sertec,
         ))
@@ -190,8 +194,10 @@ def _evaluar_facturacion(alertas: list, carga_id: int, o: OstSnapshot, ost_to_pu
             and o.f11srx_status_f03 == "NO F3"):
         alertas.append(Alerta(
             carga_id=carga_id, tipo="facturacion", severidad="media",
-            ost_num=o.ost_num, ss_nro=ost_to_pu.get(o.ost_num), cruce_tienda=o.cruce_tienda,
-            titulo=f"OST {o.ost_num} · Revisar facturación a proveedor",
+            ost_num=o.ost_num, f11_num=o.f11_num, subestado=o.ost_subestado,
+            gestion_producto=o.ost_estado_gestion_producto,
+            ss_nro=ost_to_pu.get(o.ost_num), cruce_tienda=o.cruce_tienda,
+            titulo="Revisar facturación a proveedor",
             detalle=f"{o.xtransac_full} · sin F3 · {o.prod_nombre or ''}",
             valor_actual="NO F3",
         ))

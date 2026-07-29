@@ -35,7 +35,7 @@
         <th class="px-2 py-3">Severidad</th>
         <th class="px-2 py-3">Crear PU</th>
         <th class="text-left px-2 py-3">Mensaje / acción</th>
-        <th class="px-2 py-3"></th>
+        <th class="px-2 py-3">Eliminar</th>
       </tr>
     </thead>
     <tbody class="divide-y divide-slate-100">
@@ -61,7 +61,8 @@
         <td class="px-2 py-2"><input type="text" name="mensaje_{{ r.id }}" value="{{ r.mensaje or '' }}" class="w-full min-w-[240px] border border-slate-300 rounded px-2 py-1"></td>
         <td class="px-2 py-2 text-center">
           <button type="submit" formaction="/config/reglas/{{ r.id }}/eliminar" formnovalidate
-                  onclick="return confirm('¿Eliminar esta regla?')" class="text-xs text-red-600 hover:underline">✕</button>
+                  onclick="return confirm('¿Eliminar esta regla?')"
+                  class="text-xs bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded px-2 py-1">🗑 Eliminar</button>
         </td>
       </tr>
       {% endfor %}

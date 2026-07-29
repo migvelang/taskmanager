@@ -148,6 +148,9 @@ class Alerta(Base):
     severidad = Column(String(10), default="media")  # alta | media | baja
 
     ost_num = Column(String(30), index=True)
+    f11_num = Column(String(30))
+    subestado = Column(String(80))
+    gestion_producto = Column(String(80))
     ss_nro = Column(String(40))
     cruce_tienda = Column(String(160), index=True)
 
