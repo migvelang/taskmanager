@@ -12,6 +12,8 @@ Rendimiento:
 import csv
 import datetime as dt
 import io
+import logging
+import os
 import re
 
 from python_calamine import CalamineWorkbook
@@ -19,6 +21,8 @@ from sqlalchemy.orm import Session
 
 from ..models import Carga, OstSnapshot, SfSnapshot
 from . import sf_link
+
+logger = logging.getLogger("sertec")
 
 SHEET_SERTEC = "Base SERTEC"
 SHEET_SF = "Base SF"
@@ -155,38 +159,75 @@ def parse_workbook_meta(path: str) -> dict:
 # --------------------------------------------------------------------------- #
 # Ingesta principal
 # --------------------------------------------------------------------------- #
-def ingest_file(db: Session, path: str, archivo_nombre: str, usuario: str) -> Carga:
-    """Procesa el Excel y crea la Carga con sus snapshots. Devuelve la Carga."""
-    sheets = _load_sheets(path)
-    fecha = _parse_fecha_extraccion(sheets[SHEET_RESUMEN])
-    totales = _parse_resumen_totales(sheets[SHEET_RESUMEN])
+def leer_meta(path: str) -> tuple[dt.datetime, dict]:
+    """Lee rápido solo la hoja Resumen (fecha + totales), validando las hojas."""
+    wb = CalamineWorkbook.from_path(path)
+    disponibles = set(wb.sheet_names)
+    for req in (SHEET_SERTEC, SHEET_SF, SHEET_RESUMEN):
+        if req not in disponibles:
+            raise IngestError(f"Falta la hoja obligatoria '{req}' en el archivo.")
+    resumen = wb.get_sheet_by_name(SHEET_RESUMEN).to_python()
+    return _parse_fecha_extraccion(resumen), _parse_resumen_totales(resumen)
 
+
+def crear_carga(db: Session, path: str, archivo_nombre: str, usuario: str) -> Carga:
+    """Valida el archivo y crea la Carga en estado 'procesando' (rápido)."""
+    fecha, totales = leer_meta(path)
     existente = db.query(Carga).filter(Carga.fecha_extraccion == fecha).first()
     if existente:
         raise IngestError(
             f"Ya existe una carga con fecha de extracción {fecha:%d-%m-%Y %H:%M} "
             f"(carga #{existente.id}). Elimínala primero si quieres reprocesarla."
         )
-
-    carga = Carga(
-        fecha_extraccion=fecha,
-        archivo_nombre=archivo_nombre,
-        subido_por=usuario,
-        estado="procesando",
-        totales=totales,
-    )
+    carga = Carga(fecha_extraccion=fecha, archivo_nombre=archivo_nombre,
+                  subido_por=usuario, estado="procesando", totales=totales)
     db.add(carga)
-    db.flush()  # obtener carga.id
+    db.commit()
+    db.refresh(carga)
+    return carga
 
+
+def _procesar(db: Session, carga: Carga, sheets: dict):
+    """Inserta snapshots y genera alertas para una Carga ya creada."""
     carga.n_ost = _ingest_sertec(db, sheets[SHEET_SERTEC], carga.id)
     carga.n_sf = _ingest_sf(db, sheets[SHEET_SF], carga.id)
-    carga.estado = "listo"
     db.flush()
-
-    # Motor de alertas (import diferido para evitar ciclo de imports).
-    from .diff import generar_alertas
+    from .diff import generar_alertas  # import diferido (evita ciclo)
     carga.n_alertas = generar_alertas(db, carga)
+    carga.estado = "listo"
 
+
+def procesar_carga_bg(carga_id: int, path: str):
+    """Procesa la carga en segundo plano (sesión propia). Borra el temporal."""
+    from ..db import SessionLocal
+    db = SessionLocal()
+    try:
+        carga = db.get(Carga, carga_id)
+        if carga is None:
+            return
+        _procesar(db, carga, _load_sheets(path))
+        db.commit()
+        logger.info("Carga %s procesada: %s OST, %s alertas", carga_id, carga.n_ost, carga.n_alertas)
+    except Exception as e:  # noqa: BLE001
+        db.rollback()
+        carga = db.get(Carga, carga_id)
+        if carga is not None:
+            carga.estado = "error"
+            carga.error_msg = str(e)[:500]
+            db.commit()
+        logger.exception("Error procesando carga %s", carga_id)
+    finally:
+        db.close()
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
+
+def ingest_file(db: Session, path: str, archivo_nombre: str, usuario: str) -> Carga:
+    """Procesa el Excel de forma síncrona (uso local/tests)."""
+    carga = crear_carga(db, path, archivo_nombre, usuario)
+    _procesar(db, carga, _load_sheets(path))
     db.commit()
     db.refresh(carga)
     return carga

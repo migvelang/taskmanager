@@ -66,8 +66,15 @@ def generar_alertas(db: Session, carga: Carga) -> int:
                 "rango": r.rango_sertec,
             }
 
-    # --- Recorre las OST de la carga actual ---
-    for o in db.query(OstSnapshot).filter(OstSnapshot.carga_id == carga.id).yield_per(2000):
+    # --- Recorre las OST de la carga actual (solo columnas necesarias) ---
+    cols_ost = (
+        OstSnapshot.ost_num, OstSnapshot.ost_estado, OstSnapshot.ost_subestado,
+        OstSnapshot.ost_estado_gestion_producto, OstSnapshot.flag_plazo,
+        OstSnapshot.rango_sertec, OstSnapshot.dias_sertec, OstSnapshot.cruce_tienda,
+        OstSnapshot.prod_nombre, OstSnapshot.xtransac_full,
+        OstSnapshot.f11srx_status_f03, OstSnapshot.f11_tipo_cliente,
+    )
+    for o in db.query(*cols_ost).filter(OstSnapshot.carga_id == carga.id).yield_per(5000):
         p = prev_map.get(o.ost_num)
 
         # Reglas configurables (estado + subestado + gestión) sobre la foto actual

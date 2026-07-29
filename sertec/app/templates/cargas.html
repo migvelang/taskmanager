@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Historial de cargas · SERTEC{% endblock %}
 {% block content %}
+{% if hay_procesando %}<meta http-equiv="refresh" content="4">{% endif %}
 <h1 class="text-2xl font-bold text-slate-900 mb-1">Historial de cargas</h1>
 
 {% if persistente %}
@@ -9,6 +10,10 @@
   <p class="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">⚠️ Almacenamiento temporal (SQLite): los datos se perderían en un redeploy. Falta configurar <code>DATABASE_URL</code> hacia Postgres.</p>
 {% endif %}
 
+{% if procesando %}<div class="mb-4 text-sm text-cyan-800 bg-cyan-50 border border-cyan-200 rounded-lg px-3 py-2 flex items-center gap-2">
+  <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.4 0 0 5.4 0 12h4z"/></svg>
+  Procesando la carga en segundo plano… esta página se actualiza sola. Puedes seguir navegando.
+</div>{% endif %}
 {% if ok %}<div class="mb-4 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">✓ Carga #{{ ok }} procesada correctamente.</div>{% endif %}
 
 <div class="bg-white rounded-xl shadow overflow-hidden">
@@ -17,6 +22,7 @@
     <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
       <tr>
         <th class="text-left px-4 py-3">#</th>
+        <th class="text-left px-4 py-3">Estado</th>
         <th class="text-left px-4 py-3">Fecha extracción</th>
         <th class="text-left px-4 py-3">Archivo</th>
         <th class="text-left px-4 py-3">Subido por</th>
@@ -30,6 +36,11 @@
       {% for c in cargas %}
       <tr class="hover:bg-slate-50">
         <td class="px-4 py-3 text-slate-400">{{ c.id }}</td>
+        <td class="px-4 py-3">
+          {% if c.estado == 'listo' %}<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">listo</span>
+          {% elif c.estado == 'procesando' %}<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-cyan-100 text-cyan-700">procesando…</span>
+          {% else %}<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700" title="{{ c.error_msg }}">error</span>{% endif %}
+        </td>
         <td class="px-4 py-3 font-medium">{{ c.fecha_extraccion.strftime('%d-%m-%Y %H:%M') }}</td>
         <td class="px-4 py-3 text-slate-600 max-w-xs truncate" title="{{ c.archivo_nombre }}">{{ c.archivo_nombre }}</td>
         <td class="px-4 py-3 text-slate-600">{{ c.subido_por }}</td>
@@ -45,7 +56,7 @@
         </td>
       </tr>
       {% else %}
-      <tr><td colspan="8" class="px-4 py-8 text-center text-slate-400">Sin cargas todavía. <a href="/cargar" class="text-cyan-600 hover:underline">Sube la primera →</a></td></tr>
+      <tr><td colspan="9" class="px-4 py-8 text-center text-slate-400">Sin cargas todavía. <a href="/cargar" class="text-cyan-600 hover:underline">Sube la primera →</a></td></tr>
       {% endfor %}
     </tbody>
   </table>

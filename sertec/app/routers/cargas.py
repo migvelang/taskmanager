@@ -16,14 +16,17 @@ router = APIRouter()
 def listar(
     request: Request,
     ok: int | None = None,
+    procesando: int | None = None,
     db: Session = Depends(get_db),
     user: User = Depends(require_user),
 ):
-    cargas = db.query(Carga).order_by(Carga.fecha_extraccion.desc()).all()
+    cargas = db.query(Carga).order_by(Carga.subido_en.desc()).all()
     persistente = not settings.DATABASE_URL.startswith("sqlite")
+    hay_procesando = any(c.estado == "procesando" for c in cargas)
     return templates.TemplateResponse(
         "cargas.html",
         {"request": request, "user": user, "cargas": cargas, "ok": ok,
+         "procesando": procesando, "hay_procesando": hay_procesando,
          "persistente": persistente},
     )
 

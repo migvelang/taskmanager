@@ -37,6 +37,7 @@ class Carga(Base):
     subido_por = Column(String(255))
     subido_en = Column(DateTime, default=dt.datetime.utcnow)
     estado = Column(String(20), default="procesando")  # procesando | listo | error
+    error_msg = Column(String(500))
     totales = Column(JSON)  # KPIs de la hoja Resumen
     n_ost = Column(Integer, default=0)
     n_sf = Column(Integer, default=0)
