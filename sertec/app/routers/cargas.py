@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
+from ..config import settings
 from ..db import get_db
 from ..deps import require_admin, require_user
 from ..models import Carga, User
@@ -19,9 +20,11 @@ def listar(
     user: User = Depends(require_user),
 ):
     cargas = db.query(Carga).order_by(Carga.fecha_extraccion.desc()).all()
+    persistente = not settings.DATABASE_URL.startswith("sqlite")
     return templates.TemplateResponse(
         "cargas.html",
-        {"request": request, "user": user, "cargas": cargas, "ok": ok},
+        {"request": request, "user": user, "cargas": cargas, "ok": ok,
+         "persistente": persistente},
     )
 
 

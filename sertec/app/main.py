@@ -1,4 +1,6 @@
 """Punto de entrada de la app SERTEC (FastAPI)."""
+import logging
+
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -37,10 +39,36 @@ async def auth_redirect(request: Request, exc: StarletteHTTPException):
     )
 
 
+logger = logging.getLogger("sertec")
+
+
 @app.on_event("startup")
 def startup():
+    # Nunca se hace drop_all: create_all solo crea tablas que falten, así que los
+    # datos ya cargados sobreviven a cada redeploy.
     Base.metadata.create_all(bind=engine)
     _seed_admin()
+    _avisar_backend_datos()
+
+
+def _avisar_backend_datos():
+    """Avisa en los logs qué base se está usando y alerta si es efímera.
+
+    Con SQLite dentro del contenedor los datos se pierden en cada redeploy; con
+    Postgres persisten. Este aviso permite detectar de inmediato una mala
+    configuración de DATABASE_URL antes de perder cargas.
+    """
+    url = settings.DATABASE_URL
+    if url.startswith("sqlite"):
+        logger.warning(
+            "⚠️  SERTEC está usando SQLite (%s). Los datos se BORRAN en cada "
+            "redeploy. En producción define DATABASE_URL apuntando a Postgres.",
+            url,
+        )
+    else:
+        # Oculta credenciales al registrar el host.
+        host = url.split("@")[-1] if "@" in url else url
+        logger.info("SERTEC usando base persistente: %s", host)
 
 
 def _seed_admin():
