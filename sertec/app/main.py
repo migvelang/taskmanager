@@ -1,7 +1,9 @@
 """Punto de entrada de la app SERTEC (FastAPI)."""
 import logging
+import time
 
 from fastapi import FastAPI, Request
+from sqlalchemy.exc import OperationalError
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -46,9 +48,27 @@ logger = logging.getLogger("sertec")
 def startup():
     # Nunca se hace drop_all: create_all solo crea tablas que falten, así que los
     # datos ya cargados sobreviven a cada redeploy.
-    Base.metadata.create_all(bind=engine)
+    _init_db_con_reintentos()
     _seed_admin()
     _avisar_backend_datos()
+
+
+def _init_db_con_reintentos(intentos: int = 12, espera: int = 3):
+    """Crea las tablas, reintentando si la base aún no acepta conexiones.
+
+    Al reiniciarse (p. ej. en Railway) Postgres pasa unos segundos en
+    'recovery' sin aceptar conexiones. En vez de caer, la app espera y reintenta
+    para recuperarse sola.
+    """
+    for i in range(1, intentos + 1):
+        try:
+            Base.metadata.create_all(bind=engine)
+            return
+        except OperationalError as e:
+            logger.warning("Base de datos no lista (intento %s/%s): %s", i, intentos, e)
+            time.sleep(espera)
+    # Último intento: si sigue fallando, que el error se propague de forma visible.
+    Base.metadata.create_all(bind=engine)
 
 
 def _avisar_backend_datos():
