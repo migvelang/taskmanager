@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0f172a">
+<title>Inventario · Beta</title>
+<style>
+  :root{
+    --bg:#0f172a; --bg2:#1e293b; --card:#1e293b; --card2:#273449;
+    --txt:#e2e8f0; --muted:#94a3b8; --line:#334155;
+    --brand:#38bdf8; --brand2:#0ea5e9; --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--txt); font-size:15px; line-height:1.4;
+    padding-bottom:76px;
+  }
+  header{
+    position:sticky; top:0; z-index:20; background:rgba(15,23,42,.92);
+    backdrop-filter:blur(8px); border-bottom:1px solid var(--line);
+    padding:10px 14px; display:flex; align-items:center; gap:10px;
+  }
+  header .logo{font-weight:800; letter-spacing:.3px; font-size:17px}
+  header .badge{font-size:10px; background:var(--brand); color:#00121f; font-weight:800;
+    padding:2px 6px; border-radius:6px; letter-spacing:.5px}
+  header .scope{margin-left:auto; font-size:11px; color:var(--muted); text-align:right; max-width:52%}
+  main{padding:14px; max-width:720px; margin:0 auto}
+  section{display:none}
+  section.active{display:block; animation:fade .18s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  h2{font-size:15px; margin:2px 0 12px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:14px; margin-bottom:12px}
+  label{display:block; font-size:12px; color:var(--muted); margin-bottom:5px; font-weight:600}
+  input,select,button,textarea{font-family:inherit; font-size:15px}
+  input[type=text],input[type=number],select{
+    width:100%; padding:12px; background:var(--bg2); border:1px solid var(--line);
+    color:var(--txt); border-radius:10px; outline:none;
+  }
+  input:focus,select:focus{border-color:var(--brand)}
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    padding:12px 14px; border:none; border-radius:10px; background:var(--card2);
+    color:var(--txt); font-weight:700; cursor:pointer; border:1px solid var(--line)}
+  .btn:active{transform:scale(.97)}
+  .btn.primary{background:var(--brand2); color:#00121f; border-color:transparent}
+  .btn.ok{background:var(--ok); color:#00210e; border-color:transparent}
+  .btn.warn{background:var(--warn); color:#241a00; border-color:transparent}
+  .btn.bad{background:var(--bad); color:#2a0000; border-color:transparent}
+  .btn.ghost{background:transparent}
+  .btn.sm{padding:8px 10px; font-size:13px}
+  .btn.block{width:100%}
+  .row{display:flex; gap:10px}
+  .row>*{flex:1}
+  .muted{color:var(--muted)}
+  .pill{display:inline-block; font-size:11px; padding:2px 8px; border-radius:999px; background:var(--card2); color:var(--muted); border:1px solid var(--line)}
+  .kpis{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+  .kpi{background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:10px; text-align:center}
+  .kpi b{display:block; font-size:20px}
+  .kpi span{font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px}
+  /* Scan */
+  .scanbox{display:flex; gap:8px}
+  .scanbox input{font-size:18px; font-weight:700; letter-spacing:1px}
+  .stepper{display:flex; align-items:center; gap:0; border:1px solid var(--line); border-radius:10px; overflow:hidden}
+  .stepper button{width:44px; height:46px; border:none; background:var(--card2); color:var(--txt); font-size:20px; font-weight:800}
+  .stepper input{width:52px; text-align:center; border:none; border-left:1px solid var(--line); border-right:1px solid var(--line); border-radius:0; background:var(--bg2)}
+  .last{margin-top:6px}
+  .prod{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin-bottom:8px; display:flex; gap:10px; align-items:center}
+  .prod .info{flex:1; min-width:0}
+  .prod .name{font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .prod .sub{font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .prod .num{text-align:right; font-weight:800; font-size:15px; white-space:nowrap}
+  .prod .num small{display:block; font-size:10px; color:var(--muted); font-weight:600}
+  .flash{animation:flash .8s ease}
+  @keyframes flash{0%{background:#0c4a6e}100%{background:var(--card)}}
+  .tag{font-size:10px; padding:1px 6px; border-radius:6px; font-weight:800}
+  .tag.ok{background:rgba(34,197,94,.16); color:#4ade80}
+  .tag.falta{background:rgba(245,158,11,.16); color:#fbbf24}
+  .tag.exc{background:rgba(239,68,68,.16); color:#f87171}
+  /* toast */
+  #toast{position:fixed; left:50%; bottom:86px; transform:translateX(-50%); z-index:50;
+    display:flex; flex-direction:column; gap:8px; width:calc(100% - 28px); max-width:520px; pointer-events:none}
+  .toast{background:var(--card2); border:1px solid var(--line); border-left:4px solid var(--brand);
+    padding:11px 13px; border-radius:10px; font-size:13px; box-shadow:0 8px 24px rgba(0,0,0,.4); animation:fade .2s}
+  .toast.bad{border-left-color:var(--bad)} .toast.ok{border-left-color:var(--ok)} .toast.warn{border-left-color:var(--warn)}
+  .toast b{display:block; margin-bottom:2px}
+  /* table */
+  .tbl{width:100%; border-collapse:collapse; font-size:13px}
+  .tbl th,.tbl td{padding:8px 6px; border-bottom:1px solid var(--line); text-align:left}
+  .tbl th{color:var(--muted); font-size:11px; text-transform:uppercase; position:sticky; top:52px; background:var(--bg)}
+  .tbl td.n{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap}
+  .scroll{max-height:60vh; overflow:auto; -webkit-overflow-scrolling:touch}
+  .filters{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px}
+  .chip{font-size:12px; padding:6px 11px; border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--muted); cursor:pointer}
+  .chip.on{background:var(--brand2); color:#00121f; border-color:transparent; font-weight:700}
+  /* nav */
+  nav{position:fixed; bottom:0; left:0; right:0; z-index:30; display:flex; background:rgba(15,23,42,.96);
+    backdrop-filter:blur(8px); border-top:1px solid var(--line)}
+  nav button{flex:1; background:none; border:none; color:var(--muted); padding:9px 2px 8px; font-size:10px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px}
+  nav button.on{color:var(--brand)}
+  nav button .ic{font-size:19px; line-height:1}
+  nav button .bdg{position:absolute; transform:translate(14px,-4px); background:var(--bad); color:#fff; font-size:9px; font-weight:800; padding:0 5px; border-radius:999px; min-width:14px}
+  /* camera */
+  #cam{position:fixed; inset:0; z-index:100; background:#000; display:none; flex-direction:column}
+  #cam.on{display:flex}
+  #cam video{flex:1; width:100%; object-fit:cover}
+  #cam .reticle{position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:75%; max-width:320px; height:150px; border:2px solid var(--brand); border-radius:14px; box-shadow:0 0 0 2000px rgba(0,0,0,.45)}
+  #cam .bar{position:absolute; top:0; left:0; right:0; padding:14px; display:flex; gap:10px; align-items:center; color:#fff}
+  #cam .hint{position:absolute; bottom:24px; left:0; right:0; text-align:center; color:#fff; font-size:13px}
+  .empty{text-align:center; color:var(--muted); padding:26px 10px; font-size:13px}
+  .hr{height:1px; background:var(--line); margin:12px 0}
+  details summary{cursor:pointer; color:var(--brand); font-size:13px; font-weight:600}
+  code{background:var(--bg2); padding:1px 5px; border-radius:5px; font-size:12px}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="logo">📦 Inventario</span>
+  <span class="badge">BETA</span>
+  <span class="scope" id="scopeLbl">Sin archivo cargado</span>
+</header>
+
+<main>
+  <!-- ============ CARGAR ============ -->
+  <section id="tab-load" class="active">
+    <h2>1 · Cargar archivo</h2>
+    <div class="card">
+      <label>Archivo de inventario (.txt / .csv exportado del sistema)</label>
+      <input type="file" id="file" accept=".txt,.csv,text/plain" style="padding:10px">
+      <p class="muted" style="font-size:12px;margin:8px 0 0">Separado por <code>;</code> · cabecera con NUMBER, UPC, STOCK DISPONIBLE, CLASE, SUBCLASE. Los datos se procesan solo en tu teléfono.</p>
+    </div>
+
+    <div class="card" id="scopeCard" style="display:none">
+      <h2 style="margin-top:0">2 · Qué vas a tomar</h2>
+      <label>Alcance del conteo</label>
+      <div class="row" style="margin-bottom:10px">
+        <select id="selClase"><option value="">Todas las clases</option></select>
+        <select id="selSub"><option value="">Todas las subclases</option></select>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><b id="kProd">0</b><span>Productos</span></div>
+        <div class="kpi"><b id="kUpc">0</b><span>Códigos EAN/UPC</span></div>
+        <div class="kpi"><b id="kStock">0</b><span>Stock disp.</span></div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn primary block" id="goScan">Empezar a escanear →</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn sm ghost" id="expBase">Exportar base CSV</button>
+        <button class="btn sm bad ghost" id="resetAll">Borrar conteo</button>
+      </div>
+      <p class="muted" style="font-size:11.5px;margin:10px 0 0">El conteo se guarda automáticamente en este dispositivo (aunque cierres la página).</p>
+    </div>
+  </section>
+
+  <!-- ============ ESCANEAR ============ -->
+  <section id="tab-scan">
+    <h2>Escanear / ingresar código</h2>
+    <div class="card">
+      <div class="scanbox">
+        <input type="text" id="code" inputmode="numeric" autocomplete="off" placeholder="UPC / EAN o SKU (NUMBER)…" enterkeyhint="done">
+        <button class="btn primary" id="scanCamBtn" title="Cámara">📷</button>
+      </div>
+      <div class="row" style="margin-top:10px; align-items:center">
+        <div style="flex:0 0 auto">
+          <label style="margin-bottom:3px">Cantidad</label>
+          <div class="stepper">
+            <button id="qMinus">−</button>
+            <input type="number" id="qty" value="1" min="1" inputmode="numeric">
+            <button id="qPlus">+</button>
+          </div>
+        </div>
+        <div style="align-self:flex-end">
+          <button class="btn ok block" id="addBtn" style="height:46px">Sumar ✓</button>
+        </div>
+      </div>
+      <p class="muted" style="font-size:11.5px;margin:9px 0 0">Un lector Bluetooth (modo HID/teclado) escribe aquí y suma solo con dejar el campo enfocado. <button class="btn sm ghost" id="reFocus" style="padding:2px 8px">Enfocar</button></p>
+    </div>
+
+    <div class="kpis" style="margin-bottom:12px">
+      <div class="kpi"><b id="sTaken">0</b><span>Contados</span></div>
+      <div class="kpi"><b id="sFalta">0</b><span>Faltan</span></div>
+      <div class="kpi"><b id="sExc" style="color:var(--bad)">0</b><span>Excedentes</span></div>
+    </div>
+
+    <h2>Últimos 3 tomados</h2>
+    <div id="last3"><div class="empty">Aún no se ha tomado ningún producto.</div></div>
+  </section>
+
+  <!-- ============ DIFERENCIAS ============ -->
+  <section id="tab-diff">
+    <h2>Diferencias en línea</h2>
+    <div class="filters" id="diffFilters">
+      <span class="chip on" data-f="all">Todos</span>
+      <span class="chip" data-f="difs">Con diferencia</span>
+      <span class="chip" data-f="falta">Faltantes</span>
+      <span class="chip" data-f="exc">Excedentes</span>
+      <span class="chip" data-f="sin">Sin contar</span>
+    </div>
+    <div class="row" style="margin-bottom:10px">
+      <button class="btn sm ghost" id="expDiff">Exportar diferencias CSV</button>
+    </div>
+    <div class="card scroll" style="padding:6px 10px">
+      <table class="tbl">
+        <thead><tr><th>Producto</th><th class="n">Disp.</th><th class="n">Físico</th><th class="n">Dif.</th></tr></thead>
+        <tbody id="diffBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ NO ENCONTRADOS ============ -->
+  <section id="tab-nf">
+    <h2>Códigos no reconocidos</h2>
+    <div class="card">
+      <p class="muted" style="margin-top:0;font-size:13px">Códigos escaneados que <b>no existen</b> en el archivo. No se suman a ningún stock. Revísalos y confírmalos para pasarlos al listado oficial de <b>No encontrados</b>.</p>
+    </div>
+    <h2 style="color:var(--warn)">Pendientes de revisar</h2>
+    <div id="pendList"><div class="empty">Nada pendiente. 👌</div></div>
+    <div class="hr"></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <h2 style="margin:0">Confirmados (No encontrados)</h2>
+      <button class="btn sm ghost" id="expNf" style="margin-left:auto">Exportar CSV</button>
+    </div>
+    <div id="nfList" style="margin-top:10px"><div class="empty">Ninguno confirmado.</div></div>
+  </section>
+</main>
+
+<nav>
+  <button data-tab="load" class="on"><span class="ic">📂</span>Cargar</button>
+  <button data-tab="scan"><span class="ic">📷</span>Escanear</button>
+  <button data-tab="diff"><span class="ic">📊</span>Diferencias</button>
+  <button data-tab="nf"><span class="ic">⚠️</span><span id="nfBadgeWrap"></span>No encontr.</button>
+</nav>
+
+<div id="toast"></div>
+
+<!-- ============ CÁMARA ============ -->
+<div id="cam">
+  <video id="video" playsinline muted></video>
+  <div class="reticle"></div>
+  <div class="bar">
+    <button class="btn" id="camClose">✕ Cerrar</button>
+    <span id="camStatus" style="font-size:13px">Apunta al código…</span>
+  </div>
+  <div class="hint">Mantén el código dentro del recuadro</div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   Inventario Beta — app de un solo archivo
+   Modelo: conteo agregado por NUMBER (SKU). Un NUMBER puede
+   tener varios UPC/EAN; cualquiera de ellos suma al mismo SKU.
+   ============================================================ */
+
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const LSKEY = 'inv_beta_v1';
+
+let DATA = null;          // {products:Map<number,prod>, byUpc:Map<upc,number>, meta}
+let state = {             // persistente
+  fileSig:'', counts:{}, history:[], pending:{}, notFound:[],
+  scope:{clase:'', sub:''}
+};
+let diffFilter = 'all';
+
+/* ---------- utilidades ---------- */
+function parseNum(s){
+  if(s==null) return 0;
+  s = String(s).trim();
+  if(!s) return 0;
+  const neg = s[0]==='-';
+  s = s.replace(/[+\-]/g,'').replace(/\./g,'').replace(',', '.');
+  const v = parseFloat(s);
+  return isNaN(v)?0:(neg?-v:v);
+}
+function fmt(n){ return (Math.round(n*100)/100).toLocaleString('es-CL'); }
+function toast(msg, type, ms){
+  const t = document.createElement('div');
+  t.className = 'toast '+(type||'');
+  t.innerHTML = msg;
+  $('#toast').appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, ms||3200);
+}
+function beep(ok){
+  try{
+    const c = new (window.AudioContext||window.webkitAudioContext)();
+    const o = c.createOscillator(), g = c.createGain();
+    o.connect(g); g.connect(c.destination);
+    o.frequency.value = ok?880:200; g.gain.value = .08;
+    o.start(); setTimeout(()=>{o.stop(); c.close();}, ok?90:220);
+  }catch(e){}
+}
+function vibrate(ms){ if(navigator.vibrate) navigator.vibrate(ms); }
+
+/* ---------- persistencia ---------- */
+function save(){ try{ localStorage.setItem(LSKEY, JSON.stringify(state)); }catch(e){} }
+function load(){
+  try{ const s = JSON.parse(localStorage.getItem(LSKEY)); if(s) state = Object.assign(state, s); }catch(e){}
+}
+
+/* ---------- parseo del archivo ---------- */
+function parseFile(text){
+  const lines = text.split(/\r?\n/).filter(l=>l.trim().length);
+  if(!lines.length) throw new Error('Archivo vacío');
+  const header = lines[0].split(';').map(h=>h.trim().toUpperCase());
+  const idx = name => header.findIndex(h=>h.replace(/\./g,'').replace(/\s+/g,'').includes(name));
+  const iNum = idx('NUMBER'), iUpc = idx('UPC'), iStk = header.findIndex(h=>h.includes('STOCK')&&h.includes('DISPONIBLE'));
+  const iDesc = idx('DESCRIPPRODUCTO'), iMarca = idx('MARCA');
+  const iClase = header.findIndex(h=>h==='CLASE'), iDClase = idx('DESCRIPCLASE');
+  const iSub = header.findIndex(h=>h==='SUBCLASE'), iDSub = idx('DESCRIPSUBCLASE');
+  const iVta = idx('PVTA');
+  if(iNum<0||iUpc<0||iStk<0) throw new Error('Faltan columnas NUMBER / UPC / STOCK DISPONIBLE');
+
+  const products = new Map(), byUpc = new Map();
+  let rows=0;
+  for(let i=1;i<lines.length;i++){
+    const c = lines[i].split(';');
+    if(c.length < header.length-1) continue;
+    const num = (c[iNum]||'').trim();
+    const rawUpc = (c[iUpc]||'').trim();
+    if(!num) continue;
+    const stk = parseNum(c[iStk]);
+    let p = products.get(num);
+    if(!p){
+      p = { number:num, desc:(c[iDesc]||'').trim(), marca:(c[iMarca]||'').trim(),
+            clase:(c[iClase]||'').trim(), dclase:(c[iDClase]||'').trim(),
+            sub:(c[iSub]||'').trim(), dsub:(c[iDSub]||'').trim(),
+            pvta:parseNum(c[iVta]), upcs:[], disp:0 };
+      products.set(num, p);
+    }
+    p.upcs.push({ upc:rawUpc, disp:stk });
+    p.disp += stk;
+    if(rawUpc) byUpc.set(rawUpc, num);
+    rows++;
+  }
+  // firma del archivo (para saber si cambió la base)
+  const sig = products.size+'-'+rows+'-'+[...products.keys()].slice(0,3).join(',');
+  return { products, byUpc, meta:{ rows, sig,
+    clases:[...new Set([...products.values()].map(p=>p.clase+'|'+p.dclase))].filter(x=>x!=='|'),
+    subs:[...new Set([...products.values()].map(p=>p.sub+'|'+p.dsub))].filter(x=>x!=='|') } };
+}
+
+/* ---------- alcance / filtros ---------- */
+function inScope(p){
+  if(state.scope.clase && p.clase!==state.scope.clase) return false;
+  if(state.scope.sub && p.sub!==state.scope.sub) return false;
+  return true;
+}
+function scopedProducts(){ return [...DATA.products.values()].filter(inScope); }
+
+/* ---------- lógica de conteo ---------- */
+// encuentra el UPC objetivo (el que tiene stock disponible) dentro de un NUMBER
+function targetUpc(p){
+  const withStock = p.upcs.filter(u=>u.disp>0).sort((a,b)=>b.disp-a.disp);
+  return (withStock[0]||p.upcs[0]||{}).upc || '';
+}
+function resolve(codeRaw){
+  const code = codeRaw.trim();
+  if(!code) return null;
+  // 1) match directo por UPC
+  if(DATA.byUpc.has(code)) return { number:DATA.byUpc.get(code), by:'upc', code };
+  // 2) match por NUMBER (SKU)
+  if(DATA.products.has(code)) return { number:code, by:'sku', code };
+  // 3) tolerancia: UPC sin ceros a la izquierda
+  const alt = code.replace(/^0+/,'');
+  for(const [u,n] of DATA.byUpc){ if(u.replace(/^0+/,'')===alt) return {number:n, by:'upc', code}; }
+  return null;
+}
+function addCount(codeRaw, qty){
+  qty = qty||1;
+  const r = resolve(codeRaw);
+  if(!r){ handleUnknown(codeRaw.trim(), qty); return; }
+  const p = DATA.products.get(r.number);
+  if(!inScope(p)){
+    toast('<b>Fuera de alcance</b>'+esc(p.desc)+' no pertenece a la clase/subclase seleccionada.', 'warn');
+    beep(false); return;
+  }
+  state.counts[r.number] = (state.counts[r.number]||0) + qty;
+  const tgt = r.by==='upc' ? r.code : targetUpc(p);
+  state.history.unshift({ number:r.number, upc:tgt, qty, ts:Date.now() });
+  state.history = state.history.slice(0,50);
+  save();
+  const fis = state.counts[r.number], dif = p.disp - fis;
+  beep(true); vibrate(40);
+  if(fis > p.disp){
+    toast('<b>⚠️ EXCEDENTE · '+esc(p.desc)+'</b>Físico '+fis+' supera disponible '+fmt(p.disp)+' (+'+fmt(fis-p.disp)+')', 'bad', 5000);
+  }
+  renderScan();
+}
+function handleUnknown(code, qty){
+  if(!code) return;
+  state.pending[code] = (state.pending[code]||0) + qty;
+  save();
+  beep(false); vibrate([60,40,60]);
+  toast('<b>⚠️ Código no reconocido</b><code>'+esc(code)+'</code> no está en el archivo. No se sumó. Queda pendiente de revisar.', 'warn', 4500);
+  renderNF();
+}
+
+/* ---------- UNDO ---------- */
+function undoLast(){
+  const h = state.history.shift();
+  if(!h) return;
+  state.counts[h.number] = Math.max(0,(state.counts[h.number]||0) - h.qty);
+  if(state.counts[h.number]===0) delete state.counts[h.number];
+  save(); renderScan();
+  toast('Deshecho el último conteo.', '', 1800);
+}
+
+/* ---------- rendering ---------- */
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function renderScope(){
+  const cl = $('#selClase'), sb = $('#selSub');
+  cl.innerHTML = '<option value="">Todas las clases</option>' +
+    DATA.meta.clases.sort().map(c=>{ const [k,d]=c.split('|'); return `<option value="${esc(k)}">${esc(d||k)}</option>`; }).join('');
+  cl.value = state.scope.clase;
+  fillSubs();
+  sb.value = state.scope.sub;
+  $('#scopeCard').style.display='block';
+  updateScopeKpis();
+}
+function fillSubs(){
+  const sb = $('#selSub');
+  const clase = $('#selClase').value;
+  const subs = [...new Set([...DATA.products.values()]
+    .filter(p=>!clase||p.clase===clase).map(p=>p.sub+'|'+p.dsub))].filter(x=>x!=='|').sort();
+  sb.innerHTML = '<option value="">Todas las subclases</option>' +
+    subs.map(c=>{ const [k,d]=c.split('|'); return `<option value="${esc(k)}">${esc(d||k)}</option>`; }).join('');
+}
+function updateScopeKpis(){
+  const ps = scopedProducts();
+  $('#kProd').textContent = ps.length;
+  $('#kUpc').textContent = ps.reduce((a,p)=>a+p.upcs.length,0);
+  $('#kStock').textContent = fmt(ps.reduce((a,p)=>a+p.disp,0));
+  const parts = [];
+  if(state.scope.clase){ const p=[...DATA.products.values()].find(x=>x.clase===state.scope.clase); parts.push(p?p.dclase:state.scope.clase); }
+  if(state.scope.sub){ const p=[...DATA.products.values()].find(x=>x.sub===state.scope.sub); parts.push(p?p.dsub:state.scope.sub); }
+  $('#scopeLbl').textContent = (parts.length?parts.join(' · '):'Todo el archivo') + ' · ' + ps.length + ' prod.';
+}
+
+function prodStat(p){
+  const fis = state.counts[p.number]||0, dif = p.disp - fis;
+  let cls='ok', label='OK';
+  if(!(p.number in state.counts)){ cls='falta'; label='sin contar'; }
+  else if(fis > p.disp){ cls='exc'; label='+'+fmt(fis-p.disp); }
+  else if(fis < p.disp){ cls='falta'; label='faltan '+fmt(dif); }
+  return { fis, dif, cls, label };
+}
+
+function renderScan(){
+  const ps = scopedProducts();
+  let contados=0, falta=0, exc=0;
+  ps.forEach(p=>{ const s=prodStat(p);
+    if(p.number in state.counts) contados++;
+    if(s.fis < p.disp) falta += (p.disp - s.fis);
+    if(s.fis > p.disp) exc += (s.fis - p.disp);
+  });
+  $('#sTaken').textContent = contados;
+  $('#sFalta').textContent = fmt(falta);
+  $('#sExc').textContent = fmt(exc);
+
+  const box = $('#last3');
+  const seen = new Set(); const items = [];
+  for(const h of state.history){ if(seen.has(h.number)) continue; seen.add(h.number); items.push(h); if(items.length>=3) break; }
+  if(!items.length){ box.innerHTML = '<div class="empty">Aún no se ha tomado ningún producto.</div>'; return; }
+  box.innerHTML = items.map((h,i)=>{
+    const p = DATA.products.get(h.number); if(!p) return '';
+    const s = prodStat(p);
+    return `<div class="prod ${i===0?'flash':''}">
+      <div class="info">
+        <div class="name">${esc(p.desc||p.number)}</div>
+        <div class="sub">${esc(p.marca)} · SKU ${esc(p.number)} · <code>${esc(h.upc||'—')}</code></div>
+        <div style="margin-top:4px"><span class="tag ${s.cls}">${s.cls==='ok'?'OK':(s.cls==='exc'?'EXCEDENTE '+s.label:'FALTAN '+fmt(p.disp-s.fis))}</span></div>
+      </div>
+      <div class="num">${fmt(s.fis)}<small>de ${fmt(p.disp)} disp.</small></div>
+    </div>`;
+  }).join('') + `<button class="btn sm ghost block" id="undoBtn" style="margin-top:2px">↩ Deshacer último</button>`;
+  $('#undoBtn').onclick = undoLast;
+}
+
+function renderDiff(){
+  const body = $('#diffBody');
+  let ps = scopedProducts();
+  ps = ps.filter(p=>{
+    const s = prodStat(p);
+    if(diffFilter==='difs') return s.fis !== p.disp;
+    if(diffFilter==='falta') return s.fis < p.disp && (p.number in state.counts || p.disp>0);
+    if(diffFilter==='exc') return s.fis > p.disp;
+    if(diffFilter==='sin') return !(p.number in state.counts);
+    return true;
+  }).sort((a,b)=>Math.abs(prodStat(b).dif)-Math.abs(prodStat(a).dif));
+  if(!ps.length){ body.innerHTML = '<tr><td colspan="4"><div class="empty">Sin resultados para este filtro.</div></td></tr>'; return; }
+  body.innerHTML = ps.map(p=>{
+    const s = prodStat(p);
+    const difTxt = s.fis===p.disp ? '<span class="tag ok">0</span>'
+      : s.fis>p.disp ? `<span class="tag exc">+${fmt(s.fis-p.disp)}</span>`
+      : `<span class="tag falta">${fmt(p.disp-s.fis)}</span>`;
+    return `<tr>
+      <td><div style="font-weight:600">${esc(p.desc||p.number)}</div>
+          <div class="muted" style="font-size:11px">${esc(p.marca)} · ${esc(p.dsub||p.dclase)} · SKU ${esc(p.number)}</div></td>
+      <td class="n">${fmt(p.disp)}</td>
+      <td class="n">${fmt(s.fis)}</td>
+      <td class="n">${difTxt}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderNF(){
+  // pendientes
+  const pend = Object.entries(state.pending);
+  const pl = $('#pendList');
+  if(!pend.length){ pl.innerHTML = '<div class="empty">Nada pendiente. 👌</div>'; }
+  else{
+    pl.innerHTML = pend.map(([code,cnt])=>`
+      <div class="prod">
+        <div class="info"><div class="name"><code>${esc(code)}</code></div>
+          <div class="sub">Escaneado ${cnt} vez(ces) · no existe en el archivo</div></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn sm warn" data-conf="${esc(code)}">Confirmar</button>
+          <button class="btn sm ghost" data-disc="${esc(code)}">Descartar</button>
+        </div>
+      </div>`).join('') +
+      `<button class="btn sm warn block" id="confAll" style="margin-top:4px">Confirmar todos (${pend.length})</button>`;
+    $$('[data-conf]').forEach(b=>b.onclick=()=>confirmNF(b.dataset.conf));
+    $$('[data-disc]').forEach(b=>b.onclick=()=>{ delete state.pending[b.dataset.disc]; save(); renderNF(); });
+    $('#confAll').onclick=()=>{ Object.keys(state.pending).forEach(confirmNF); };
+  }
+  // confirmados
+  const nl = $('#nfList');
+  if(!state.notFound.length){ nl.innerHTML = '<div class="empty">Ninguno confirmado.</div>'; }
+  else{
+    nl.innerHTML = state.notFound.map((r,i)=>`
+      <div class="prod">
+        <div class="info"><div class="name"><code>${esc(r.code)}</code></div>
+          <div class="sub">Cantidad ${r.qty} · ${new Date(r.ts).toLocaleString('es-CL')}</div></div>
+        <button class="btn sm ghost" data-del="${i}">Quitar</button>
+      </div>`).join('');
+    $$('[data-del]').forEach(b=>b.onclick=()=>{ state.notFound.splice(+b.dataset.del,1); save(); renderNF(); });
+  }
+  // badge
+  const n = pend.length;
+  $('#nfBadgeWrap').innerHTML = n? `<span class="bdg">${n}</span>`:'';
+}
+function confirmNF(code){
+  if(!(code in state.pending)) return;
+  state.notFound.push({ code, qty:state.pending[code], ts:Date.now() });
+  delete state.pending[code];
+  save(); renderNF();
+  toast('<b>Agregado a No encontrados</b><code>'+esc(code)+'</code>', 'ok', 2200);
+}
+
+function renderAll(){ if(!DATA) return; renderScope(); renderScan(); renderDiff(); renderNF(); }
+
+/* ---------- CSV export ---------- */
+function download(name, rows){
+  const csv = rows.map(r=>r.map(c=>{
+    c = String(c==null?'':c);
+    return /[;"\n]/.test(c) ? '"'+c.replace(/"/g,'""')+'"' : c;
+  }).join(';')).join('\r\n');
+  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
+function expBase(){
+  const rows = [['NUMBER','UPCS','DESCRIPCION','MARCA','CLASE','SUBCLASE','STOCK_DISPONIBLE']];
+  scopedProducts().forEach(p=>rows.push([p.number, p.upcs.map(u=>u.upc).join(' | '), p.desc, p.marca, p.dclase, p.dsub, fmt(p.disp)]));
+  download('inventario_base.csv', rows);
+}
+function expDiff(){
+  const rows = [['NUMBER','DESCRIPCION','MARCA','CLASE','SUBCLASE','DISPONIBLE','FISICO','DIFERENCIA','ESTADO']];
+  scopedProducts().forEach(p=>{ const s=prodStat(p);
+    const est = !(p.number in state.counts)?'SIN CONTAR': s.fis>p.disp?'EXCEDENTE': s.fis<p.disp?'FALTANTE':'OK';
+    rows.push([p.number,p.desc,p.marca,p.dclase,p.dsub,fmt(p.disp),fmt(s.fis),fmt(s.fis-p.disp),est]);
+  });
+  download('inventario_diferencias.csv', rows);
+}
+function expNf(){
+  const rows = [['CODIGO','CANTIDAD','FECHA']];
+  state.notFound.forEach(r=>rows.push([r.code, r.qty, new Date(r.ts).toLocaleString('es-CL')]));
+  download('inventario_no_encontrados.csv', rows);
+}
+
+/* ---------- cámara (BarcodeDetector nativo) ---------- */
+let stream=null, detector=null, scanning=false, lastCode='', lastAt=0;
+async function openCam(){
+  if(!('BarcodeDetector' in window)){
+    toast('<b>Cámara no disponible</b>Tu navegador no soporta escaneo por cámara (común en iPhone/Safari). Usa un lector Bluetooth o escribe el código. Chrome en Android sí funciona.', 'warn', 6000);
+    $('#code').focus(); return;
+  }
+  try{
+    detector = detector || new window.BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf']});
+    stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' } });
+    $('#video').srcObject = stream; await $('#video').play();
+    $('#cam').classList.add('on'); scanning=true; loopDetect();
+  }catch(e){ toast('<b>No se pudo abrir la cámara</b>'+esc(e.message), 'bad', 4000); }
+}
+function closeCam(){
+  scanning=false; $('#cam').classList.remove('on');
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+}
+async function loopDetect(){
+  if(!scanning) return;
+  try{
+    const codes = await detector.detect($('#video'));
+    if(codes && codes.length){
+      const val = codes[0].rawValue;
+      const now = Date.now();
+      if(val && (val!==lastCode || now-lastAt>1500)){
+        lastCode=val; lastAt=now;
+        $('#camStatus').textContent = '✔ '+val;
+        addCount(val, +($('#qty').value||1));
+        beep(true);
+      }
+    }
+  }catch(e){}
+  requestAnimationFrame(loopDetect);
+}
+
+/* ---------- navegación ---------- */
+function goTab(tab){
+  $$('nav button').forEach(b=>b.classList.toggle('on', b.dataset.tab===tab));
+  $$('main section').forEach(s=>s.classList.toggle('active', s.id==='tab-'+tab));
+  if(tab==='diff') renderDiff();
+  if(tab==='scan') setTimeout(()=>$('#code').focus(),120);
+  if(tab==='nf') renderNF();
+}
+
+/* ---------- eventos ---------- */
+function bind(){
+  $$('nav button').forEach(b=>b.onclick=()=>goTab(b.dataset.tab));
+
+  $('#file').onchange = e=>{
+    const f = e.target.files[0]; if(!f) return;
+    const rd = new FileReader();
+    rd.onload = ()=>{
+      try{
+        DATA = parseFile(rd.result);
+        if(state.fileSig && state.fileSig!==DATA.meta.sig){
+          if(confirm('El archivo cargado es distinto al del conteo guardado. ¿Empezar un conteo nuevo? (Cancelar = conservar el conteo actual)')){
+            state.counts={}; state.history=[]; state.pending={}; state.notFound=[];
+          }
+        }
+        state.fileSig = DATA.meta.sig; save();
+        renderScope(); renderScan();
+        toast('<b>Archivo cargado</b>'+DATA.products.size+' productos · '+DATA.meta.rows+' códigos', 'ok');
+      }catch(err){ toast('<b>Error al leer</b>'+esc(err.message), 'bad', 5000); }
+    };
+    rd.readAsText(f, 'latin1'); // acentos del sistema (ISO-8859-1)
+  };
+
+  $('#selClase').onchange = ()=>{ state.scope.clase=$('#selClase').value; state.scope.sub=''; fillSubs(); save(); updateScopeKpis(); renderScan(); renderDiff(); };
+  $('#selSub').onchange = ()=>{ state.scope.sub=$('#selSub').value; save(); updateScopeKpis(); renderScan(); renderDiff(); };
+  $('#goScan').onclick = ()=>goTab('scan');
+  $('#expBase').onclick = expBase;
+  $('#resetAll').onclick = ()=>{ if(confirm('¿Borrar todo el conteo (contados, pendientes y no encontrados)?')){ state.counts={}; state.history=[]; state.pending={}; state.notFound=[]; save(); renderAll(); toast('Conteo borrado.'); } };
+
+  const doAdd = ()=>{ const v=$('#code').value.trim(); if(!v) return; addCount(v, +($('#qty').value||1)); $('#code').value=''; $('#code').focus(); };
+  $('#addBtn').onclick = doAdd;
+  $('#code').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); doAdd(); } });
+  $('#qPlus').onclick = ()=>$('#qty').value = (+$('#qty').value||0)+1;
+  $('#qMinus').onclick = ()=>$('#qty').value = Math.max(1,(+$('#qty').value||1)-1);
+  $('#reFocus').onclick = ()=>$('#code').focus();
+  $('#scanCamBtn').onclick = openCam;
+  $('#camClose').onclick = closeCam;
+
+  $$('#diffFilters .chip').forEach(c=>c.onclick=()=>{
+    diffFilter=c.dataset.f; $$('#diffFilters .chip').forEach(x=>x.classList.toggle('on',x===c)); renderDiff();
+  });
+  $('#expDiff').onclick = expDiff;
+  $('#expNf').onclick = expNf;
+}
+
+/* ---------- init ---------- */
+load(); bind(); renderNF();
+window.addEventListener('beforeunload', save);
+</script>
+</body>
+</html>
