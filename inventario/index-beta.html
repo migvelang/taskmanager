@@ -712,8 +712,7 @@ function buildFullCSV(d, sess){
   const out = [head.join(';')];
   d.rawRows.forEach(r=>{
     let cols = trimTrailingEmpty(r.cols);
-    if(C.iNum>=0 && cols[C.iNum]!=null) cols[C.iNum] = String(cols[C.iNum]).trim();
-    if(C.iUpc>=0 && cols[C.iUpc]!=null) cols[C.iUpc] = String(cols[C.iUpc]).trim();
+    // NUMBER y UPC se dejan EXACTAMENTE como en el archivo original (mismos códigos)
     if(C.iVta>=0 && cols[C.iVta]!=null) cols[C.iVta] = cleanNum(cols[C.iVta]);
     if(C.iCst>=0 && cols[C.iCst]!=null) cols[C.iCst] = cleanNum(cols[C.iCst]);
     if(C.iStk>=0 && cols[C.iStk]!=null) cols[C.iStk] = cleanNum(cols[C.iStk]);
