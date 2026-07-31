@@ -127,14 +127,21 @@
 <main>
   <!-- ============ CARGAR ============ -->
   <section id="tab-load" class="active">
-    <h2>1 · Cargar archivo</h2>
+    <h2>1 · Cargar / nuevo inventario</h2>
     <div class="card">
       <label>Archivo de inventario (.txt / .csv exportado del sistema)</label>
       <input type="file" id="file" accept=".txt,.csv,text/plain" style="padding:10px">
-      <p class="muted" style="font-size:12px;margin:8px 0 0">Separado por <code>;</code> · cabecera con NUMBER, UPC, STOCK DISPONIBLE, CLASE, SUBCLASE. Los datos se procesan solo en tu teléfono.</p>
+      <p class="muted" style="font-size:12px;margin:8px 0 0">Cada archivo que cargues abre un <b>inventario nuevo</b> (le pones nombre). Separado por <code>;</code> · cabecera con NUMBER, UPC, STOCK DISPONIBLE, CLASE, SUBCLASE. Los datos se procesan solo en tu teléfono.</p>
     </div>
 
     <div class="card" id="scopeCard" style="display:none">
+      <div id="activeBar" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <div style="flex:1;min-width:0">
+          <div class="muted" style="font-size:11px">Inventario activo</div>
+          <div id="activeName" style="font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+        </div>
+        <button class="btn sm ghost" id="renameBtn">Renombrar</button>
+      </div>
       <h2 style="margin-top:0">2 · Qué vas a tomar</h2>
       <label>Alcance del conteo</label>
       <div class="row" style="margin-bottom:10px">
@@ -150,10 +157,19 @@
         <button class="btn primary block" id="goScan">Empezar a escanear →</button>
       </div>
       <div class="row" style="margin-top:8px">
-        <button class="btn sm ghost" id="expBase">Exportar base CSV</button>
+        <button class="btn sm ok ghost" id="expBase">⬇ Exportar CSV de todo</button>
         <button class="btn sm bad ghost" id="resetAll">Borrar conteo</button>
       </div>
-      <p class="muted" style="font-size:11.5px;margin:10px 0 0">El conteo se guarda automáticamente en este dispositivo (aunque cierres la página).</p>
+      <p class="muted" style="font-size:11.5px;margin:10px 0 0">El CSV conserva el formato original del archivo y agrega la columna <b>STOCK FISICO</b>. Todo se guarda automáticamente en este dispositivo: aunque cierres o actualices la página, retomas donde ibas.</p>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <h2 style="margin:0">Historial de inventarios</h2>
+        <button class="btn sm ghost" id="newInv" style="margin-left:auto">+ Nuevo</button>
+      </div>
+      <p class="muted" style="font-size:12px;margin:0 0 10px">Cada inventario queda guardado aquí. Puedes <b>pausar</b> uno y <b>continuar</b> otro cuando quieras; el progreso no se pierde al actualizar la página.</p>
+      <div id="histList"><div class="empty">Aún no hay inventarios guardados.</div></div>
     </div>
   </section>
 
@@ -259,14 +275,20 @@
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-const LSKEY = 'inv_beta_v1';
+const LSKEY = 'inv_beta_store_v1';
 
-let DATA = null;          // {products:Map<number,prod>, byUpc:Map<upc,number>, meta}
-let state = {             // persistente
-  fileSig:'', counts:{}, history:[], pending:{}, notFound:[],
-  scope:{clase:'', sub:''}
-};
+let DATA = null;          // archivo parseado de la sesión ACTIVA
+let store = { activeId:null, sessions:{} };   // varios inventarios guardados
+let state = null;         // sesión activa (referencia dentro de store.sessions)
 let diffFilter = 'all';
+
+function newId(){ return 'inv_'+Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+function suggestName(fn){ const base=(fn||'inventario').replace(/\.[^.]+$/,'').slice(0,28); return base+' · '+new Date().toLocaleDateString('es-CL'); }
+function blankSession(name, fileText, fileSig){
+  return { id:newId(), name:name||'Inventario', fileText:fileText||'', fileSig:fileSig||'',
+           counts:{}, history:[], pending:{}, notFound:[], scope:{clase:'',sub:''},
+           createdAt:Date.now(), updatedAt:Date.now() };
+}
 
 /* ---------- utilidades ---------- */
 function parseNum(s){
@@ -297,10 +319,21 @@ function beep(ok){
 }
 function vibrate(ms){ if(navigator.vibrate) navigator.vibrate(ms); }
 
-/* ---------- persistencia ---------- */
-function save(){ try{ localStorage.setItem(LSKEY, JSON.stringify(state)); }catch(e){} }
-function load(){
-  try{ const s = JSON.parse(localStorage.getItem(LSKEY)); if(s) state = Object.assign(state, s); }catch(e){}
+/* ---------- persistencia (multi-inventario) ---------- */
+function save(){ if(state) state.updatedAt = Date.now(); try{ localStorage.setItem(LSKEY, JSON.stringify(store)); }catch(e){} }
+function loadStore(){
+  try{ const s = JSON.parse(localStorage.getItem(LSKEY)); if(s && s.sessions) store = s; }catch(e){}
+}
+function activate(id){
+  const s = store.sessions[id]; if(!s) return false;
+  DATA = parseFile(s.fileText);
+  store.activeId = id; state = s; save();
+  return true;
+}
+function deleteSession(id){
+  delete store.sessions[id];
+  if(store.activeId===id){ store.activeId=null; state=null; DATA=null; }
+  save();
 }
 
 /* ---------- parseo del archivo ---------- */
@@ -313,9 +346,12 @@ function parseFile(text){
   const iDesc = idx('DESCRIPPRODUCTO'), iMarca = idx('MARCA');
   const iClase = header.findIndex(h=>h==='CLASE'), iDClase = idx('DESCRIPCLASE');
   const iSub = header.findIndex(h=>h==='SUBCLASE'), iDSub = idx('DESCRIPSUBCLASE');
-  const iVta = idx('PVTA');
+  const iVta = idx('PVTA'), iCst = idx('PCST');
+  const iFis = header.findIndex(h=>h.includes('STOCK')&&h.includes('FISICO'));
   if(iNum<0||iUpc<0||iStk<0) throw new Error('Faltan columnas NUMBER / UPC / STOCK DISPONIBLE');
 
+  const rawHeader = lines[0].split(';');   // cabecera original (sin normalizar)
+  const rawRows = [];                       // filas originales para exportar 1:1
   const products = new Map(), byUpc = new Map();
   let rows=0;
   for(let i=1;i<lines.length;i++){
@@ -336,11 +372,14 @@ function parseFile(text){
     p.upcs.push({ upc:rawUpc, disp:stk });
     p.disp += stk;
     if(rawUpc) byUpc.set(rawUpc, num);
+    rawRows.push({ cols:c, number:num, upc:rawUpc });
     rows++;
   }
   // firma del archivo (para saber si cambió la base)
   const sig = products.size+'-'+rows+'-'+[...products.keys()].slice(0,3).join(',');
-  return { products, byUpc, meta:{ rows, sig,
+  return { products, byUpc, rawHeader, rawRows,
+    cols:{ iNum, iUpc, iVta, iCst, iStk, iFis },
+    meta:{ rows, sig,
     clases:[...new Set([...products.values()].map(p=>p.clase+'|'+p.dclase))].filter(x=>x!=='|'),
     subs:[...new Set([...products.values()].map(p=>p.sub+'|'+p.dsub))].filter(x=>x!=='|') } };
 }
@@ -456,6 +495,7 @@ function prodStat(p){
 }
 
 function renderScan(){
+  if(!DATA||!state) return;
   const ps = scopedProducts();
   let contados=0, falta=0, exc=0;
   ps.forEach(p=>{ const s=prodStat(p);
@@ -487,6 +527,7 @@ function renderScan(){
 }
 
 function renderDiff(){
+  if(!DATA||!state) return;
   const body = $('#diffBody');
   let ps = scopedProducts();
   ps = ps.filter(p=>{
@@ -514,6 +555,7 @@ function renderDiff(){
 }
 
 function renderNF(){
+  if(!state){ $('#nfBadgeWrap').innerHTML=''; return; }
   // pendientes
   const pend = Object.entries(state.pending);
   const pl = $('#pendList');
@@ -557,7 +599,39 @@ function confirmNF(code){
   toast('<b>Agregado a No encontrados</b><code>'+esc(code)+'</code>', 'ok', 2200);
 }
 
-function renderAll(){ if(!DATA) return; renderScope(); renderScan(); renderDiff(); renderNF(); }
+function renderAll(){
+  renderHist();
+  if(!DATA || !state){ $('#scopeCard').style.display='none'; $('#scopeLbl').textContent='Sin archivo cargado'; renderNF(); return; }
+  if($('#activeName')) $('#activeName').textContent = state.name;
+  renderScope(); renderScan(); renderDiff(); renderNF();
+}
+
+/* ---------- historial de inventarios ---------- */
+function renderHist(){
+  const el = $('#histList'); if(!el) return;
+  const arr = Object.values(store.sessions).sort((a,b)=>b.updatedAt-a.updatedAt);
+  if(!arr.length){ el.innerHTML='<div class="empty">Aún no hay inventarios guardados. Carga un archivo para empezar.</div>'; return; }
+  el.innerHTML = arr.map(s=>{
+    const prods = Object.keys(s.counts||{}).length;
+    const units = Object.values(s.counts||{}).reduce((a,v)=>a+v,0);
+    const nf = (s.notFound||[]).length;
+    const active = s.id===store.activeId;
+    return `<div class="prod" style="${active?'border-color:var(--brand)':''}">
+      <div class="info">
+        <div class="name">${esc(s.name)} ${active?'<span class="tag ok">activo</span>':''}</div>
+        <div class="sub">${prods} prod. contados · ${fmt(units)} u.${nf?' · '+nf+' no encontr.':''} · ${new Date(s.updatedAt).toLocaleString('es-CL')}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        ${active?'':`<button class="btn sm primary" data-open="${s.id}">Continuar</button>`}
+        <button class="btn sm ghost" data-csv="${s.id}" title="Exportar CSV">⬇</button>
+        <button class="btn sm ghost" data-delses="${s.id}" title="Borrar">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+  $$('[data-open]').forEach(b=>b.onclick=()=>{ try{ if(activate(b.dataset.open)){ renderAll(); toast('<b>Continuando</b>'+esc(state.name),'ok'); goTab('scan'); } }catch(e){ toast('<b>No se pudo abrir</b>'+esc(e.message),'bad'); } });
+  $$('[data-csv]').forEach(b=>b.onclick=()=>{ try{ exportSessionCSV(b.dataset.csv); }catch(e){ toast('<b>Error al exportar</b>'+esc(e.message),'bad'); } });
+  $$('[data-delses]').forEach(b=>b.onclick=()=>{ const s=store.sessions[b.dataset.delses]; if(confirm('¿Borrar el inventario "'+(s?s.name:'')+'" y todo su conteo?')){ deleteSession(b.dataset.delses); renderAll(); } });
+}
 
 /* ---------- CSV export ---------- */
 function download(name, rows){
@@ -570,10 +644,60 @@ function download(name, rows){
   a.href = URL.createObjectURL(blob); a.download = name; a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
 }
-function expBase(){
-  const rows = [['NUMBER','UPCS','DESCRIPCION','MARCA','CLASE','SUBCLASE','STOCK_DISPONIBLE']];
-  scopedProducts().forEach(p=>rows.push([p.number, p.upcs.map(u=>u.upc).join(' | '), p.desc, p.marca, p.dclase, p.dsub, fmt(p.disp)]));
-  download('inventario_base.csv', rows);
+/* Exporta el CSV "de todo" conservando EXACTAMENTE el formato del archivo
+   original (mismas columnas, ; como separador, CRLF, ISO-8859-1, textos con
+   su relleno) y agregando la columna final STOCK FISICO por fila. */
+function downloadLatin1(name, text){
+  const bytes = new Uint8Array(text.length);
+  for(let i=0;i<text.length;i++) bytes[i] = text.charCodeAt(i) & 0xff;
+  const blob = new Blob([bytes], {type:'text/csv;charset=iso-8859-1'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
+function cleanNum(v){
+  if(typeof v!=='number') v = parseNum(v);
+  if(Number.isInteger(v)) return String(v);
+  return String(Math.round(v*100)/100).replace('.', ',');
+}
+function trimTrailingEmpty(arr){ const a=arr.slice(); while(a.length && String(a[a.length-1]).trim()==='') a.pop(); return a; }
+// físico por fila: el total del NUMBER va a la fila del UPC con stock disponible
+function physRow(d, counts, number, upc){
+  const total = counts[number]||0; if(!total) return 0;
+  const p = d.products.get(number); if(!p) return 0;
+  if(p.upcs.length<=1) return total;
+  return upc===targetUpc(p) ? total : 0;
+}
+function buildFullCSV(d, sess){
+  const C = d.cols;
+  let head = trimTrailingEmpty(d.rawHeader);
+  const hasFis = C.iFis>=0 && C.iFis < head.length;
+  if(!hasFis) head = head.concat('STOCK FISICO');
+  const out = [head.join(';')];
+  d.rawRows.forEach(r=>{
+    let cols = trimTrailingEmpty(r.cols);
+    if(C.iNum>=0 && cols[C.iNum]!=null) cols[C.iNum] = String(cols[C.iNum]).trim();
+    if(C.iUpc>=0 && cols[C.iUpc]!=null) cols[C.iUpc] = String(cols[C.iUpc]).trim();
+    if(C.iVta>=0 && cols[C.iVta]!=null) cols[C.iVta] = cleanNum(cols[C.iVta]);
+    if(C.iCst>=0 && cols[C.iCst]!=null) cols[C.iCst] = cleanNum(cols[C.iCst]);
+    if(C.iStk>=0 && cols[C.iStk]!=null) cols[C.iStk] = cleanNum(cols[C.iStk]);
+    const fis = physRow(d, sess.counts, r.number, r.upc);
+    if(hasFis) cols[C.iFis] = fis; else cols = cols.concat(fis);
+    out.push(cols.join(';'));
+  });
+  return out.join('\r\n') + '\r\n';
+}
+function expFull(){
+  if(!DATA||!state){ toast('Carga un archivo primero.','warn'); return; }
+  const fname = 'inv_'+(state.name||'inventario').replace(/[^\w\-]+/g,'_')+'.csv';
+  downloadLatin1(fname, buildFullCSV(DATA, state));
+  toast('<b>CSV exportado</b>Formato original + columna STOCK FISICO','ok',2600);
+}
+function exportSessionCSV(id){
+  const s = store.sessions[id]; if(!s) return;
+  const d = (state && store.activeId===id) ? DATA : parseFile(s.fileText);
+  const fname = 'inv_'+(s.name||'inventario').replace(/[^\w\-]+/g,'_')+'.csv';
+  downloadLatin1(fname, buildFullCSV(d, s));
 }
 function expDiff(){
   const rows = [['NUMBER','DESCRIPCION','MARCA','CLASE','SUBCLASE','DISPONIBLE','FISICO','DIFERENCIA','ESTADO']];
@@ -643,25 +767,33 @@ function bind(){
     const rd = new FileReader();
     rd.onload = ()=>{
       try{
-        DATA = parseFile(rd.result);
-        if(state.fileSig && state.fileSig!==DATA.meta.sig){
-          if(confirm('El archivo cargado es distinto al del conteo guardado. ¿Empezar un conteo nuevo? (Cancelar = conservar el conteo actual)')){
-            state.counts={}; state.history=[]; state.pending={}; state.notFound=[];
-          }
+        const text = rd.result;
+        const d = parseFile(text);
+        const existing = Object.values(store.sessions).find(s=>s.fileSig===d.meta.sig);
+        if(existing && confirm('Ya existe un inventario con este mismo archivo:\n\n"'+existing.name+'"\n\nAceptar = CONTINUAR ese conteo.\nCancelar = crear un inventario NUEVO.')){
+          activate(existing.id);
+        } else {
+          let name = prompt('Nombre para este inventario:', suggestName(f.name));
+          if(name===null){ e.target.value=''; return; }
+          name = (name||'').trim() || suggestName(f.name);
+          const s = blankSession(name, text, d.meta.sig);
+          store.sessions[s.id] = s; store.activeId = s.id; state = s; DATA = d; save();
         }
-        state.fileSig = DATA.meta.sig; save();
-        renderScope(); renderScan();
-        toast('<b>Archivo cargado</b>'+DATA.products.size+' productos · '+DATA.meta.rows+' códigos', 'ok');
+        renderAll();
+        toast('<b>'+esc(state.name)+'</b>'+DATA.products.size+' productos · '+DATA.meta.rows+' códigos', 'ok');
+        e.target.value='';
       }catch(err){ toast('<b>Error al leer</b>'+esc(err.message), 'bad', 5000); }
     };
     rd.readAsText(f, 'latin1'); // acentos del sistema (ISO-8859-1)
   };
+  $('#renameBtn').onclick = ()=>{ if(!state) return; const n=prompt('Nuevo nombre del inventario:', state.name); if(n!==null){ state.name=(n||'').trim()||state.name; save(); renderAll(); } };
+  $('#newInv').onclick = ()=>$('#file').click();
 
   $('#selClase').onchange = ()=>{ state.scope.clase=$('#selClase').value; state.scope.sub=''; fillSubs(); save(); updateScopeKpis(); renderScan(); renderDiff(); };
   $('#selSub').onchange = ()=>{ state.scope.sub=$('#selSub').value; save(); updateScopeKpis(); renderScan(); renderDiff(); };
   $('#goScan').onclick = ()=>goTab('scan');
-  $('#expBase').onclick = expBase;
-  $('#resetAll').onclick = ()=>{ if(confirm('¿Borrar todo el conteo (contados, pendientes y no encontrados)?')){ state.counts={}; state.history=[]; state.pending={}; state.notFound=[]; save(); renderAll(); toast('Conteo borrado.'); } };
+  $('#expBase').onclick = expFull;
+  $('#resetAll').onclick = ()=>{ if(!state) return; if(confirm('¿Borrar el conteo de "'+state.name+'" (contados, pendientes y no encontrados)? El archivo se conserva.')){ state.counts={}; state.history=[]; state.pending={}; state.notFound=[]; save(); renderAll(); toast('Conteo borrado.'); } };
 
   const doAdd = ()=>{ const v=$('#code').value.trim(); if(!v) return; addCount(v, +($('#qty').value||1)); $('#code').value=''; $('#code').focus(); };
   $('#addBtn').onclick = doAdd;
@@ -680,7 +812,11 @@ function bind(){
 }
 
 /* ---------- init ---------- */
-load(); bind(); renderNF();
+loadStore(); bind();
+if(store.activeId && store.sessions[store.activeId] && store.sessions[store.activeId].fileText){
+  try{ activate(store.activeId); }catch(e){ store.activeId=null; state=null; DATA=null; }
+}
+renderAll();
 window.addEventListener('beforeunload', save);
 </script>
 </body>
