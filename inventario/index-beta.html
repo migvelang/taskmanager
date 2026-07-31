@@ -103,13 +103,17 @@
   nav button.on{color:var(--brand)}
   nav button .ic{font-size:19px; line-height:1}
   nav button .bdg{position:absolute; transform:translate(14px,-4px); background:var(--bad); color:#fff; font-size:9px; font-weight:800; padding:0 5px; border-radius:999px; min-width:14px}
-  /* camera */
-  #cam{position:fixed; inset:0; z-index:100; background:#000; display:none; flex-direction:column}
-  #cam.on{display:flex}
-  #cam video{flex:1; width:100%; object-fit:cover}
-  #cam .reticle{position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:75%; max-width:320px; height:150px; border:2px solid var(--brand); border-radius:14px; box-shadow:0 0 0 2000px rgba(0,0,0,.45)}
-  #cam .bar{position:absolute; top:0; left:0; right:0; padding:14px; display:flex; gap:10px; align-items:center; color:#fff}
-  #cam .hint{position:absolute; bottom:24px; left:0; right:0; text-align:center; color:#fff; font-size:13px}
+  /* camera (embebida, no pantalla completa) */
+  .camwrap{position:relative; width:100%; height:230px; background:#000; border-radius:10px; overflow:hidden}
+  .camwrap video{width:100%; height:100%; object-fit:cover}
+  .camwrap .camline{position:absolute; left:8%; right:8%; top:50%; height:2px; background:var(--bad); box-shadow:0 0 8px 1px var(--bad); animation:scanline 1.8s ease-in-out infinite}
+  @keyframes scanline{0%,100%{top:22%}50%{top:78%}}
+  /* modal */
+  .modal{position:fixed; inset:0; z-index:120; background:rgba(0,0,0,.55); display:none; align-items:flex-end; justify-content:center}
+  .modal.on{display:flex}
+  .sheet{background:var(--card); border:1px solid var(--line); border-radius:16px 16px 0 0; width:100%; max-width:560px; padding:16px; max-height:88vh; overflow:auto; animation:fade .2s}
+  textarea{width:100%; padding:12px; background:var(--bg2); border:1px solid var(--line); color:var(--txt); border-radius:10px; outline:none; font-size:16px; resize:vertical}
+  textarea:focus{border-color:var(--brand)}
   .empty{text-align:center; color:var(--muted); padding:26px 10px; font-size:13px}
   .hr{height:1px; background:var(--line); margin:12px 0}
   details summary{cursor:pointer; color:var(--brand); font-size:13px; font-weight:600}
@@ -166,9 +170,10 @@
     <div class="card">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
         <h2 style="margin:0">Historial de inventarios</h2>
-        <button class="btn sm ghost" id="newInv" style="margin-left:auto">+ Nuevo</button>
+        <button class="btn sm ghost" id="importBtn" style="margin-left:auto">⬆ Importar</button>
+        <button class="btn sm ghost" id="newInv">+ Nuevo</button>
       </div>
-      <p class="muted" style="font-size:12px;margin:0 0 10px">Cada inventario queda guardado aquí. Puedes <b>pausar</b> uno y <b>continuar</b> otro cuando quieras; el progreso no se pierde al actualizar la página.</p>
+      <p class="muted" style="font-size:12px;margin:0 0 10px">Cada inventario queda guardado aquí. Puedes <b>pausar</b> uno y <b>continuar</b> otro cuando quieras; el progreso no se pierde al actualizar la página. Con <b>Finalizar</b> + <b>compartir</b> (🔗) lo pasas a otro dispositivo.</p>
       <div id="histList"><div class="empty">Aún no hay inventarios guardados.</div></div>
     </div>
   </section>
@@ -178,10 +183,10 @@
     <h2>Escanear / ingresar código</h2>
     <div class="card">
       <div class="scanbox">
-        <input type="text" id="code" inputmode="numeric" autocomplete="off" placeholder="UPC / EAN o SKU (NUMBER)…" enterkeyhint="done">
-        <button class="btn primary" id="scanCamBtn" title="Cámara">📷</button>
+        <input type="text" id="code" inputmode="numeric" pattern="[0-9]*" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="codigo-inventario" data-1p-ignore data-lpignore="true" data-form-type="other" placeholder="UPC / EAN o SKU (NUMBER)…" enterkeyhint="done">
+        <button class="btn ok" id="addBtn" title="Sumar">Sumar ✓</button>
       </div>
-      <div class="row" style="margin-top:10px; align-items:center">
+      <div class="row" style="margin-top:10px; align-items:flex-end">
         <div style="flex:0 0 auto">
           <label style="margin-bottom:3px">Cantidad</label>
           <div class="stepper">
@@ -190,11 +195,24 @@
             <button id="qPlus">+</button>
           </div>
         </div>
-        <div style="align-self:flex-end">
-          <button class="btn ok block" id="addBtn" style="height:46px">Sumar ✓</button>
-        </div>
+        <button class="btn primary" id="scanCamBtn" style="height:46px">📷 Cámara</button>
+        <button class="btn" id="pasteBtn" style="height:46px">📋 Pegar lista</button>
       </div>
       <p class="muted" style="font-size:11.5px;margin:9px 0 0">Un lector Bluetooth (modo HID/teclado) escribe aquí y suma solo con dejar el campo enfocado. <button class="btn sm ghost" id="reFocus" style="padding:2px 8px">Enfocar</button></p>
+    </div>
+
+    <!-- Cámara embebida (no pantalla completa) -->
+    <div class="card" id="camCard" style="display:none; padding:10px">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px">
+        <b style="font-size:13px">📷 Escáner de cámara</b>
+        <span id="camStatus" class="muted" style="font-size:12px">Iniciando…</span>
+        <button class="btn sm bad ghost" id="camClose" style="margin-left:auto">Cerrar</button>
+      </div>
+      <div class="camwrap">
+        <video id="video" playsinline muted autoplay></video>
+        <div class="camline"></div>
+      </div>
+      <p class="muted" style="font-size:11px;margin:8px 0 0">Apunta al código de barras. Cada lectura suena y se suma abajo; puedes deshacer sin cerrar la cámara.</p>
     </div>
 
     <div class="kpis" style="margin-bottom:12px">
@@ -205,6 +223,8 @@
 
     <h2>Últimos 3 tomados</h2>
     <div id="last3"><div class="empty">Aún no se ha tomado ningún producto.</div></div>
+
+    <button class="btn warn block" id="finishBtn" style="margin-top:14px">🏁 Finalizar inventario</button>
   </section>
 
   <!-- ============ DIFERENCIAS ============ -->
@@ -217,8 +237,14 @@
       <span class="chip" data-f="exc">Excedentes</span>
       <span class="chip" data-f="sin">Sin contar</span>
     </div>
-    <div class="row" style="margin-bottom:10px">
-      <button class="btn sm ghost" id="expDiff">Exportar diferencias CSV</button>
+    <div class="row" style="margin-bottom:8px; gap:6px">
+      <select id="fMarca"><option value="">Todas las marcas</option></select>
+      <select id="fClase"><option value="">Todas las clases</option></select>
+      <select id="fSub"><option value="">Todas las subclases</option></select>
+    </div>
+    <div class="row" style="margin-bottom:10px; align-items:center">
+      <span class="muted" id="diffCount" style="font-size:12px">—</span>
+      <button class="btn sm ghost" id="expDiff" style="flex:0 0 auto">Exportar diferencias CSV</button>
     </div>
     <div class="card scroll" style="padding:6px 10px">
       <table class="tbl">
@@ -253,16 +279,19 @@
 </nav>
 
 <div id="toast"></div>
+<input type="file" id="importFile" accept=".json,.invjson,application/json" style="display:none">
 
-<!-- ============ CÁMARA ============ -->
-<div id="cam">
-  <video id="video" playsinline muted></video>
-  <div class="reticle"></div>
-  <div class="bar">
-    <button class="btn" id="camClose">✕ Cerrar</button>
-    <span id="camStatus" style="font-size:13px">Apunta al código…</span>
+<!-- ============ MODAL: pegar lista ============ -->
+<div id="modalPaste" class="modal">
+  <div class="sheet">
+    <h2 style="margin-top:0">📋 Pegar lista de códigos</h2>
+    <p class="muted" style="font-size:12.5px;margin:0 0 8px">Pega varios UPC/EAN o SKU (uno por línea, o separados por espacio/coma). Se sumará <b>1 a cada código</b> tras tu confirmación.</p>
+    <textarea id="pasteArea" rows="8" placeholder="16894286&#10;17059252&#10;17265607&#10;…"></textarea>
+    <div class="row" style="margin-top:10px">
+      <button class="btn ghost" id="pasteCancel">Cancelar</button>
+      <button class="btn primary" id="pasteGo">Revisar y sumar →</button>
+    </div>
   </div>
-  <div class="hint">Mantén el código dentro del recuadro</div>
 </div>
 
 <script>
@@ -526,18 +555,23 @@ function renderScan(){
   $('#undoBtn').onclick = undoLast;
 }
 
+let diffSel = { marca:'', clase:'', sub:'' };
+function fillDiffSelects(){
+  const ps = scopedProducts();
+  const opts = (arr, cur) => '<option value="">'+arr.head+'</option>' + arr.list.sort().map(v=>`<option value="${esc(v.k)}"${v.k===cur?' selected':''}>${esc(v.d)}</option>`).join('');
+  const marcas = [...new Set(ps.map(p=>p.marca).filter(Boolean))].map(m=>({k:m,d:m}));
+  const clases = [...new Map(ps.map(p=>[p.clase, p.dclase||p.clase])).entries()].filter(x=>x[0]).map(x=>({k:x[0],d:x[1]}));
+  const subs = [...new Map(ps.filter(p=>!diffSel.clase||p.clase===diffSel.clase).map(p=>[p.sub, p.dsub||p.sub])).entries()].filter(x=>x[0]).map(x=>({k:x[0],d:x[1]}));
+  $('#fMarca').innerHTML = opts({head:'Todas las marcas', list:marcas}, diffSel.marca);
+  $('#fClase').innerHTML = opts({head:'Todas las clases', list:clases}, diffSel.clase);
+  $('#fSub').innerHTML   = opts({head:'Todas las subclases', list:subs}, diffSel.sub);
+}
 function renderDiff(){
   if(!DATA||!state) return;
+  fillDiffSelects();
   const body = $('#diffBody');
-  let ps = scopedProducts();
-  ps = ps.filter(p=>{
-    const s = prodStat(p);
-    if(diffFilter==='difs') return s.fis !== p.disp;
-    if(diffFilter==='falta') return s.fis < p.disp && (p.number in state.counts || p.disp>0);
-    if(diffFilter==='exc') return s.fis > p.disp;
-    if(diffFilter==='sin') return !(p.number in state.counts);
-    return true;
-  }).sort((a,b)=>Math.abs(prodStat(b).dif)-Math.abs(prodStat(a).dif));
+  let ps = diffFilteredProducts().sort((a,b)=>Math.abs(prodStat(b).dif)-Math.abs(prodStat(a).dif));
+  $('#diffCount').textContent = ps.length + ' producto' + (ps.length===1?'':'s');
   if(!ps.length){ body.innerHTML = '<tr><td colspan="4"><div class="empty">Sin resultados para este filtro.</div></td></tr>'; return; }
   body.innerHTML = ps.map(p=>{
     const s = prodStat(p);
@@ -618,17 +652,19 @@ function renderHist(){
     const active = s.id===store.activeId;
     return `<div class="prod" style="${active?'border-color:var(--brand)':''}">
       <div class="info">
-        <div class="name">${esc(s.name)} ${active?'<span class="tag ok">activo</span>':''}</div>
+        <div class="name">${esc(s.name)} ${active?'<span class="tag ok">activo</span>':''} ${s.finished?'<span class="tag falta">finalizado</span>':''}</div>
         <div class="sub">${prods} prod. contados · ${fmt(units)} u.${nf?' · '+nf+' no encontr.':''} · ${new Date(s.updatedAt).toLocaleString('es-CL')}</div>
       </div>
-      <div style="display:flex;gap:6px;flex-shrink:0">
+      <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">
         ${active?'':`<button class="btn sm primary" data-open="${s.id}">Continuar</button>`}
+        <button class="btn sm ghost" data-share="${s.id}" title="Compartir a otro dispositivo">🔗</button>
         <button class="btn sm ghost" data-csv="${s.id}" title="Exportar CSV">⬇</button>
         <button class="btn sm ghost" data-delses="${s.id}" title="Borrar">🗑</button>
       </div>
     </div>`;
   }).join('');
   $$('[data-open]').forEach(b=>b.onclick=()=>{ try{ if(activate(b.dataset.open)){ renderAll(); toast('<b>Continuando</b>'+esc(state.name),'ok'); goTab('scan'); } }catch(e){ toast('<b>No se pudo abrir</b>'+esc(e.message),'bad'); } });
+  $$('[data-share]').forEach(b=>b.onclick=()=>{ try{ shareSession(b.dataset.share); }catch(e){ toast('<b>Error al compartir</b>'+esc(e.message),'bad'); } });
   $$('[data-csv]').forEach(b=>b.onclick=()=>{ try{ exportSessionCSV(b.dataset.csv); }catch(e){ toast('<b>Error al exportar</b>'+esc(e.message),'bad'); } });
   $$('[data-delses]').forEach(b=>b.onclick=()=>{ const s=store.sessions[b.dataset.delses]; if(confirm('¿Borrar el inventario "'+(s?s.name:'')+'" y todo su conteo?')){ deleteSession(b.dataset.delses); renderAll(); } });
 }
@@ -699,9 +735,23 @@ function exportSessionCSV(id){
   const fname = 'inv_'+(s.name||'inventario').replace(/[^\w\-]+/g,'_')+'.csv';
   downloadLatin1(fname, buildFullCSV(d, s));
 }
+function diffFilteredProducts(){
+  let ps = scopedProducts();
+  if(diffSel.marca) ps = ps.filter(p=>p.marca===diffSel.marca);
+  if(diffSel.clase) ps = ps.filter(p=>p.clase===diffSel.clase);
+  if(diffSel.sub)   ps = ps.filter(p=>p.sub===diffSel.sub);
+  return ps.filter(p=>{ const s=prodStat(p);
+    if(diffFilter==='difs') return s.fis!==p.disp;
+    if(diffFilter==='falta') return s.fis<p.disp && (p.number in state.counts || p.disp>0);
+    if(diffFilter==='exc') return s.fis>p.disp;
+    if(diffFilter==='sin') return !(p.number in state.counts);
+    return true;
+  });
+}
 function expDiff(){
+  if(!DATA||!state){ toast('Carga un archivo primero.','warn'); return; }
   const rows = [['NUMBER','DESCRIPCION','MARCA','CLASE','SUBCLASE','DISPONIBLE','FISICO','DIFERENCIA','ESTADO']];
-  scopedProducts().forEach(p=>{ const s=prodStat(p);
+  diffFilteredProducts().forEach(p=>{ const s=prodStat(p);
     const est = !(p.number in state.counts)?'SIN CONTAR': s.fis>p.disp?'EXCEDENTE': s.fis<p.disp?'FALTANTE':'OK';
     rows.push([p.number,p.desc,p.marca,p.dclase,p.dsub,fmt(p.disp),fmt(s.fis),fmt(s.fis-p.disp),est]);
   });
@@ -713,40 +763,132 @@ function expNf(){
   download('inventario_no_encontrados.csv', rows);
 }
 
-/* ---------- cámara (BarcodeDetector nativo) ---------- */
-let stream=null, detector=null, scanning=false, lastCode='', lastAt=0;
+/* ---------- cámara embebida (BarcodeDetector en Android, ZXing en iPhone) ---------- */
+let stream=null, detector=null, scanning=false, lastCode='', lastAt=0, zxing=null, zxingLoading=null;
+const ZXING_URL = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
+
+function onCamHit(val){
+  if(!val) return;
+  const now = Date.now();
+  if(val===lastCode && now-lastAt<1500) return;   // anti-repetición
+  lastCode=val; lastAt=now;
+  $('#camStatus').textContent = '✔ '+val;
+  beep(true); vibrate(45);
+  addCount(String(val).trim(), +($('#qty').value||1));   // suma y suena; renderScan actualiza "últimos 3"
+}
+function loadZXing(){
+  if(window.ZXing) return Promise.resolve();
+  if(zxingLoading) return zxingLoading;
+  zxingLoading = new Promise((res,rej)=>{
+    const s=document.createElement('script'); s.src=ZXING_URL;
+    s.onload=res; s.onerror=()=>rej(new Error('sin conexión para cargar el escáner'));
+    document.head.appendChild(s);
+  });
+  return zxingLoading;
+}
 async function openCam(){
-  if(!('BarcodeDetector' in window)){
-    toast('<b>Cámara no disponible</b>Tu navegador no soporta escaneo por cámara (común en iPhone/Safari). Usa un lector Bluetooth o escribe el código. Chrome en Android sí funciona.', 'warn', 6000);
-    $('#code').focus(); return;
+  if(!state){ toast('Abre o crea un inventario primero.','warn'); return; }
+  if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)){
+    toast('<b>Cámara no disponible</b>Este navegador no permite usar la cámara. Usa un lector Bluetooth o escribe el código.','warn',6000); return;
   }
+  const v=$('#video');
+  $('#camCard').style.display='block';
+  $('#camStatus').textContent='Iniciando cámara…';
+  scanning=true; lastCode='';
   try{
-    detector = detector || new window.BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf']});
-    stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' } });
-    $('#video').srcObject = stream; await $('#video').play();
-    $('#cam').classList.add('on'); scanning=true; loopDetect();
-  }catch(e){ toast('<b>No se pudo abrir la cámara</b>'+esc(e.message), 'bad', 4000); }
+    if('BarcodeDetector' in window){
+      detector = detector || new window.BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','code_93','itf','codabar']});
+      stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ideal:'environment'} } });
+      v.srcObject=stream; await v.play();
+      $('#camStatus').textContent='Buscando código…';
+      loopNative();
+    } else {
+      $('#camStatus').textContent='Cargando escáner…';
+      await loadZXing();               // iPhone: no hay BarcodeDetector → ZXing
+      zxing = zxing || new window.ZXing.BrowserMultiFormatReader();
+      $('#camStatus').textContent='Buscando código…';
+      await zxing.decodeFromConstraints(
+        { video:{ facingMode:{ideal:'environment'} } }, v,
+        (result)=>{ if(result && scanning) onCamHit(result.getText()); });
+    }
+  }catch(e){
+    closeCam();
+    toast('<b>No se pudo abrir la cámara</b>'+esc(e.message||e)+'<br>En iPhone usa Safari y acepta el permiso de cámara.','bad',6500);
+  }
 }
 function closeCam(){
-  scanning=false; $('#cam').classList.remove('on');
-  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  scanning=false;
+  try{ if(zxing && zxing.reset) zxing.reset(); }catch(e){}
+  if(stream){ try{ stream.getTracks().forEach(t=>t.stop()); }catch(e){} stream=null; }
+  const v=$('#video');
+  if(v){ try{ if(v.srcObject) v.srcObject.getTracks().forEach(t=>t.stop()); }catch(e){} v.srcObject=null; }
+  $('#camCard').style.display='none';
 }
-async function loopDetect(){
+async function loopNative(){
   if(!scanning) return;
   try{
     const codes = await detector.detect($('#video'));
-    if(codes && codes.length){
-      const val = codes[0].rawValue;
-      const now = Date.now();
-      if(val && (val!==lastCode || now-lastAt>1500)){
-        lastCode=val; lastAt=now;
-        $('#camStatus').textContent = '✔ '+val;
-        addCount(val, +($('#qty').value||1));
-        beep(true);
-      }
-    }
+    if(codes && codes.length) onCamHit(codes[0].rawValue);
   }catch(e){}
-  requestAnimationFrame(loopDetect);
+  if(scanning) requestAnimationFrame(loopNative);
+}
+
+/* ---------- pegar lista de códigos ---------- */
+function openPaste(){ if(!state){ toast('Abre o crea un inventario primero.','warn'); return; } $('#pasteArea').value=''; $('#modalPaste').classList.add('on'); setTimeout(()=>$('#pasteArea').focus(),100); }
+function closePaste(){ $('#modalPaste').classList.remove('on'); }
+function processPaste(){
+  const raw = $('#pasteArea').value || '';
+  const codes = raw.split(/[\s,;]+/).map(c=>c.trim()).filter(Boolean);
+  if(!codes.length){ toast('No hay códigos que procesar.','warn'); return; }
+  let ok=0, nf=0;
+  codes.forEach(c=>{ if(resolve(c)) ok++; else nf++; });
+  const msg = 'Se sumará 1 a cada uno de '+codes.length+' códigos.\n\n'
+    + '• Reconocidos: '+ok+'\n• No reconocidos: '+nf+(nf?' (irán a Pendientes de revisar)':'')
+    + '\n\n¿Estás seguro?';
+  if(!confirm(msg)) return;
+  codes.forEach(c=>addCount(c, 1));
+  closePaste();
+  toast('<b>Lista procesada</b>'+ok+' sumados · '+nf+' no reconocidos','ok',3600);
+}
+
+/* ---------- finalizar / compartir / importar (multi-dispositivo) ---------- */
+function finishInventory(){
+  if(!state){ toast('No hay inventario activo.','warn'); return; }
+  const already = state.finished;
+  if(!confirm((already?'Este inventario ya está finalizado. ':'')+'¿Finalizar "'+state.name+'"?\n\nSe marcará como terminado y podrás compartirlo para verlo en otro dispositivo.')) return;
+  state.finished = true; state.finishedAt = Date.now(); save();
+  renderAll();
+  if(confirm('Inventario finalizado ✅\n\n¿Compartir/descargar ahora el archivo para abrirlo en otro dispositivo?')) shareSession(state.id);
+}
+function serializeSession(s){
+  return JSON.stringify({ app:'inventario-beta', v:1, session:s });
+}
+async function shareSession(id){
+  const s = store.sessions[id]; if(!s) return;
+  const data = serializeSession(s);
+  const fname = 'inventario_'+(s.name||'inv').replace(/[^\w\-]+/g,'_')+'.json';
+  const file = new File([data], fname, {type:'application/json'});
+  // 1) Web Share con archivo (móvil): AirDrop / WhatsApp / Mail…
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({ files:[file], title:s.name, text:'Inventario: '+s.name }); return; }catch(e){ if(e && e.name==='AbortError') return; }
+  }
+  // 2) Descarga como archivo .json
+  const blob=new Blob([data],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast('<b>Archivo del inventario descargado</b>Ábrelo en el otro dispositivo con “⬆ Importar”.','ok',4200);
+}
+function importSessionText(text){
+  let obj; try{ obj=JSON.parse(text); }catch(e){ toast('<b>Archivo no válido</b>','bad'); return; }
+  const s = obj && obj.session ? obj.session : obj;
+  if(!s || !s.fileText || !s.counts){ toast('<b>Archivo no reconocido</b>No parece un inventario exportado.','bad',4000); return; }
+  const dup = Object.values(store.sessions).find(x=>x.fileSig===s.fileSig && x.name===s.name);
+  const id = newId();
+  s.id = id; s.name = dup ? (s.name+' (importado)') : s.name; s.updatedAt=Date.now();
+  store.sessions[id]=s;
+  try{ activate(id); }catch(e){ store.activeId=id; state=s; }
+  renderAll(); goTab('diff');
+  toast('<b>Inventario importado</b>'+esc(s.name)+' — revisa las diferencias','ok',3600);
 }
 
 /* ---------- navegación ---------- */
@@ -801,14 +943,31 @@ function bind(){
   $('#qPlus').onclick = ()=>$('#qty').value = (+$('#qty').value||0)+1;
   $('#qMinus').onclick = ()=>$('#qty').value = Math.max(1,(+$('#qty').value||1)-1);
   $('#reFocus').onclick = ()=>$('#code').focus();
-  $('#scanCamBtn').onclick = openCam;
+  $('#scanCamBtn').onclick = ()=>{ if(scanning) closeCam(); else openCam(); };
   $('#camClose').onclick = closeCam;
 
-  $$('#diffFilters .chip').forEach(c=>c.onclick=()=>{
-    diffFilter=c.dataset.f; $$('#diffFilters .chip').forEach(x=>x.classList.toggle('on',x===c)); renderDiff();
-  });
+  // pegar lista
+  $('#pasteBtn').onclick = openPaste;
+  $('#pasteCancel').onclick = closePaste;
+  $('#pasteGo').onclick = processPaste;
+  $('#modalPaste').addEventListener('click', e=>{ if(e.target.id==='modalPaste') closePaste(); });
+
+  // finalizar / compartir / importar
+  $('#finishBtn').onclick = finishInventory;
+  $('#importBtn').onclick = ()=>$('#importFile').click();
+  $('#importFile').onchange = e=>{ const f=e.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ importSessionText(rd.result); e.target.value=''; }; rd.readAsText(f); };
+
+  // filtros de diferencias
+  $('#diffFilters').addEventListener('click', e=>{ const c=e.target.closest('.chip'); if(!c) return;
+    diffFilter=c.dataset.f; $$('#diffFilters .chip').forEach(x=>x.classList.toggle('on',x===c)); renderDiff(); });
+  $('#fMarca').onchange = ()=>{ diffSel.marca=$('#fMarca').value; renderDiff(); };
+  $('#fClase').onchange = ()=>{ diffSel.clase=$('#fClase').value; diffSel.sub=''; renderDiff(); };
+  $('#fSub').onchange   = ()=>{ diffSel.sub=$('#fSub').value; renderDiff(); };
   $('#expDiff').onclick = expDiff;
   $('#expNf').onclick = expNf;
+
+  // cerrar cámara al cambiar de pestaña
+  $$('nav button').forEach(b=>b.addEventListener('click', ()=>{ if(b.dataset.tab!=='scan' && scanning) closeCam(); }));
 }
 
 /* ---------- init ---------- */
