@@ -65,7 +65,8 @@
   .scanbox input{font-size:18px; font-weight:700; letter-spacing:1px}
   .stepper{display:flex; align-items:center; gap:0; border:1px solid var(--line); border-radius:10px; overflow:hidden}
   .stepper button{width:44px; height:46px; border:none; background:var(--card2); color:var(--txt); font-size:20px; font-weight:800}
-  .stepper input{width:52px; text-align:center; border:none; border-left:1px solid var(--line); border-right:1px solid var(--line); border-radius:0; background:var(--bg2)}
+  .stepper input{width:72px; font-size:19px; font-weight:800; text-align:center; border:none; border-left:1px solid var(--line); border-right:1px solid var(--line); border-radius:0; background:var(--bg2); -moz-appearance:textfield; appearance:textfield}
+  .stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
   .last{margin-top:6px}
   .prod{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin-bottom:8px; display:flex; gap:10px; align-items:center}
   .prod .info{flex:1; min-width:0}
@@ -370,6 +371,7 @@ function resolve(codeRaw){
   for(const [u,n] of DATA.byUpc){ if(u.replace(/^0+/,'')===alt) return {number:n, by:'upc', code}; }
   return null;
 }
+function resetQty(){ const q=$('#qty'); if(q) q.value='1'; }
 function addCount(codeRaw, qty){
   qty = qty||1;
   const r = resolve(codeRaw);
@@ -389,6 +391,7 @@ function addCount(codeRaw, qty){
   if(fis > p.disp){
     toast('<b>⚠️ EXCEDENTE · '+esc(p.desc)+'</b>Físico '+fis+' supera disponible '+fmt(p.disp)+' (+'+fmt(fis-p.disp)+')', 'bad', 5000);
   }
+  resetQty();
   renderScan();
 }
 function handleUnknown(code, qty){
@@ -397,6 +400,7 @@ function handleUnknown(code, qty){
   save();
   beep(false); vibrate([60,40,60]);
   toast('<b>⚠️ Código no reconocido</b><code>'+esc(code)+'</code> no está en el archivo. No se sumó. Queda pendiente de revisar.', 'warn', 4500);
+  resetQty();
   renderNF();
 }
 
