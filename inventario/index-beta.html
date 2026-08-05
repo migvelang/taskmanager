@@ -10,7 +10,14 @@
     --bg:#0f172a; --bg2:#1e293b; --card:#1e293b; --card2:#273449;
     --txt:#e2e8f0; --muted:#94a3b8; --line:#334155;
     --brand:#38bdf8; --brand2:#0ea5e9; --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+    --headerbg:rgba(15,23,42,.92); --navbg:rgba(15,23,42,.96);
     --radius:14px;
+  }
+  :root.light{
+    --bg:#f1f5f9; --bg2:#ffffff; --card:#ffffff; --card2:#eef2f7;
+    --txt:#0f172a; --muted:#64748b; --line:#dbe2ea;
+    --brand:#0284c7; --brand2:#0ea5e9; --ok:#16a34a; --warn:#d97706; --bad:#dc2626;
+    --headerbg:rgba(255,255,255,.9); --navbg:rgba(255,255,255,.95);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0}
@@ -20,14 +27,17 @@
     padding-bottom:76px;
   }
   header{
-    position:sticky; top:0; z-index:20; background:rgba(15,23,42,.92);
+    position:sticky; top:0; z-index:20; background:var(--headerbg);
     backdrop-filter:blur(8px); border-bottom:1px solid var(--line);
     padding:10px 14px; display:flex; align-items:center; gap:10px;
   }
   header .logo{font-weight:800; letter-spacing:.3px; font-size:17px}
   header .badge{font-size:10px; background:var(--brand); color:#00121f; font-weight:800;
     padding:2px 6px; border-radius:6px; letter-spacing:.5px}
-  header .scope{margin-left:auto; font-size:11px; color:var(--muted); text-align:right; max-width:52%}
+  header .scope{margin-left:auto; font-size:11px; color:var(--muted); text-align:right; max-width:48%}
+  .iconbtn{flex-shrink:0; width:34px; height:34px; border-radius:9px; border:1px solid var(--line);
+    background:var(--card2); color:var(--txt); font-size:16px; cursor:pointer; padding:0; line-height:1}
+  .iconbtn:active{transform:scale(.94)}
   main{padding:14px; max-width:720px; margin:0 auto}
   section{display:none}
   section.active{display:block; animation:fade .18s ease}
@@ -90,14 +100,14 @@
   /* table */
   .tbl{width:100%; border-collapse:collapse; font-size:13px}
   .tbl th,.tbl td{padding:8px 6px; border-bottom:1px solid var(--line); text-align:left}
-  .tbl th{color:var(--muted); font-size:11px; text-transform:uppercase; position:sticky; top:52px; background:var(--bg)}
+  .tbl th{color:var(--muted); font-size:11px; text-transform:uppercase; position:sticky; top:0; z-index:2; background:var(--card)}
   .tbl td.n{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap}
   .scroll{max-height:60vh; overflow:auto; -webkit-overflow-scrolling:touch}
   .filters{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px}
   .chip{font-size:12px; padding:6px 11px; border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--muted); cursor:pointer}
   .chip.on{background:var(--brand2); color:#00121f; border-color:transparent; font-weight:700}
   /* nav */
-  nav{position:fixed; bottom:0; left:0; right:0; z-index:30; display:flex; background:rgba(15,23,42,.96);
+  nav{position:fixed; bottom:0; left:0; right:0; z-index:30; display:flex; background:var(--navbg);
     backdrop-filter:blur(8px); border-top:1px solid var(--line)}
   nav button{flex:1; background:none; border:none; color:var(--muted); padding:9px 2px 8px; font-size:10px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px}
   nav button.on{color:var(--brand)}
@@ -126,6 +136,7 @@
   <span class="logo">📦 Inventario</span>
   <span class="badge">BETA</span>
   <span class="scope" id="scopeLbl">Sin archivo cargado</span>
+  <button class="iconbtn" id="themeBtn" title="Modo claro / oscuro" aria-label="Cambiar tema">🌙</button>
 </header>
 
 <main>
@@ -902,6 +913,7 @@ function goTab(tab){
 /* ---------- eventos ---------- */
 function bind(){
   $$('nav button').forEach(b=>b.onclick=()=>goTab(b.dataset.tab));
+  $('#themeBtn').onclick = toggleTheme;
 
   $('#file').onchange = e=>{
     const f = e.target.files[0]; if(!f) return;
@@ -969,7 +981,27 @@ function bind(){
   $$('nav button').forEach(b=>b.addEventListener('click', ()=>{ if(b.dataset.tab!=='scan' && scanning) closeCam(); }));
 }
 
+/* ---------- tema claro / oscuro ---------- */
+const THEMEKEY = 'inv_beta_theme';
+function applyTheme(t){
+  const light = t==='light';
+  document.documentElement.classList.toggle('light', light);
+  const b=$('#themeBtn'); if(b) b.textContent = light ? '☀️' : '🌙';
+  const meta=document.querySelector('meta[name="theme-color"]'); if(meta) meta.setAttribute('content', light?'#f1f5f9':'#0f172a');
+}
+function initTheme(){
+  let t; try{ t=localStorage.getItem(THEMEKEY); }catch(e){}
+  if(!t) t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  applyTheme(t);
+}
+function toggleTheme(){
+  const t = document.documentElement.classList.contains('light') ? 'dark' : 'light';
+  try{ localStorage.setItem(THEMEKEY, t); }catch(e){}
+  applyTheme(t);
+}
+
 /* ---------- init ---------- */
+initTheme();
 loadStore(); bind();
 if(store.activeId && store.sessions[store.activeId] && store.sessions[store.activeId].fileText){
   try{ activate(store.activeId); }catch(e){ store.activeId=null; state=null; DATA=null; }
