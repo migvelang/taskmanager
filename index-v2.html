@@ -61,10 +61,10 @@ body::after{ content:''; position:fixed; inset:0; z-index:-1; pointer-events:non
 /* ---------- header con reloj ---------- */
 .hdr{ display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
 .brand h1{ font-size:16px; font-weight:800; letter-spacing:.6px; background:linear-gradient(100deg,var(--planificar),var(--delegar) 55%,var(--urgente)); -webkit-background-clip:text; background-clip:text; color:transparent; }
-.clockbox{ display:flex; align-items:baseline; gap:9px; margin-top:5px; flex-wrap:wrap; }
-.ctime{ font-size:31px; font-weight:800; font-family:ui-monospace,'SF Mono',Menlo,monospace; line-height:1; letter-spacing:-1px;
+.datebar{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin:0 0 14px; padding:0 3px; }
+.ctime{ font-size:30px; font-weight:800; font-family:ui-monospace,'SF Mono',Menlo,monospace; line-height:1; letter-spacing:-1px;
         background:linear-gradient(120deg,var(--planificar),var(--delegar)); -webkit-background-clip:text; background-clip:text; color:transparent; }
-.cdate{ font-size:11.5px; color:var(--muted); font-weight:600; letter-spacing:.4px; }
+.cdate{ font-size:12px; color:var(--muted); font-weight:700; letter-spacing:.5px; }
 .hdrctl{ display:flex; gap:7px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
 .iconbtn{ font-size:15px; padding:8px 11px; border-radius:14px; border:1px solid var(--border); background:var(--card); color:var(--muted); cursor:pointer; line-height:1; box-shadow:var(--shadow); }
 .iconbtn:active{ border-color:var(--planificar); }
@@ -190,11 +190,6 @@ body::after{ content:''; position:fixed; inset:0; z-index:-1; pointer-events:non
 .evtime{ font-size:12px; font-weight:800; color:var(--c); font-family:ui-monospace,monospace; flex:0 0 44px; }
 .evtxt{ font-size:13.5px; flex:1; overflow-wrap:anywhere; }
 .evsrc{ font-size:8.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; flex:none; }
-.mini-cal{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; }
-.mini-cell{ aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; border-radius:9px; background:var(--card2); font-size:11px; cursor:pointer; }
-.mini-cell.dim{ opacity:.3; }
-.mini-cell.today{ outline:1.5px solid var(--planificar); color:var(--planificar); font-weight:800; }
-.mini-cell i{ width:4px; height:4px; border-radius:50%; display:block; background:var(--delegar); }
 
 /* ---------- inputs ---------- */
 .addrow{ display:flex; gap:8px; margin-top:11px; flex-wrap:wrap; }
@@ -254,7 +249,6 @@ details summary::before{ content:'▸ '; } details[open] summary::before{ conten
 <div class="hdr">
   <div class="brand">
     <h1>✨ DAILY TASK MANAGER</h1>
-    <div class="clockbox"><span class="ctime" id="reloj">--:--</span><span class="cdate" id="fecha">—</span></div>
   </div>
   <div class="hdrctl">
     <button class="iconbtn" id="theme-btn" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
@@ -264,6 +258,11 @@ details summary::before{ content:'▸ '; } details[open] summary::before{ conten
       <span class="lastsync" id="lastsync">sin sincronizar aún</span>
     </div>
   </div>
+</div>
+
+<div class="datebar">
+  <span class="cdate" id="fecha">—</span>
+  <span class="ctime" id="reloj">--:--</span>
 </div>
 
 <div class="card set" id="setPanel">
@@ -288,8 +287,8 @@ details summary::before{ content:'▸ '; } details[open] summary::before{ conten
 <!-- ============ HOY ============ -->
 <div id="v-hoy">
   <div class="hero">
-    <div class="h1" id="hero-dow">—</div>
-    <div class="h2" id="hero-date">—</div>
+    <div class="h1">TU DÍA</div>
+    <div class="h2" id="hero-greet">—</div>
     <div class="h3" id="hero-sum">—</div>
   </div>
   <div id="hoy-cta"></div>
@@ -363,11 +362,6 @@ details summary::before{ content:'▸ '; } details[open] summary::before{ conten
     <div id="agendaList"></div>
   </div>
 
-  <div class="card">
-    <h2 style="color:var(--caso)">🔭 MES SIGUIENTE · <span id="nextMonthLabel"></span></h2>
-    <div class="dow"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
-    <div class="mini-cal" id="nextMonthGrid"></div>
-  </div>
 </div>
 
 <!-- ============ CASOS ============ -->
@@ -382,7 +376,11 @@ details summary::before{ content:'▸ '; } details[open] summary::before{ conten
   </div>
   <div id="casos-cta"></div>
   <div class="card">
-    <h2 style="color:var(--caso)">🎫 CASOS ABIERTOS</h2>
+    <h2 style="color:var(--caso)">🎫 CASOS ABIERTOS <span id="casos-count" style="color:var(--muted); font-weight:600"></span></h2>
+    <div style="position:relative; margin-bottom:11px">
+      <input id="in-buscar" placeholder="🔍 Buscar por N° o descripción…" oninput="renderCasos()" style="padding-right:38px">
+      <button class="mini" onclick="limpiarBusqueda()" style="position:absolute; right:9px; top:50%; transform:translateY(-50%); font-size:14px">✕</button>
+    </div>
     <div id="casos"></div>
   </div>
   <div class="card">
@@ -720,8 +718,8 @@ function ctaRevisar(){
 
 function renderHoy(){
   const h=hoy(), n=new Date();
-  $('hero-dow').textContent=n.toLocaleDateString('es-CL',{weekday:'long'}).toUpperCase();
-  $('hero-date').textContent=n.toLocaleDateString('es-CL',{day:'numeric',month:'long'});
+  const hh=n.getHours();
+  $('hero-greet').textContent = (hh<12?'Buenos días':hh<20?'Buenas tardes':'Buenas noches')+' 👋';
   const evsHoy=sortEv(evsOf(h));
   const urg=S.tareas.filter(t=>!t.done && t.cat==='urgente');
   const rojos=casosRojos();
@@ -805,14 +803,19 @@ function casoRow(c,i,compact){
   if(!compact) h+='<div class="cdet" id="det-'+i+'" style="display:none">última actividad: '+esc(c.act||'—')+' · estado: '+esc(c.estado)+'</div>';
   return h;
 }
+function limpiarBusqueda(){ const i=$('in-buscar'); if(i){ i.value=''; renderCasos(); i.focus(); } }
 function renderCasos(){
   $('casos-cta').innerHTML=ctaRevisar();
-  const orden=[...S.casos].sort((a,b)=>{
+  const q=(($('in-buscar')||{}).value||'').trim().toLowerCase();
+  const filtrados = q ? S.casos.filter(c=>(c.id+' '+c.desc).toLowerCase().includes(q)) : S.casos;
+  const orden=[...filtrados].sort((a,b)=>{
     const r={dang:0,warn:1,ok:2};
     return r[nivelCaso(a).lv]-r[nivelCaso(b).lv];
   });
+  $('casos-count').textContent = q ? '· '+orden.length+' de '+S.casos.length : (S.casos.length?'· '+S.casos.length:'');
   $('casos').innerHTML = orden.length ? orden.map(c=>casoRow(c,S.casos.indexOf(c),false)).join('')
-    : '<div class="empty"><span class="ee">🎉</span>Sin casos abiertos</div>';
+    : (q ? '<div class="empty"><span class="ee">🔍</span>Ningún caso coincide con “'+esc(q)+'”</div>'
+         : '<div class="empty"><span class="ee">🎉</span>Sin casos abiertos</div>');
   $('cerrados').innerHTML = S.cerrados.length
     ? S.cerrados.map((c,i)=>'<div class="ccard done" style="border-left-color:var(--done)"><span class="cid">'+esc(c.id)+'</span><span class="cdesc">'+esc(c.desc)+'</span><span class="muted">'+esc(c.cerrado||'')+'</span><button class="mini" onclick="reabrirCaso('+i+')" title="reabrir">↩️</button></div>').join('')
     : '<div class="empty"><span class="ee">📭</span>Aún no hay cierres</div>';
@@ -865,17 +868,6 @@ function renderCal(){
     $('wgrid').innerHTML=h;
   }
 
-  const nb=new Date(); nb.setDate(1); nb.setMonth(nb.getMonth()+1);
-  $('nextMonthLabel').textContent=nb.toLocaleDateString('es-CL',{month:'long',year:'numeric'}).toUpperCase();
-  const f2=new Date(nb.getFullYear(),nb.getMonth(),1);
-  const s2=new Date(f2); s2.setDate(f2.getDate()-((f2.getDay()+6)%7));
-  let mh='';
-  for(let i=0;i<42;i++){
-    const d=new Date(s2); d.setDate(s2.getDate()+i);
-    const ds=fmt(d), inM=d.getMonth()===nb.getMonth();
-    mh+='<div class="mini-cell'+(ds===hoy()?' today':'')+(inM?'':' dim')+'" onclick="jumpToDate(\''+ds+'\')">'+d.getDate()+(evsOf(ds).length?'<i></i>':'')+'</div>';
-  }
-  $('nextMonthGrid').innerHTML=mh;
   renderAgenda();
 }
 function renderAgenda(){
