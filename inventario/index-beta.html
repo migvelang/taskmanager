@@ -175,7 +175,7 @@
         <button class="btn primary" id="connectBtn">Conectar</button>
         <button class="btn ghost" id="disconnectBtn">Desconectar</button>
       </div>
-      <details style="margin-top:10px">
+      <details style="margin-top:10px" id="cfgDetails">
         <summary>Configurar conexión (Firebase)</summary>
         <p class="muted" style="font-size:11.5px;margin:8px 0">Pega aquí la configuración de tu proyecto Firebase (objeto <code>firebaseConfig</code>). Se guarda en este dispositivo. Pídeme los pasos si aún no tienes el proyecto.</p>
         <textarea id="fbCfg" rows="7" placeholder='{&#10;  "apiKey": "…",&#10;  "authDomain": "…",&#10;  "projectId": "…",&#10;  "appId": "…"&#10;}'></textarea>
@@ -980,7 +980,14 @@ function importSessionText(text){
 }
 
 /* ================= EN LÍNEA (Firebase) ================= */
-const FB_CONFIG_HARDCODE = null;   // opcional: pegar aquí el objeto de config para no configurarlo en cada equipo
+const FB_CONFIG_HARDCODE = {      // proyecto Firebase de la empresa (config de cliente, seguro embeberla)
+  apiKey: "AIzaSyAU7zttaYeJO2U7pMdAyk3608w7ct0BGbg",
+  authDomain: "inventario-eb8f8.firebaseapp.com",
+  projectId: "inventario-eb8f8",
+  storageBucket: "inventario-eb8f8.firebasestorage.app",
+  messagingSenderId: "556208417264",
+  appId: "1:556208417264:web:f50b3dfa5700a8f0559535"
+};
 const FB_SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
 let online=false, fbdb=null, fbApp=null, fbName='', fbConfig=null, pushTimer=null, baseSyncedSig='', superUnsub=null, deviceId='';
 
@@ -998,6 +1005,7 @@ function renderOnlineCard(){
   const cb=$('#connectBtn'); if(cb) cb.textContent = online?'Reconectar':'Conectar';
   const nm=$('#fbName'); if(nm && document.activeElement!==nm && fbName) nm.value=fbName;
   const cfg=$('#fbCfg'); if(cfg && !cfg.value && fbConfig && !FB_CONFIG_HARDCODE){ try{ cfg.value=JSON.stringify(fbConfig,null,2); }catch(e){} }
+  const cd=$('#cfgDetails'); if(cd) cd.style.display = FB_CONFIG_HARDCODE ? 'none' : '';
   const ss=$('#superStatus'); if(ss) ss.textContent = online? 'en vivo ●' : 'desconectado';
 }
 async function connectOnline(){
