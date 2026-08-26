@@ -243,6 +243,7 @@
         </div>
         <button class="btn primary" id="scanCamBtn" style="height:46px">📷 Cámara</button>
         <button class="btn" id="pasteBtn" style="height:46px">📋 Pegar lista</button>
+        <button class="btn" id="searchBtn" style="height:46px" title="Buscar producto">🔍</button>
       </div>
       <p class="muted" style="font-size:11.5px;margin:9px 0 0">Un lector Bluetooth (modo HID/teclado) escribe aquí y suma solo con dejar el campo enfocado. <button class="btn sm ghost" id="reFocus" style="padding:2px 8px">Enfocar</button></p>
     </div>
@@ -288,6 +289,11 @@
       <select id="fClase"><option value="">Todas las clases</option></select>
       <select id="fSub"><option value="">Todas las subclases</option></select>
     </div>
+    <div class="row" style="margin-bottom:8px; gap:8px; align-items:center">
+      <label style="margin:0; flex:0 0 auto">Diferencia ≥</label>
+      <input type="number" id="fMinDif" min="0" value="0" inputmode="numeric" style="max-width:120px">
+      <span class="muted" style="font-size:11px; flex:1">(en unidades, + o −)</span>
+    </div>
     <div class="row" style="margin-bottom:10px; align-items:center">
       <span class="muted" id="diffCount" style="font-size:12px">—</span>
       <button class="btn sm ghost" id="expDiff" style="flex:0 0 auto">Exportar diferencias CSV</button>
@@ -322,8 +328,17 @@
       <h2 style="margin:0">Supervisor · en vivo</h2>
       <span class="muted" id="superStatus" style="margin-left:auto;font-size:12px"></span>
     </div>
-    <p class="muted" style="font-size:12.5px;margin:6px 0 12px">Quién está tomando inventario, su avance en tiempo real y descarga del CSV al finalizar. Necesitas estar <b>Conectado</b> (pestaña Cargar → En línea).</p>
-    <div id="superList"><div class="empty">Conéctate para ver la actividad en vivo.</div></div>
+    <div id="superGate" class="card" style="text-align:center">
+      <p class="muted" style="font-size:13px;margin:4px 0 12px">Este panel es <b>solo para el supervisor</b>. Inicia sesión con tu cuenta de Google autorizada para ver todos los inventarios en vivo.</p>
+      <button class="btn primary" id="superLoginBtn">Entrar como supervisor (Google)</button>
+    </div>
+    <div id="superWrap" style="display:none">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span class="muted" id="superWho" style="font-size:12px"></span>
+        <button class="btn sm ghost" id="superLogoutBtn" style="margin-left:auto">Salir</button>
+      </div>
+      <div id="superList"><div class="empty">Cargando actividad…</div></div>
+    </div>
   </section>
 </main>
 
@@ -351,6 +366,42 @@
   </div>
 </div>
 
+<!-- ============ MODAL: buscar producto ============ -->
+<div id="modalSearch" class="modal">
+  <div class="sheet">
+    <h2 style="margin-top:0">🔍 Buscar producto</h2>
+    <p class="muted" style="font-size:12.5px;margin:0 0 8px">Escribe parte del <b>código</b> (UPC/SKU) o de la <b>descripción</b>. Útil si el código de barras está cortado o borroso.</p>
+    <input type="text" id="searchInput" autocomplete="off" placeholder="Ej: 1725 · smart tank · epson">
+    <div id="searchResults" class="scroll" style="max-height:52vh;margin-top:10px"></div>
+    <div class="row" style="margin-top:10px"><button class="btn ghost block" id="searchClose">Cerrar</button></div>
+  </div>
+</div>
+
+<!-- ============ MODAL: imagen producto ============ -->
+<div id="modalImg" class="modal">
+  <div class="sheet" style="text-align:center">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <b id="imgTitle" style="font-size:13px;flex:1;text-align:left"></b>
+      <button class="btn sm ghost" id="imgClose">Cerrar</button>
+    </div>
+    <div id="imgWrap" style="min-height:200px;display:flex;align-items:center;justify-content:center;background:var(--bg2);border-radius:10px">
+      <img id="imgEl" style="max-width:100%;max-height:60vh;border-radius:10px" alt="">
+      <div id="imgMsg" class="muted" style="display:none">Sin imagen disponible para este SKU.</div>
+    </div>
+    <a id="imgLink" href="#" target="_blank" rel="noopener" class="muted" style="font-size:11px;display:inline-block;margin-top:8px">Abrir en pestaña nueva</a>
+  </div>
+</div>
+
+<!-- ============ MODAL: nombre (quién toma) ============ -->
+<div id="modalName" class="modal">
+  <div class="sheet">
+    <h2 style="margin-top:0">👤 ¿Quién toma inventario?</h2>
+    <p class="muted" style="font-size:12.5px;margin:0 0 8px">Escribe tu nombre. Queda asociado a tus conteos y el supervisor lo ve en línea.</p>
+    <input type="text" id="nameInput" autocomplete="off" placeholder="Tu nombre" enterkeyhint="done">
+    <div class="row" style="margin-top:12px"><button class="btn primary block" id="nameGo">Continuar →</button></div>
+  </div>
+</div>
+
 <script>
 "use strict";
 /* ============================================================
@@ -372,7 +423,7 @@ let lastExpanded = false;  // "últimos tomados": false=5, true=15
 function newId(){ return 'inv_'+Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
 function suggestName(fn){ const base=(fn||'inventario').replace(/\.[^.]+$/,'').slice(0,28); return base+' · '+new Date().toLocaleDateString('es-CL'); }
 function blankSession(name, fileText, fileSig){
-  return { id:newId(), name:name||'Inventario', fileText:fileText||'', fileSig:fileSig||'',
+  return { id:newId(), name:name||'Inventario', owner:(fbName||''), fileText:fileText||'', fileSig:fileSig||'',
            counts:{}, history:[], pending:{}, notFound:[], scope:{clase:'',sub:''},
            createdAt:Date.now(), updatedAt:Date.now() };
 }
@@ -542,17 +593,20 @@ function handleUnknown(code, qty, silent){
   if(confirmingUnknown) return;          // evita apilar diálogos con la cámara
   confirmingUnknown = true;
   toast('<b>⛔ Código NO reconocido</b><code>'+esc(code)+'</code>', 'bad', 3000);
-  const add = confirm('⛔ Código NO reconocido:\n\n'+code+'\n\nOjo: puede ser un QR u otro código escaneado por error (no el de barras).\n\n¿Agregarlo a la lista de "No encontrados" para revisar después?\n\nAceptar = agregar    ·    Cancelar = ignorar');
-  confirmingUnknown = false;
-  if(add){
-    state.pending[code] = (state.pending[code]||0) + qty;
-    save();
-    toast('<b>Agregado a pendientes</b><code>'+esc(code)+'</code> quedó para revisar.', 'warn', 2600);
-    renderNF();
-  } else {
-    toast('Código ignorado (no se agregó).', '', 1600);
-  }
-  resetQty();
+  // difiere el confirm para que el sonido/vibración se sientan ANTES del diálogo
+  setTimeout(()=>{
+    const add = confirm('⛔ Código NO reconocido:\n\n'+code+'\n\nOjo: puede ser un QR u otro código escaneado por error (no el de barras).\n\n¿Agregarlo a la lista de "No encontrados" para revisar después?\n\nAceptar = agregar    ·    Cancelar = ignorar');
+    confirmingUnknown = false;
+    if(add){
+      state.pending[code] = (state.pending[code]||0) + qty;
+      save();
+      toast('<b>Agregado a pendientes</b><code>'+esc(code)+'</code> quedó para revisar.', 'warn', 2600);
+      renderNF();
+    } else {
+      toast('Código ignorado (no se agregó).', '', 1600);
+    }
+    resetQty();
+  }, 180);
 }
 
 /* ---------- UNDO ---------- */
@@ -643,7 +697,7 @@ function renderScan(){
   $('#undoBtn').onclick = undoLast;
 }
 
-let diffSel = { marca:'', clase:'', sub:'' };
+let diffSel = { marca:'', clase:'', sub:'', min:0 };
 function fillDiffSelects(){
   const ps = scopedProducts();
   const opts = (arr, cur) => '<option value="">'+arr.head+'</option>' + arr.list.sort().map(v=>`<option value="${esc(v.k)}"${v.k===cur?' selected':''}>${esc(v.d)}</option>`).join('');
@@ -668,12 +722,14 @@ function renderDiff(){
       : `<span class="tag falta">${fmt(p.disp-s.fis)}</span>`;
     return `<tr>
       <td><div style="font-weight:600">${esc(p.desc||p.number)}</div>
-          <div class="muted" style="font-size:11px">${esc(p.marca)} · ${esc(p.dsub||p.dclase)} · SKU ${esc(p.number)}</div></td>
+          <div class="muted" style="font-size:11px">${esc(p.marca)} · ${esc(p.dsub||p.dclase)} · SKU ${esc(p.number)}
+          <button class="btn sm ghost imgbtn" data-img="${esc(p.number)}" style="padding:1px 7px;margin-left:4px">🖼 ver</button></div></td>
       <td class="n">${fmt(p.disp)}</td>
       <td class="n">${fmt(s.fis)}</td>
       <td class="n">${difTxt}</td>
     </tr>`;
   }).join('');
+  $$('#diffBody .imgbtn').forEach(b=>b.onclick=()=>openImg(b.dataset.img));
 }
 
 function renderNF(){
@@ -731,7 +787,8 @@ function renderAll(){
 /* ---------- historial de inventarios ---------- */
 function renderHist(){
   const el = $('#histList'); if(!el) return;
-  const arr = Object.values(store.sessions).sort((a,b)=>b.updatedAt-a.updatedAt);
+  // cada persona ve solo sus inventarios; el supervisor los ve todos en el panel Supervisor
+  const arr = Object.values(store.sessions).filter(s=>!fbName || !s.owner || s.owner===fbName).sort((a,b)=>b.updatedAt-a.updatedAt);
   if(!arr.length){ el.innerHTML='<div class="empty">Aún no hay inventarios guardados. Carga un archivo para empezar.</div>'; return; }
   el.innerHTML = arr.map(s=>{
     const prods = Object.keys(s.counts||{}).length;
@@ -827,6 +884,7 @@ function diffFilteredProducts(){
   if(diffSel.marca) ps = ps.filter(p=>p.marca===diffSel.marca);
   if(diffSel.clase) ps = ps.filter(p=>p.clase===diffSel.clase);
   if(diffSel.sub)   ps = ps.filter(p=>p.sub===diffSel.sub);
+  if(diffSel.min>0) ps = ps.filter(p=>Math.abs(prodStat(p).dif) >= diffSel.min);
   return ps.filter(p=>{ const s=prodStat(p);
     if(diffFilter==='difs') return s.fis!==p.disp;
     if(diffFilter==='falta') return s.fis<p.disp && (p.number in state.counts || p.disp>0);
@@ -938,6 +996,49 @@ function processPaste(){
   toast('<b>Lista procesada</b>'+ok+' sumados · '+nf+' no reconocidos','ok',3600);
 }
 
+/* ---------- buscar producto (lupa) ---------- */
+function openSearch(){ if(!state){ toast('Abre o crea un inventario primero.','warn'); return; } $('#searchInput').value=''; $('#searchResults').innerHTML='<div class="empty">Escribe para buscar…</div>'; $('#modalSearch').classList.add('on'); setTimeout(()=>$('#searchInput').focus(),100); }
+function closeSearch(){ $('#modalSearch').classList.remove('on'); }
+function doSearch(){
+  const q=($('#searchInput').value||'').trim().toLowerCase();
+  const el=$('#searchResults');
+  if(q.length<2){ el.innerHTML='<div class="empty">Escribe al menos 2 caracteres.</div>'; return; }
+  const res=[];
+  for(const p of DATA.products.values()){
+    const inCode = p.number.toLowerCase().includes(q) || p.upcs.some(u=>u.upc.toLowerCase().includes(q));
+    const inDesc = (p.desc||'').toLowerCase().includes(q) || (p.marca||'').toLowerCase().includes(q);
+    if(inCode||inDesc) res.push(p);
+    if(res.length>=40) break;
+  }
+  if(!res.length){ el.innerHTML='<div class="empty">Sin resultados para “'+esc(q)+'”.</div>'; return; }
+  el.innerHTML = res.map(p=>{
+    const s=prodStat(p);
+    return `<div class="prod">
+      <div class="info">
+        <div class="name">${esc(p.desc||p.number)}</div>
+        <div class="sub">${esc(p.marca)} · SKU ${esc(p.number)} · <code>${esc(p.upcs.map(u=>u.upc).join(' / '))}</code></div>
+        <div class="muted" style="font-size:11px">Físico ${fmt(s.fis)} de ${fmt(p.disp)} disp.</div>
+      </div>
+      <button class="btn sm ok" data-add="${esc(p.number)}">+ Sumar</button>
+    </div>`;
+  }).join('');
+  $$('#searchResults [data-add]').forEach(b=>b.onclick=()=>{ addCount(b.dataset.add, +($('#qty').value||1)); toast('<b>Sumado</b>'+esc(DATA.products.get(b.dataset.add).desc||b.dataset.add),'ok',1600); doSearch(); });
+}
+
+/* ---------- imagen del producto (Falabella por SKU) ---------- */
+function openImg(sku){
+  const url='https://media.falabella.com/falabellaCL/'+encodeURIComponent(sku)+'/public';
+  const img=$('#imgEl'), msg=$('#imgMsg'), lnk=$('#imgLink');
+  const p=DATA.products.get(sku);
+  $('#imgTitle').textContent=(p?(p.desc||''):'')+'  ·  SKU '+sku;
+  msg.style.display='none'; img.style.display='';
+  img.onerror=()=>{ img.style.display='none'; msg.style.display=''; };
+  img.onload=()=>{ img.style.display=''; msg.style.display='none'; };
+  img.src=url; lnk.href=url;
+  $('#modalImg').classList.add('on');
+}
+function closeImg(){ $('#modalImg').classList.remove('on'); const img=$('#imgEl'); if(img) img.src=''; }
+
 /* ---------- finalizar / compartir / importar (multi-dispositivo) ---------- */
 function finishInventory(){
   if(!state){ toast('No hay inventario activo.','warn'); return; }
@@ -989,9 +1090,25 @@ const FB_CONFIG_HARDCODE = {      // proyecto Firebase de la empresa (config de 
   appId: "1:556208417264:web:f50b3dfa5700a8f0559535"
 };
 const FB_SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
-let online=false, fbdb=null, fbApp=null, fbName='', fbConfig=null, pushTimer=null, baseSyncedSig='', superUnsub=null, deviceId='';
+const SUPERVISOR_EMAILS = ['miguelm.aranguiz@gmail.com'];   // correos autorizados a ver el panel Supervisor
+let online=false, fbdb=null, fbApp=null, fbName='', fbConfig=null, pushTimer=null, baseSyncedSig='', superUnsub=null, deviceId='', isSuper=false, authWired=false;
 
 function loadFbScript(f){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=FB_SDK+f; s.onload=res; s.onerror=()=>rej(new Error('sin conexión para cargar Firebase')); document.head.appendChild(s); }); }
+async function ensureFb(){
+  if(!fbConfig) throw new Error('Sin configuración de Firebase');
+  if(!window.firebase){ await loadFbScript('firebase-app-compat.js'); await loadFbScript('firebase-firestore-compat.js'); await loadFbScript('firebase-auth-compat.js'); }
+  if(!fbApp){ fbApp = window.firebase.apps && window.firebase.apps.length ? window.firebase.app() : window.firebase.initializeApp(fbConfig); }
+  fbdb = window.firebase.firestore();
+  try{ await fbdb.enablePersistence({synchronizeTabs:true}); }catch(e){}
+  if(!authWired){ authWired=true; window.firebase.auth().onAuthStateChanged(handleAuth); }
+  return fbdb;
+}
+function handleAuth(u){
+  const email=(u&&u.email||'').toLowerCase();
+  isSuper = !!email && SUPERVISOR_EMAILS.includes(email);
+  renderSuperGate();
+  if(isSuper) startSupervisor();
+}
 function loadOnlinePrefs(){
   try{ fbName=localStorage.getItem('inv_fb_name')||''; }catch(e){}
   try{ fbConfig = FB_CONFIG_HARDCODE || JSON.parse(localStorage.getItem('inv_fb_config')||'null'); }catch(e){ fbConfig=null; }
@@ -1013,18 +1130,38 @@ async function connectOnline(){
   if(!fbName){ toast('<b>Escribe tu nombre</b>','warn',3500); const n=$('#fbName'); if(n) n.focus(); return false; }
   setOnlineStatus('Conectando…');
   try{
-    if(!window.firebase){ await loadFbScript('firebase-app-compat.js'); await loadFbScript('firebase-firestore-compat.js'); await loadFbScript('firebase-auth-compat.js'); }
-    if(!fbApp){ fbApp = window.firebase.apps && window.firebase.apps.length ? window.firebase.app() : window.firebase.initializeApp(fbConfig); }
-    fbdb = window.firebase.firestore();
-    try{ await fbdb.enablePersistence({synchronizeTabs:true}); }catch(e){}
-    try{ await window.firebase.auth().signInAnonymously(); }catch(e){ /* si no está habilitado, dependemos de las reglas */ }
+    await ensureFb();
+    // solo iniciamos sesión anónima si NO hay ya una sesión (p. ej. supervisor con Google)
+    if(!window.firebase.auth().currentUser){ try{ await window.firebase.auth().signInAnonymously(); }catch(e){} }
     online=true; baseSyncedSig='';
-    renderOnlineCard(); startSupervisor(); pushOnlineNow();
+    renderOnlineCard(); pushOnlineNow();
     toast('<b>En línea</b>Conectado como '+esc(fbName),'ok',2600);
     return true;
   }catch(e){ online=false; renderOnlineCard(); setOnlineStatus('Error'); toast('<b>No se pudo conectar</b>'+esc(e.message||e),'bad',6000); return false; }
 }
-function disconnectOnline(){ online=false; if(superUnsub){try{superUnsub();}catch(e){}} superUnsub=null; renderOnlineCard(); renderSupervisor([]); toast('Desconectado del modo en línea.','',2000); }
+function disconnectOnline(){ online=false; if(superUnsub){try{superUnsub();}catch(e){}} superUnsub=null; renderOnlineCard(); toast('Desconectado del modo en línea.','',2000); }
+
+/* Supervisor: acceso solo con Google autorizado */
+function renderSuperGate(){
+  const gate=$('#superGate'), wrap=$('#superWrap'), who=$('#superWho');
+  if(!gate||!wrap) return;
+  if(isSuper){
+    gate.style.display='none'; wrap.style.display='';
+    if(who){ try{ who.textContent='Supervisor: '+window.firebase.auth().currentUser.email; }catch(e){ who.textContent='Supervisor'; } }
+    renderSupervisor(superRows);
+  } else { gate.style.display=''; wrap.style.display='none'; }
+}
+async function superLogin(){
+  try{
+    await ensureFb();
+    const prov=new window.firebase.auth.GoogleAuthProvider();
+    try{ await window.firebase.auth().signInWithPopup(prov); }
+    catch(e){ if(e && (e.code==='auth/popup-blocked'||e.code==='auth/cancelled-popup-request'||e.code==='auth/operation-not-supported-in-this-environment')){ await window.firebase.auth().signInWithRedirect(prov); } else throw e; }
+    const u=window.firebase.auth().currentUser;
+    if(u && !SUPERVISOR_EMAILS.includes((u.email||'').toLowerCase())){ toast('<b>Cuenta no autorizada</b>'+esc(u.email||'')+' no es supervisor.','bad',6000); await window.firebase.auth().signOut(); }
+  }catch(e){ toast('<b>No se pudo iniciar sesión</b>'+esc(e.message||e),'bad',6000); }
+}
+async function superLogout(){ try{ await window.firebase.auth().signOut(); }catch(e){} isSuper=false; if(superUnsub){try{superUnsub();}catch(e){}} superUnsub=null; renderSuperGate(); if(fbConfig&&fbName) connectOnline().catch(()=>{}); }
 
 function summaryOf(sess, d){
   const sc=sess.scope||{clase:'',sub:''};
@@ -1058,7 +1195,7 @@ async function pushOnlineNow(){
   }catch(e){ setOnlineStatus('Error al subir'); }
 }
 function startSupervisor(){
-  if(!online||!fbdb){ return; }
+  if(!isSuper||!fbdb){ return; }
   if(superUnsub){ try{superUnsub();}catch(e){} superUnsub=null; }
   superUnsub = fbdb.collection('inventarios').orderBy('updatedMs','desc').limit(100).onSnapshot(
     snap=>{ const rows=[]; snap.forEach(doc=>rows.push(doc.data())); renderSupervisor(rows); },
@@ -1067,9 +1204,9 @@ function startSupervisor(){
 }
 let superRows=[];
 function renderSupervisor(rows){
-  superRows = rows||[];
+  if(rows) superRows = rows;
   const el=$('#superList'); if(!el) return;
-  if(!online){ el.innerHTML='<div class="empty">Conéctate para ver la actividad en vivo.</div>'; return; }
+  if(!isSuper){ return; }
   if(!superRows.length){ el.innerHTML='<div class="empty">Nadie está tomando inventario en línea todavía.</div>'; return; }
   el.innerHTML = superRows.map((r,idx)=>{
     const s=r.summary||{}; const pct=s.total? Math.round((s.contados/s.total)*100):0;
@@ -1115,7 +1252,39 @@ function goTab(tab){
   if(tab==='diff') renderDiff();
   if(tab==='scan') setTimeout(()=>$('#code').focus(),120);
   if(tab==='nf') renderNF();
-  if(tab==='super'){ renderSupervisor(superRows); if(online && !superUnsub) startSupervisor(); }
+  if(tab==='super'){ renderSuperGate(); if(fbConfig){ ensureFb().then(()=>{ renderSuperGate(); if(isSuper && !superUnsub) startSupervisor(); }).catch(()=>{}); } }
+}
+
+/* ---------- nombre de quien toma + continuar / nuevo ---------- */
+function myUnfinished(){
+  return Object.values(store.sessions)
+    .filter(s=>(!s.owner || s.owner===fbName) && !s.finished)
+    .sort((a,b)=>b.updatedAt-a.updatedAt);
+}
+function askName(){
+  const ni=$('#nameInput'); if(ni) ni.value = fbName || '';
+  $('#modalName').classList.add('on');
+  setTimeout(()=>{ if(ni) ni.focus(); }, 150);
+}
+function submitName(){
+  const n=($('#nameInput').value||'').trim();
+  if(!n){ $('#nameInput').focus(); return; }
+  fbName=n; try{localStorage.setItem('inv_fb_name',fbName);}catch(e){}
+  $('#modalName').classList.remove('on');
+  const nm=$('#fbName'); if(nm) nm.value=fbName;
+  renderOnlineCard();
+  if(fbConfig) connectOnline().catch(()=>{});
+  afterName();
+}
+function afterName(){
+  const mine=myUnfinished();
+  if(mine.length){
+    const last=mine[0];
+    if(confirm('Hola '+fbName+'.\n\nTienes un inventario SIN finalizar:\n"'+last.name+'"\n\nAceptar = CONTINUAR donde ibas.\nCancelar = empezar uno NUEVO (cargar archivo).')){
+      try{ activate(last.id); renderAll(); goTab('scan'); return; }catch(e){}
+    }
+  }
+  renderAll(); goTab('load');
 }
 
 /* ---------- eventos ---------- */
@@ -1134,6 +1303,19 @@ function bind(){
   };
   $('#connectBtn').onclick = ()=>{ fbName=$('#fbName').value.trim(); try{localStorage.setItem('inv_fb_name',fbName);}catch(e){} connectOnline(); };
   $('#disconnectBtn').onclick = disconnectOnline;
+  $('#superLoginBtn').onclick = superLogin;
+  $('#superLogoutBtn').onclick = superLogout;
+
+  // ----- buscar / imagen / nombre -----
+  $('#searchBtn').onclick = openSearch;
+  $('#searchClose').onclick = closeSearch;
+  $('#searchInput').addEventListener('input', doSearch);
+  $('#modalSearch').addEventListener('click', e=>{ if(e.target.id==='modalSearch') closeSearch(); });
+  $('#imgClose').onclick = closeImg;
+  $('#modalImg').addEventListener('click', e=>{ if(e.target.id==='modalImg') closeImg(); });
+  $('#nameGo').onclick = submitName;
+  $('#nameInput').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); submitName(); } });
+  $('#fMinDif').addEventListener('input', ()=>{ diffSel.min = Math.max(0, +$('#fMinDif').value||0); renderDiff(); });
 
   $('#file').onchange = e=>{
     const f = e.target.files[0]; if(!f) return;
@@ -1228,8 +1410,8 @@ if(store.activeId && store.sessions[store.activeId] && store.sessions[store.acti
   try{ activate(store.activeId); }catch(e){ store.activeId=null; state=null; DATA=null; }
 }
 renderOnlineCard(); renderAll();
-// reconecta solo si ya estaba configurado en este dispositivo
-if(fbConfig && fbName){ connectOnline().catch(()=>{}); }
+// al abrir: pedir nombre de quien toma (prellenado con el último). Continuar/nuevo se resuelve en submitName→afterName.
+askName();
 window.addEventListener('beforeunload', save);
 </script>
 </body>
