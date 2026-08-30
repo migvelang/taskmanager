@@ -590,21 +590,39 @@ function push(){
       .catch(e=>{ setChip('SIN CONEXIÓN','warn'); toast('No se pudo guardar en la nube (guardado local): '+e.message); });
   },400);
 }
+function parseICS(t,src){
+  const out=[];
+  for(const b of t.split('BEGIN:VEVENT').slice(1)){
+    const dt=(b.match(/DTSTART[^:]*:(\d{8})(T(\d{4,6}))?/)||[]);
+    const sm=(b.match(/SUMMARY[^:]*:(.*)/)||[])[1];
+    if(dt[1]&&sm) out.push({ d:dt[1].slice(0,4)+'-'+dt[1].slice(4,6)+'-'+dt[1].slice(6,8), hora: dt[3]?dt[3].slice(0,2)+':'+dt[3].slice(2,4):'', t:sm.trim().replace(/\\,/g,','), src });
+  }
+  return out;
+}
 async function cargarICS(url,src){
-  for(const u of [url,'https://corsproxy.io/?url='+encodeURIComponent(url)]){
+  const e=encodeURIComponent(url);
+  // Outlook/iCloud/Google no envían cabecera CORS, así que el intento directo
+  // casi siempre falla y hay que pasar por un proxy. Se prueban varios porque
+  // son servicios gratuitos que caen o imponen límites de un día para otro.
+  const vias=[ url, 'https://r.jina.ai/'+url, 'https://api.allorigins.win/raw?url='+e, 'https://api.codetabs.com/v1/proxy?quest='+e ];
+  let parcial=null;
+  for(const u of vias){
     try{
       const r=await fetch(u); if(!r.ok) continue;
       const t=await r.text(); if(!t.includes('BEGIN:VEVENT')) continue;
-      const nuevos=[];
-      for(const b of t.split('BEGIN:VEVENT').slice(1)){
-        const dt=(b.match(/DTSTART[^:]*:(\d{8})(T(\d{4,6}))?/)||[]);
-        const sm=(b.match(/SUMMARY[^:]*:(.*)/)||[])[1];
-        if(dt[1]&&sm) nuevos.push({ d:dt[1].slice(0,4)+'-'+dt[1].slice(4,6)+'-'+dt[1].slice(6,8), hora: dt[3]?dt[3].slice(0,2)+':'+dt[3].slice(2,4):'', t:sm.trim().replace(/\\,/g,','), src });
-      }
-      ICS_BY_SRC[src]=nuevos; render(); return;
-    }catch(e){}
+      const evs=parseICS(t,src); if(!evs.length) continue;
+      // Sin END:VCALENDAR la respuesta viene cortada: algunos proxies truncan
+      // los calendarios grandes. Se guarda como respaldo y se sigue probando.
+      if(t.includes('END:VCALENDAR')){ ICS_BY_SRC[src]=evs; render(); return; }
+      if(!parcial || evs.length>parcial.length) parcial=evs;
+    }catch(err){}
   }
-  toast('No pude leer el calendario de '+src+' (revisa el enlace en ⚙️)');
+  if(parcial){
+    ICS_BY_SRC[src]=parcial; render();
+    toast('⚠️ El calendario de '+src+' se leyó incompleto ('+parcial.length+' eventos).');
+    return;
+  }
+  toast('No pude leer el calendario de '+src+'. Revisa el enlace en ⚙️.');
 }
 
 /* ---------- datos ---------- */
@@ -659,6 +677,10 @@ async function conectar(){
   if(!c){ setChip('SIN CONEXIÓN','warn'); $('setPanel').style.display='block'; return; }
   if(!navigator.onLine){ setChip('SIN CONEXIÓN','warn'); toast('Sin conexión — usando los datos de este dispositivo.'); return; }
 
+  // Los calendarios se leen aparte de Firestore: si la sincronización falla,
+  // la agenda igual tiene que cargar.
+  iniciarCalendarios(c);
+
   setChip('CONECTANDO','warn');
   if(!await loadFirebase()){
     setChip('SDK BLOQUEADO','err');
@@ -679,6 +701,9 @@ async function conectar(){
     },err=>{ setChip('SIN CONEXIÓN','warn'); toast('Error de Firestore: '+err.message); });
   }catch(e){ setChip('SIN CONEXIÓN','err'); toast('No se pudo conectar: '+e.message); }
 
+}
+
+function iniciarCalendarios(c){
   const activas=[['ics','outlook'],['icsApple','apple'],['icsGoogle','google']].filter(([k])=>c[k]);
   activas.forEach(([k,src])=>{ cargarICS(c[k],src); setInterval(()=>cargarICS(c[k],src),15*60*1000); });
   if(activas.length) document.addEventListener('visibilitychange',()=>{ if(!document.hidden) activas.forEach(([k,src])=>cargarICS(c[k],src)); });
