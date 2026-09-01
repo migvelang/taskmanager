@@ -15,10 +15,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm install --no-save web-push@3.6.7
+      - run: npm install --no-save web-push@3.6.7 google-auth-library@9.15.0
       - run: node scripts/enviar-avisos.js
         env:
-          DTM_CLAVE: ${{ secrets.DTM_CLAVE }}
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
           VAPID_PUBLIC: ${{ secrets.VAPID_PUBLIC }}
           VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
           VAPID_CONTACTO: ${{ secrets.VAPID_CONTACTO }}

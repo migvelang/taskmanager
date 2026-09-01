@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Cada panel y todo lo que cuelga de él (adjuntos, suscripciones push)
+    // solo lo puede leer y escribir su dueño.
+    match /paneles/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+      match /{documento=**} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+  }
+}
