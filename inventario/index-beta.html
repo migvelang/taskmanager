@@ -153,11 +153,14 @@
 <main>
   <!-- ============ CARGAR ============ -->
   <section id="tab-load" class="active">
-    <h2>1 · Cargar / nuevo inventario</h2>
+    <div style="display:flex;align-items:center;gap:8px;margin:2px 0 12px">
+      <h2 style="margin:0">1 · Cargar / nuevo inventario</h2>
+      <button class="btn sm primary" id="tourBtn" style="margin-left:auto">❓ Tutorial</button>
+    </div>
     <div class="card">
-      <label>Archivo de inventario (.txt / .csv exportado del sistema)</label>
-      <input type="file" id="file" accept=".txt,.csv,text/plain" style="padding:10px">
-      <p class="muted" style="font-size:12px;margin:8px 0 0">Cada archivo que cargues abre un <b>inventario nuevo</b> (le pones nombre). Separado por <code>;</code> · cabecera con NUMBER, UPC, STOCK DISPONIBLE, CLASE, SUBCLASE.</p>
+      <label>Archivo de inventario (.txt / .csv / .gz del sistema)</label>
+      <input type="file" id="file" accept=".txt,.csv,.gz,text/plain,application/gzip" style="padding:10px">
+      <p class="muted" style="font-size:12px;margin:8px 0 0">Cada archivo que cargues abre un <b>inventario nuevo</b> (le pones nombre). Si llega <b>comprimido (.gz)</b> se descomprime solo. Separado por <code>;</code> · cabecera con NUMBER, UPC, STOCK DISPONIBLE, CLASE, SUBCLASE.</p>
     </div>
 
     <!-- ===== Conexión en línea (Firebase) ===== -->
@@ -402,6 +405,23 @@
   </div>
 </div>
 
+<!-- ============ MODAL: tutorial ============ -->
+<div id="modalTour" class="modal">
+  <div class="sheet">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <span id="tourStep" class="muted" style="font-size:11px"></span>
+      <button class="btn sm ghost" id="tourSkip" style="margin-left:auto">Omitir ✕</button>
+    </div>
+    <h2 id="tourTitle" style="margin:0 0 6px"></h2>
+    <p id="tourText" style="font-size:14px;margin:0 0 4px"></p>
+    <div id="tourDots" style="display:flex;gap:5px;justify-content:center;margin:12px 0 4px"></div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn ghost" id="tourPrev">← Anterior</button>
+      <button class="btn primary" id="tourNext">Siguiente →</button>
+    </div>
+  </div>
+</div>
+
 <script>
 "use strict";
 /* ============================================================
@@ -481,6 +501,21 @@ function deleteSession(id){
   delete store.sessions[id];
   if(store.activeId===id){ store.activeId=null; state=null; DATA=null; }
   save();
+}
+
+/* ---------- lectura de archivo (.txt o .gz comprimido) ---------- */
+async function readInventoryFile(f){
+  const buf = await f.arrayBuffer();
+  let bytes = new Uint8Array(buf);
+  const isGz = /\.gz$/i.test(f.name||'') || (bytes.length>1 && bytes[0]===0x1f && bytes[1]===0x8b);
+  if(isGz){
+    if(!('DecompressionStream' in window)) throw new Error('Este navegador no puede descomprimir .gz. Actualiza Safari/Chrome o sube el .txt.');
+    const ds = new DecompressionStream('gzip');
+    const ab = await new Response(new Blob([bytes]).stream().pipeThrough(ds)).arrayBuffer();
+    bytes = new Uint8Array(ab);
+  }
+  try{ return new TextDecoder('iso-8859-1').decode(bytes); }
+  catch(e){ let s=''; for(let i=0;i<bytes.length;i++) s+=String.fromCharCode(bytes[i]); return s; }
 }
 
 /* ---------- parseo del archivo ---------- */
@@ -720,16 +755,32 @@ function renderDiff(){
     const difTxt = s.fis===p.disp ? '<span class="tag ok">0</span>'
       : s.fis>p.disp ? `<span class="tag exc">+${fmt(s.fis-p.disp)}</span>`
       : `<span class="tag falta">${fmt(p.disp-s.fis)}</span>`;
+    const delta = p.disp - s.fis;
+    const adjBtn = delta!==0 ? `<button class="btn sm ok adjbtn" data-adj="${esc(p.number)}" style="padding:1px 8px;margin-left:4px">${delta>0?'＋'+fmt(delta)+' sumar':fmt(delta)+' ajustar'}</button>` : '';
     return `<tr>
       <td><div style="font-weight:600">${esc(p.desc||p.number)}</div>
           <div class="muted" style="font-size:11px">${esc(p.marca)} · ${esc(p.dsub||p.dclase)} · SKU ${esc(p.number)}
-          <button class="btn sm ghost imgbtn" data-img="${esc(p.number)}" style="padding:1px 7px;margin-left:4px">🖼 ver</button></div></td>
+          <button class="btn sm ghost imgbtn" data-img="${esc(p.number)}" style="padding:1px 7px;margin-left:4px">🖼 ver</button>${adjBtn}</div></td>
       <td class="n">${fmt(p.disp)}</td>
       <td class="n">${fmt(s.fis)}</td>
       <td class="n">${difTxt}</td>
     </tr>`;
   }).join('');
   $$('#diffBody .imgbtn').forEach(b=>b.onclick=()=>openImg(b.dataset.img));
+  $$('#diffBody .adjbtn').forEach(b=>b.onclick=()=>adjustToDisp(b.dataset.adj));
+}
+function adjustToDisp(number){
+  if(!state||!DATA) return;
+  const p=DATA.products.get(number); if(!p) return;
+  const cur=state.counts[number]||0; const delta=p.disp-cur;
+  if(delta===0) return;
+  if(!confirm((delta>0?'Sumar '+fmt(delta)+' unidades':'Quitar '+fmt(-delta)+' unidades')+' a:\n"'+(p.desc||number)+'"\n\nEl físico quedará en '+fmt(p.disp)+' (= disponible).')) return;
+  state.counts[number]=p.disp;
+  state.history.unshift({number, upc:targetUpc(p), qty:delta, ts:Date.now()});
+  state.history=state.history.slice(0,50);
+  save(); renderDiff(); renderScan();
+  beep(true); vibrate(40);
+  toast('<b>Cuadrado</b>'+esc(p.desc||number)+' → físico '+fmt(p.disp),'ok',1900);
 }
 
 function renderNF(){
@@ -1227,10 +1278,38 @@ function renderSupervisor(rows){
         ${r.nf?`<span style="color:var(--warn)">No enc. ${r.nf}</span>`:''}
       </div>
       <div class="muted" style="font-size:11px;margin-top:4px">Último: ${esc(last)}</div>
-      <button class="btn sm ok ghost" data-dl="${idx}" style="margin-top:8px">⬇ Descargar CSV</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        <button class="btn sm ok ghost" data-dl="${idx}">⬇ CSV</button>
+        <button class="btn sm ghost" data-edit="${idx}">✎ Editar</button>
+        <button class="btn sm ghost" data-fin="${idx}">${fin?'↺ Reactivar':'🏁 Finalizar'}</button>
+        <button class="btn sm bad ghost" data-del="${idx}">🗑 Eliminar</button>
+      </div>
     </div>`;
   }).join('');
-  $$('[data-dl]').forEach(b=>b.onclick=()=>superDownloadCSV(superRows[+b.dataset.dl]));
+  $$('#superList [data-dl]').forEach(b=>b.onclick=()=>superDownloadCSV(superRows[+b.dataset.dl]));
+  $$('#superList [data-edit]').forEach(b=>b.onclick=()=>superEdit(superRows[+b.dataset.edit]));
+  $$('#superList [data-fin]').forEach(b=>b.onclick=()=>superToggleFin(superRows[+b.dataset.fin]));
+  $$('#superList [data-del]').forEach(b=>b.onclick=()=>superDelete(superRows[+b.dataset.del]));
+}
+async function superEdit(row){
+  if(!row||!fbdb) return;
+  const nn = prompt('Nuevo nombre del inventario de '+(row.name||'')+':', row.invName||'');
+  if(nn===null) return;
+  try{ await fbdb.collection('inventarios').doc(row.invId).update({ invName:(nn||'').trim()||row.invName, updatedMs:Date.now() }); toast('<b>Renombrado</b>','ok',1800); }
+  catch(e){ toast('<b>No se pudo editar</b>'+esc(e.message||e),'bad',4000); }
+}
+async function superToggleFin(row){
+  if(!row||!fbdb) return;
+  const to = row.status==='finalizado' ? 'activo' : 'finalizado';
+  if(!confirm('¿Marcar el inventario de '+(row.name||'')+' como "'+to+'"?')) return;
+  try{ await fbdb.collection('inventarios').doc(row.invId).update({ status:to, updatedMs:Date.now() }); }
+  catch(e){ toast('<b>No se pudo cambiar</b>'+esc(e.message||e),'bad',4000); }
+}
+async function superDelete(row){
+  if(!row||!fbdb) return;
+  if(!confirm('¿ELIMINAR definitivamente el inventario de '+(row.name||'')+' ("'+(row.invName||'')+'")?\n\nEsto lo borra del panel para todos. No se puede deshacer.')) return;
+  try{ await fbdb.collection('inventarios').doc(row.invId).delete(); toast('<b>Inventario eliminado</b>','ok',2000); }
+  catch(e){ toast('<b>No se pudo eliminar</b>'+esc(e.message||e),'bad',4000); }
 }
 async function superDownloadCSV(row){
   if(!row){ return; }
@@ -1287,6 +1366,35 @@ function afterName(){
   renderAll(); goTab('load');
 }
 
+/* ---------- tutorial guiado ---------- */
+const TOUR = [
+  { tab:'load',  title:'1) Cargar el archivo', text:'Sube el archivo del sistema (.txt, .csv o .gz comprimido — se descomprime solo). Cada archivo abre un inventario nuevo al que le pones nombre.' },
+  { tab:'load',  title:'2) Qué vas a tomar', text:'Elige el alcance: todo el archivo, o solo una clase / subclase. Y escribe tu nombre en “En línea” + Conectar para que el supervisor te vea en vivo.' },
+  { tab:'scan',  title:'3) Escanear o escribir', text:'Escanea con la pistola Bluetooth o la 📷 cámara, o escribe el UPC/SKU y Enter. Suma 1 por defecto; cambia la Cantidad si necesitas sumar varias de una vez.' },
+  { tab:'scan',  title:'4) Código no reconocido', text:'Si un código no existe en el archivo (ej.: escaneaste un QR por error) suena distinto y te pregunta si guardarlo en “No encontrados”. Así no ensucia el conteo.' },
+  { tab:'scan',  title:'5) Buscar y pegar lista', text:'🔍 busca un producto por parte del código o por su descripción (útil si el código está cortado). 📋 pega una lista de códigos y suma 1 a cada uno.' },
+  { tab:'diff',  title:'6) Diferencias en vivo', text:'Revisa faltantes y excedentes. Filtra por estado, marca/clase/subclase o “diferencia ≥ N”. 🖼 ve la foto del producto, y usa “Sumar/Ajustar” para cuadrar el físico al disponible.' },
+  { tab:'nf',    title:'7) No encontrados', text:'Revisa y confirma los códigos que no se reconocieron; puedes exportarlos.' },
+  { tab:'scan',  title:'8) Finalizar', text:'Cuando termines, pulsa 🏁 Finalizar. El supervisor lo ve al instante y descarga el CSV con el stock físico.' }
+];
+let tourI = 0;
+function tourStart(){ tourI = 0; $('#modalTour').classList.add('on'); tourRender(); }
+function tourClose(){ $('#modalTour').classList.remove('on'); }
+function tourRender(){
+  const s = TOUR[tourI];
+  try{ goTab(s.tab); }catch(e){}
+  $('#tourStep').textContent = 'Paso '+(tourI+1)+' de '+TOUR.length;
+  $('#tourTitle').textContent = s.title;
+  $('#tourText').textContent = s.text;
+  $('#tourDots').innerHTML = TOUR.map((_,i)=>`<span style="width:7px;height:7px;border-radius:99px;background:${i===tourI?'var(--brand2)':'var(--line)'}"></span>`).join('');
+  $('#tourPrev').style.visibility = tourI===0 ? 'hidden':'visible';
+  $('#tourNext').textContent = tourI===TOUR.length-1 ? 'Entendido ✓' : 'Siguiente →';
+  // reflotar el modal por encima de la pestaña
+  $('#modalTour').classList.add('on');
+}
+function tourNext(){ if(tourI>=TOUR.length-1){ tourClose(); return; } tourI++; tourRender(); }
+function tourPrev(){ if(tourI>0){ tourI--; tourRender(); } }
+
 /* ---------- eventos ---------- */
 function bind(){
   $$('nav button').forEach(b=>b.onclick=()=>goTab(b.dataset.tab));
@@ -1315,31 +1423,32 @@ function bind(){
   $('#modalImg').addEventListener('click', e=>{ if(e.target.id==='modalImg') closeImg(); });
   $('#nameGo').onclick = submitName;
   $('#nameInput').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); submitName(); } });
+  // tutorial
+  $('#tourBtn').onclick = tourStart;
+  $('#tourNext').onclick = tourNext;
+  $('#tourPrev').onclick = tourPrev;
+  $('#tourSkip').onclick = tourClose;
   $('#fMinDif').addEventListener('input', ()=>{ diffSel.min = Math.max(0, +$('#fMinDif').value||0); renderDiff(); });
 
-  $('#file').onchange = e=>{
+  $('#file').onchange = async e=>{
     const f = e.target.files[0]; if(!f) return;
-    const rd = new FileReader();
-    rd.onload = ()=>{
-      try{
-        const text = rd.result;
-        const d = parseFile(text);
-        const existing = Object.values(store.sessions).find(s=>s.fileSig===d.meta.sig);
-        if(existing && confirm('Ya existe un inventario con este mismo archivo:\n\n"'+existing.name+'"\n\nAceptar = CONTINUAR ese conteo.\nCancelar = crear un inventario NUEVO.')){
-          activate(existing.id);
-        } else {
-          let name = prompt('Nombre para este inventario:', suggestName(f.name));
-          if(name===null){ e.target.value=''; return; }
-          name = (name||'').trim() || suggestName(f.name);
-          const s = blankSession(name, text, d.meta.sig);
-          store.sessions[s.id] = s; store.activeId = s.id; state = s; DATA = d; save();
-        }
-        renderAll();
-        toast('<b>'+esc(state.name)+'</b>'+DATA.products.size+' productos · '+DATA.meta.rows+' códigos', 'ok');
-        e.target.value='';
-      }catch(err){ toast('<b>Error al leer</b>'+esc(err.message), 'bad', 5000); }
-    };
-    rd.readAsText(f, 'latin1'); // acentos del sistema (ISO-8859-1)
+    try{
+      const text = await readInventoryFile(f);
+      const d = parseFile(text);
+      const existing = Object.values(store.sessions).find(s=>s.fileSig===d.meta.sig);
+      if(existing && confirm('Ya existe un inventario con este mismo archivo:\n\n"'+existing.name+'"\n\nAceptar = CONTINUAR ese conteo.\nCancelar = crear un inventario NUEVO.')){
+        activate(existing.id);
+      } else {
+        let name = prompt('Nombre para este inventario:', suggestName(f.name));
+        if(name===null){ e.target.value=''; return; }
+        name = (name||'').trim() || suggestName(f.name);
+        const s = blankSession(name, text, d.meta.sig);
+        store.sessions[s.id] = s; store.activeId = s.id; state = s; DATA = d; save();
+      }
+      renderAll();
+      toast('<b>'+esc(state.name)+'</b>'+DATA.products.size+' productos · '+DATA.meta.rows+' códigos', 'ok');
+      e.target.value='';
+    }catch(err){ toast('<b>Error al leer</b>'+esc(err.message), 'bad', 5000); e.target.value=''; }
   };
   $('#renameBtn').onclick = ()=>{ if(!state) return; const n=prompt('Nuevo nombre del inventario:', state.name); if(n!==null){ state.name=(n||'').trim()||state.name; save(); renderAll(); } };
   $('#newInv').onclick = ()=>$('#file').click();
