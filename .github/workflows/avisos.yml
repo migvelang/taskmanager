@@ -1,0 +1,24 @@
+name: Avisos de casos detenidos
+
+on:
+  schedule:
+    # 12:00 y 19:00 UTC = 09:00 y 16:00 en Chile (horario de verano, UTC-3).
+    # En invierno (UTC-4) llegan una hora antes.
+    - cron: '0 12,19 * * 1-5'
+  workflow_dispatch:        # permite dispararlo a mano desde la pestaña Actions
+
+jobs:
+  avisar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install --no-save web-push@3.6.7
+      - run: node scripts/enviar-avisos.js
+        env:
+          DTM_CLAVE: ${{ secrets.DTM_CLAVE }}
+          VAPID_PUBLIC: ${{ secrets.VAPID_PUBLIC }}
+          VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
+          VAPID_CONTACTO: ${{ secrets.VAPID_CONTACTO }}
