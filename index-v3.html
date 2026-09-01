@@ -207,6 +207,19 @@ details summary::before{content:'▸ '}details[open] summary::before{content:'�
 .lightbox.on{display:flex}
 .lightbox img{max-width:100%;max-height:100%;border-radius:10px}
 
+/* asistente */
+.chat{display:flex;flex-direction:column;gap:9px;min-height:96px;max-height:44vh;overflow-y:auto;padding:6px 2px;margin-top:10px;border-top:1px solid var(--brd);border-bottom:1px solid var(--brd)}
+.msg{max-width:88%;padding:10px 13px;border-radius:16px;font-size:12.5px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.yo{align-self:flex-end;background:linear-gradient(140deg,var(--a1),var(--a3));color:var(--ink);font-weight:600;border-bottom-right-radius:5px}
+.msg.ia{align-self:flex-start;background:var(--card2);border:1px solid var(--brd);color:var(--txt);border-bottom-left-radius:5px}
+.msg.err{align-self:flex-start;background:var(--dangbg);border:1px solid var(--dangbrd);color:var(--dang)}
+.msg .acts{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.msg .acc{font-size:9.5px;font-weight:800;letter-spacing:.4px;background:var(--a1bg);color:var(--a1);border-radius:8px;padding:3px 7px}
+.chatbar{display:flex;gap:8px;margin-top:10px}
+.chatbar .btn{flex:none;padding:11px 16px}
+.sugs{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.sug{font-size:10.5px;background:var(--card2);border:1px solid var(--brd);color:var(--mut);border-radius:11px;padding:6px 10px;cursor:pointer;font-family:inherit;font-weight:600;width:auto}
+
 @media(max-width:640px){
   .stats{grid-template-columns:repeat(2,1fr);gap:8px}
   .stat b{font-size:22px}
@@ -231,6 +244,7 @@ details summary::before{content:'▸ '}details[open] summary::before{content:'�
 <div class="hdr">
   <div class="brand"><h1>✨ DAILY TASK MANAGER</h1></div>
   <div class="hdrctl">
+    <button class="iconbtn" id="ia-btn" onclick="abrirIA()" title="Asistente">🤖</button>
     <button class="iconbtn" id="theme-btn" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
     <button class="iconbtn" id="notif-btn" onclick="pedirPush()" title="Notificaciones">🔕</button>
     <div class="syncwrap">
@@ -255,6 +269,9 @@ details summary::before{content:'▸ '}details[open] summary::before{content:'�
     <option value="C">🅲 Arena cálida — fija</option>
   </select>
   <p class="hint" id="paleta-hint"></p>
+  <label>🤖 Clave de Gemini · asistente IA (opcional)</label>
+  <input id="cfg-ia" type="password" autocomplete="off" placeholder="AIza…">
+  <p class="hint">Se guarda <b>solo en este dispositivo</b>: nunca se sube a la nube ni se comparte. Consigue una gratis en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:var(--a1);font-weight:700">aistudio.google.com/apikey</a> con tu cuenta de Google.</p>
   <label>📧 URL ICS · Outlook (opcional)</label>
   <input id="cfg-ics" placeholder="https://outlook.office365.com/owa/calendar/...">
   <label>🍎 URL ICS · Apple / iCloud (opcional)</label>
@@ -422,6 +439,21 @@ details summary::before{content:'▸ '}details[open] summary::before{content:'�
     <button class="btn go" style="flex:1" onclick="saveTarea()">Guardar</button>
     <button class="btn dgr" onclick="borrarTareaSheet()">Eliminar</button>
     <button class="btn" onclick="cerrarSheets()">Cerrar</button>
+  </div>
+</div>
+
+<div class="sheet" id="asheet">
+  <h3>🤖 Asistente</h3>
+  <p class="hint">Pídele que cree tareas, ingrese casos, cambie estados o te resuma lo pendiente. Aplica los cambios en tu panel al instante.</p>
+  <div class="chat" id="ia-chat"></div>
+  <div class="sugs" id="ia-sugs"></div>
+  <div class="chatbar">
+    <input id="ia-in" autocomplete="off" placeholder="Ej: crea una tarea urgente para llamar a Isa">
+    <button class="btn go" id="ia-send" onclick="enviarIA()">Enviar</button>
+  </div>
+  <div class="addrow" style="margin-top:10px">
+    <button class="btn sm" onclick="limpiarIA()">🧹 Nueva conversación</button>
+    <button class="btn sm" onclick="cerrarSheets()">Cerrar</button>
   </div>
 </div>
 
@@ -705,12 +737,16 @@ function toggleSet(){
   const p=$('setPanel'); p.style.display = p.style.display==='block'?'none':'block';
   const c=cfg();
   if(c){ $('cfg-ics').value=c.ics||''; $('cfg-ics-apple').value=c.icsApple||''; $('cfg-ics-google').value=c.icsGoogle||''; }
+  $('cfg-ia').value = iaKey();
   $('cfg-paleta').value = localStorage.getItem('dtm-paleta')||'auto';
   $('cfg-mail').textContent = USER ? (USER.email||USER.displayName||'cuenta de Google') : 'sin sesión';
 }
 function saveCfg(){
   localStorage.setItem('dtm-paleta',$('cfg-paleta').value);
-  const antes=JSON.stringify(cfg()||{});
+  // la clave del asistente vive aparte: solo en este equipo, nunca en Firestore.
+  const k=$('cfg-ia').value.trim();
+  if(k) localStorage.setItem('dtm-ia',k); else localStorage.removeItem('dtm-ia');
+  const antes=JSON.stringify(cfg()||{ics:'',icsApple:'',icsGoogle:''});
   const nuevo={ics:$('cfg-ics').value.trim(),icsApple:$('cfg-ics-apple').value.trim(),icsGoogle:$('cfg-ics-google').value.trim()};
   localStorage.setItem('dtm-cfg',JSON.stringify(nuevo));
   aplicarEstilo();
@@ -1136,7 +1172,7 @@ function addCaso(){ const n=$('in-cnum').value.trim(), d=$('in-cdesc').value.tri
   S.casos.push({id:n||'s/n',desc:d,estado:'EN PROGRESO',act:hoy()}); $('in-cnum').value=''; $('in-cdesc').value=''; render(); push(); }
 
 /* ---------- hojas ---------- */
-function cerrarSheets(){ $('scrim').classList.remove('on'); $('sheet').classList.remove('on'); $('tsheet').classList.remove('on'); editingEv=null; editingT=null; }
+function cerrarSheets(){ $('scrim').classList.remove('on'); $('sheet').classList.remove('on'); $('tsheet').classList.remove('on'); $('asheet').classList.remove('on'); editingEv=null; editingT=null; }
 function buildSwatches(){
   $('ev-colors').innerHTML=Object.keys(COLORS).map(k=>
     '<div class="sw'+(k===evColor?' on':'')+'" style="background:'+COLORS[k].v+'" onclick="pickColor(\''+k+'\')"></div>').join('');
@@ -1255,6 +1291,242 @@ function quitarAdjunto(aid){
   if(ref) ref.collection('adjuntos').doc(aid).delete().catch(()=>{});
   pintarAdjuntos(t); push();
 }
+
+/* ---------- asistente (Gemini) ----------
+ * La clave la pone cada persona en ⚙️ y queda solo en su navegador: nunca se
+ * guarda en Firestore ni viaja al repositorio. El modelo no toca los datos por
+ * su cuenta: solo puede usar las herramientas declaradas abajo, y cada una
+ * termina en render()+push() igual que si el cambio se hiciera a mano.
+ */
+const IA_MODELO='gemini-2.5-flash';
+const IA_SUGS=['¿Qué tengo pendiente hoy?','Crea una tarea urgente: ','Ingresa el caso HELPME- ','Resume los casos detenidos'];
+let IA_HIST=[], IA_MSJ=[], IA_ACC=[], IA_BUSY=false;
+const iaKey=()=>localStorage.getItem('dtm-ia')||'';
+
+const IA_TOOLS=[
+  {name:'crear_tarea',description:'Agrega una tarea nueva al tablero.',
+   parameters:{type:'OBJECT',properties:{
+     texto:{type:'STRING',description:'Qué hay que hacer, en pocas palabras.'},
+     categoria:{type:'STRING',enum:['urgente','planificar','delegar'],description:'urgente = hacer ya; planificar = agendar; delegar = pasar a otra persona. Por defecto planificar.'},
+     notas:{type:'STRING',description:'Detalle opcional.'}},required:['texto']}},
+  {name:'completar_tarea',description:'Marca una tarea pendiente como lista.',
+   parameters:{type:'OBJECT',properties:{texto:{type:'STRING',description:'Texto o parte del texto de la tarea.'}},required:['texto']}},
+  {name:'mover_tarea',description:'Cambia una tarea de categoría en el tablero.',
+   parameters:{type:'OBJECT',properties:{
+     texto:{type:'STRING',description:'Texto o parte del texto de la tarea.'},
+     categoria:{type:'STRING',enum:['urgente','planificar','delegar']}},required:['texto','categoria']}},
+  {name:'borrar_tarea',description:'Elimina una tarea del tablero.',
+   parameters:{type:'OBJECT',properties:{texto:{type:'STRING'}},required:['texto']}},
+  {name:'crear_caso',description:'Ingresa un caso o ticket nuevo.',
+   parameters:{type:'OBJECT',properties:{
+     numero:{type:'STRING',description:'N° del ticket, por ejemplo HELPME-197254.'},
+     descripcion:{type:'STRING'},
+     estado:{type:'STRING',enum:['EN PROGRESO','EN ESPERA']}},required:['numero','descripcion']}},
+  {name:'cambiar_estado_caso',description:'Cambia el estado de un caso. TERMINADA lo cierra y lo manda al historial.',
+   parameters:{type:'OBJECT',properties:{
+     numero:{type:'STRING',description:'N° del caso o parte de él.'},
+     estado:{type:'STRING',enum:['EN PROGRESO','EN ESPERA','TERMINADA']}},required:['numero','estado']}},
+  {name:'registrar_movimiento',description:'Deja el caso con fecha de hoy para apagar la alerta de días sin movimiento.',
+   parameters:{type:'OBJECT',properties:{numero:{type:'STRING'}},required:['numero']}},
+  {name:'crear_evento',description:'Agenda un evento en el calendario.',
+   parameters:{type:'OBJECT',properties:{
+     titulo:{type:'STRING'},
+     fecha:{type:'STRING',description:'AAAA-MM-DD'},
+     hora:{type:'STRING',description:'HH:MM. Omitir si dura todo el día.'},
+     fin:{type:'STRING',description:'HH:MM de término.'},
+     color:{type:'STRING',enum:['teal','purple','coral','amber']}},required:['titulo','fecha']}}
+];
+
+function buscarTarea(txt){
+  const q=String(txt||'').toLowerCase().trim(); if(!q) return null;
+  const p=S.tareas.filter(t=>!t.done);
+  return p.find(t=>t.text.toLowerCase()===q) || p.find(t=>t.text.toLowerCase().includes(q)) ||
+         p.find(t=>q.includes(t.text.toLowerCase())) || S.tareas.find(t=>t.text.toLowerCase().includes(q));
+}
+function buscarCaso(n){
+  const q=String(n||'').toLowerCase().trim(); if(!q) return null;
+  return S.casos.find(c=>c.id.toLowerCase()===q) ||
+         S.casos.find(c=>c.id.toLowerCase().includes(q)||(c.desc||'').toLowerCase().includes(q));
+}
+
+function ejecutarIA(nombre,a){
+  a=a||{};
+  const ok=(etiqueta,extra)=>{ IA_ACC.push(etiqueta); render(); push(); return Object.assign({ok:true},extra||{}); };
+  try{
+    switch(nombre){
+      case 'crear_tarea':{
+        const texto=String(a.texto||'').trim(); if(!texto) return {error:'Falta el texto de la tarea.'};
+        const cat=CATS[a.categoria]?a.categoria:'planificar';
+        S.tareas.push({tid:uid(),done:false,text:texto,cat,notas:String(a.notas||''),adj:[]});
+        return ok(CATS[cat].emoji+' Tarea creada',{texto,categoria:cat});
+      }
+      case 'completar_tarea':{
+        const t=buscarTarea(a.texto); if(!t) return {error:'No encontré ninguna tarea que diga "'+a.texto+'".'};
+        if(t.done) return {ok:true,nota:'Esa tarea ya estaba lista.',texto:t.text};
+        t.done=true; t.doneAt=Date.now();
+        return ok('✅ '+t.text,{texto:t.text});
+      }
+      case 'mover_tarea':{
+        const t=buscarTarea(a.texto); if(!t) return {error:'No encontré ninguna tarea que diga "'+a.texto+'".'};
+        if(!CATS[a.categoria]) return {error:'Categoría inválida.'};
+        t.cat=a.categoria;
+        return ok(CATS[a.categoria].emoji+' '+t.text,{texto:t.text,categoria:a.categoria});
+      }
+      case 'borrar_tarea':{
+        const t=buscarTarea(a.texto); if(!t) return {error:'No encontré ninguna tarea que diga "'+a.texto+'".'};
+        S.tareas=S.tareas.filter(x=>x.tid!==t.tid);
+        return ok('🗑 '+t.text,{texto:t.text});
+      }
+      case 'crear_caso':{
+        const num=String(a.numero||'').trim().toUpperCase(); if(!num) return {error:'Falta el número del caso.'};
+        if(S.casos.some(c=>c.id.toUpperCase()===num)) return {error:'El caso '+num+' ya está en el panel.'};
+        const estado=ESTADOS[a.estado]?a.estado:'EN PROGRESO';
+        S.casos.push({id:num,desc:String(a.descripcion||'').trim(),estado,act:hoy()});
+        return ok('🎫 '+num,{numero:num,estado});
+      }
+      case 'cambiar_estado_caso':{
+        const c=buscarCaso(a.numero); if(!c) return {error:'No encontré el caso "'+a.numero+'".'};
+        if(a.estado==='TERMINADA'){
+          S.casos=S.casos.filter(x=>x!==c);
+          S.cerrados.unshift({id:c.id,desc:c.desc,cerrado:hoy()});
+          return ok('🏁 '+c.id+' terminada',{numero:c.id,estado:'TERMINADA'});
+        }
+        if(!ESTADOS[a.estado]) return {error:'Estado inválido.'};
+        c.estado=a.estado; c.act=hoy();
+        return ok(ESTADOS[a.estado].emoji+' '+c.id,{numero:c.id,estado:a.estado});
+      }
+      case 'registrar_movimiento':{
+        const c=buscarCaso(a.numero); if(!c) return {error:'No encontré el caso "'+a.numero+'".'};
+        c.act=hoy();
+        return ok('✓ '+c.id+' al día',{numero:c.id,act:c.act});
+      }
+      case 'crear_evento':{
+        const titulo=String(a.titulo||'').trim();
+        const fecha=String(a.fecha||'').trim();
+        if(!titulo) return {error:'Falta el título del evento.'};
+        if(!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return {error:'La fecha debe venir como AAAA-MM-DD.'};
+        const hh=/^\d{2}:\d{2}$/.test(a.hora||'')?a.hora:'';
+        const ff=(hh&&/^\d{2}:\d{2}$/.test(a.fin||''))?a.fin:'';
+        S.agenda.push({eid:uid(),d:fecha,hora:hh,fin:ff,t:titulo,color:COLORS[a.color]?a.color:'purple'});
+        return ok('📅 '+titulo,{titulo,fecha,hora:hh});
+      }
+    }
+  }catch(e){ return {error:'No pude aplicar el cambio: '+e.message}; }
+  return {error:'Herramienta desconocida.'};
+}
+
+function ctxIA(){
+  const n=new Date();
+  const pend=S.tareas.filter(t=>!t.done);
+  const linea=[];
+  linea.push('Eres el asistente del Daily Task Manager de '+((USER&&(USER.displayName||USER.email))||'la persona que lo usa')+'.');
+  linea.push('Hoy es '+hoy()+' ('+n.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'})+'), son las '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+'.');
+  linea.push('Responde siempre en español de Chile, breve y directo, sin markdown ni asteriscos.');
+  linea.push('Usa las herramientas para modificar el panel; nunca digas que hiciste un cambio si la herramienta no lo confirmó.');
+  linea.push('Si falta un dato obligatorio (número de caso, fecha), pregúntalo en vez de inventarlo.');
+  linea.push('Un caso se considera detenido cuando lleva 2 días o más sin movimiento y no está EN ESPERA.');
+  linea.push('');
+  linea.push('TAREAS PENDIENTES ('+pend.length+'):');
+  linea.push(pend.length?pend.map(t=>'- ['+t.cat+'] '+t.text+(t.notas?' — '+t.notas:'')).join('\n'):'- (ninguna)');
+  linea.push('TAREAS LISTAS SIN ARCHIVAR: '+S.tareas.filter(t=>t.done).length);
+  linea.push('');
+  linea.push('CASOS ABIERTOS ('+S.casos.length+'):');
+  linea.push(S.casos.length?S.casos.map(c=>'- '+c.id+' | '+c.estado+' | '+diasSin(c.act)+' día(s) sin movimiento | '+(c.desc||'sin descripción')).join('\n'):'- (ninguno)');
+  const desde=hoy(), hasta=fmt(new Date(n.getTime()+7*86400000));
+  const evs=S.agenda.concat(allICS()).filter(e=>e.d>=desde&&e.d<=hasta).sort((a,b)=>(a.d+a.hora).localeCompare(b.d+b.hora));
+  linea.push('');
+  linea.push('AGENDA PRÓXIMOS 7 DÍAS ('+evs.length+'):');
+  linea.push(evs.length?evs.slice(0,40).map(e=>'- '+e.d+' '+(e.hora||'todo el día')+' '+e.t+(e.src?' (calendario '+e.src+')':'')).join('\n'):'- (sin eventos)');
+  return linea.join('\n');
+}
+
+function errorIA(status,j){
+  const m=((j&&j.error&&j.error.message)||'').slice(0,180);
+  if(status===400&&/API key/i.test(m)) return 'La clave de Gemini no es válida. Revísala en ⚙️.';
+  if(status===403) return 'Google rechazó la clave. Asegúrate de haberla creado en aistudio.google.com/apikey y de que la API de Gemini esté activa en ese proyecto.';
+  if(status===429) return 'Llegaste al límite gratuito de Gemini (por minuto o por día). Espera un rato y vuelve a intentar.';
+  if(status===503) return 'Gemini está saturado en este momento. Prueba de nuevo en unos segundos.';
+  return 'Gemini respondió con error '+status+(m?': '+m:'.');
+}
+
+async function llamarGemini(){
+  const body={
+    systemInstruction:{parts:[{text:ctxIA()}]},
+    contents:IA_HIST,
+    tools:[{functionDeclarations:IA_TOOLS}],
+    generationConfig:{temperature:0.3,maxOutputTokens:1200,thinkingConfig:{thinkingBudget:0}}
+  };
+  for(let vuelta=0;vuelta<5;vuelta++){
+    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+IA_MODELO+':generateContent?key='+encodeURIComponent(iaKey()),
+      {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    let j=null; try{ j=await r.json(); }catch(e){}
+    if(!r.ok) throw new Error(errorIA(r.status,j));
+    const cand=((j&&j.candidates)||[])[0];
+    if(!cand) throw new Error('Gemini no devolvió respuesta. Intenta de nuevo.');
+    const partes=(cand.content&&cand.content.parts)||[];
+    IA_HIST.push({role:'model',parts:partes});
+    const llamadas=partes.filter(p=>p.functionCall);
+    if(!llamadas.length){
+      const txt=partes.map(p=>p.text||'').join('').trim();
+      if(txt) return txt;
+      if(cand.finishReason==='MAX_TOKENS') return 'Me quedé sin espacio para responder. Pregúntame algo más acotado.';
+      return 'Listo.';
+    }
+    IA_HIST.push({role:'user',parts:llamadas.map(p=>({functionResponse:{name:p.functionCall.name,response:ejecutarIA(p.functionCall.name,p.functionCall.args)}}))});
+  }
+  return 'Di muchas vueltas con las herramientas. Revisa el panel por si alcancé a aplicar algo.';
+}
+
+function pintarIA(){
+  const c=$('ia-chat');
+  c.innerHTML = IA_MSJ.length ? IA_MSJ.map(m=>
+    '<div class="msg '+m.who+'">'+esc(m.text)+
+    (m.acts&&m.acts.length?'<div class="acts">'+m.acts.map(a=>'<span class="acc">'+esc(a)+'</span>').join('')+'</div>':'')+
+    '</div>').join('')
+    : '<div class="msg ia">¡Hola! Puedo crear tareas, ingresar casos, cambiar estados, agendar eventos o resumirte lo pendiente. Dime qué necesitas.</div>';
+  c.scrollTop=c.scrollHeight;
+  $('ia-sugs').innerHTML = IA_MSJ.length?'':IA_SUGS.map(s=>'<button class="sug" onclick="usarSug('+escAttr(JSON.stringify(s))+')">'+esc(s)+'</button>').join('');
+}
+function usarSug(t){ const i=$('ia-in'); i.value=t; i.focus(); if(!/[: ]$/.test(t)) enviarIA(); }
+function limpiarIA(){ IA_HIST=[]; IA_MSJ=[]; pintarIA(); }
+
+function abrirIA(){
+  cerrarSheets();
+  $('scrim').classList.add('on'); $('asheet').classList.add('on');
+  if(!iaKey()){
+    IA_MSJ=[{who:'err',text:'Para usar el asistente necesitas una clave gratuita de Gemini.\n\n1. Entra a aistudio.google.com/apikey con tu cuenta de Google.\n2. Toca "Create API key" y cópiala.\n3. Pégala en ⚙️ Configuración → Clave de Gemini y guarda.\n\nQueda guardada solo en este dispositivo.'}];
+  }
+  pintarIA();
+  setTimeout(()=>{ if(iaKey()) $('ia-in').focus(); },120);
+}
+
+async function enviarIA(){
+  if(IA_BUSY) return;
+  const inp=$('ia-in'), texto=inp.value.trim();
+  if(!texto) return;
+  if(!iaKey()){ toast('Configura tu clave de Gemini en ⚙️'); return; }
+  inp.value='';
+  IA_MSJ.push({who:'yo',text:texto});
+  IA_MSJ.push({who:'ia',text:'Pensando…'});
+  pintarIA();
+  IA_BUSY=true; $('ia-send').disabled=true;
+  const marca=IA_HIST.length;                  // por si hay que deshacer el turno
+  IA_HIST.push({role:'user',parts:[{text:texto}]});
+  IA_ACC=[];
+  try{
+    const resp=await llamarGemini();
+    IA_MSJ[IA_MSJ.length-1]={who:'ia',text:resp,acts:IA_ACC.slice()};
+  }catch(e){
+    IA_MSJ[IA_MSJ.length-1]={who:'err',text:e.message,acts:IA_ACC.slice()};
+    IA_HIST.length=marca;                      // un turno a medias rompe la conversación siguiente
+  }
+  IA_BUSY=false; $('ia-send').disabled=false;
+  pintarIA();
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&document.activeElement&&document.activeElement.id==='ia-in'){ e.preventDefault(); enviarIA(); }
+});
 
 conectar();
 </script>
