@@ -1,0 +1,25 @@
+/* ────────────────────────────────────────────────────────────
+   REGLAS TEMPORALES — SOLO PARA IMPORTAR LOS DATOS ANTIGUOS
+
+   Permiten que una sesión iniciada lea cualquier panel, para poder
+   copiar el que estaba bajo la clave antigua.
+
+   En cuanto termines de importar, vuelve a pegar las reglas
+   definitivas de reglas-firestore.txt y publica de nuevo.
+   ──────────────────────────────────────────────────────────── */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /paneles/{uid} {
+
+      // TEMPORAL: cualquiera con sesión iniciada puede leer. Quitar después.
+      allow read: if request.auth != null;
+
+      allow write: if request.auth != null && request.auth.uid == uid;
+
+      match /{documento=**} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+  }
+}
