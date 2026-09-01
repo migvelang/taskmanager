@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Paletas · Daily Task Manager</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,'Segoe UI',Roboto,sans-serif;background:#0E0F14;color:#E7E9EF;padding:20px 16px 60px;min-height:100vh}
+.top{max-width:1200px;margin:0 auto 22px}
+.top h1{font-size:20px;font-weight:800;letter-spacing:.3px}
+.top p{font-size:13px;color:#9AA0AE;margin-top:6px;line-height:1.5;max-width:660px}
+.modes{display:inline-flex;border:1px solid #2A2D38;border-radius:12px;overflow:hidden;margin-top:14px}
+.modes button{background:none;border:none;color:#9AA0AE;padding:8px 16px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.4px}
+.modes button.on{background:#E7E9EF;color:#14161C}
+.grid{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+
+/* ---- tarjeta de muestra ---- */
+.demo{border-radius:22px;overflow:hidden;border:1px solid var(--brd);background:var(--bg);box-shadow:0 18px 44px -26px rgba(0,0,0,.7)}
+.dhead{padding:15px 16px 13px;border-bottom:1px solid var(--brd)}
+.dname{font-size:14px;font-weight:800;color:var(--txt);letter-spacing:.2px}
+.ddesc{font-size:11px;color:var(--mut);margin-top:4px;line-height:1.5}
+.dbody{padding:14px 16px 18px;display:flex;flex-direction:column;gap:11px}
+
+.mrow{display:flex;justify-content:space-between;align-items:center}
+.mclock{font-family:ui-monospace,Menlo,monospace;font-size:23px;font-weight:800;letter-spacing:-.5px;
+        background:linear-gradient(120deg,var(--a1),var(--a3));-webkit-background-clip:text;background-clip:text;color:transparent}
+.mdate{font-size:9.5px;color:var(--mut);font-weight:700;letter-spacing:.5px}
+
+.hero{border-radius:15px;padding:12px 14px;background:linear-gradient(135deg,var(--a1),var(--a3));color:var(--ink)}
+.hero b{display:block;font-size:16px;font-weight:800}
+.hero span{font-size:10.5px;opacity:.85;font-weight:600}
+
+.chips{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chip{background:var(--card);border:1px solid var(--brd);border-radius:13px;padding:9px 11px;position:relative;overflow:hidden}
+.chip::after{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
+.chip p{font-size:8px;color:var(--mut);letter-spacing:.8px;font-weight:700}
+.chip b{font-family:ui-monospace,Menlo,monospace;font-size:19px;color:var(--txt);font-weight:800}
+
+.lbl{font-size:9px;color:var(--mut);letter-spacing:1.1px;font-weight:800;margin-top:3px}
+.task{background:var(--card);border:1px solid var(--brd);border-left:3px solid var(--c);border-radius:12px;padding:9px 11px;display:flex;align-items:center;gap:9px}
+.task i{width:15px;height:15px;border-radius:5px;border:1.5px solid var(--c);flex:none;display:block}
+.task span{font-size:12px;color:var(--txt);line-height:1.3}
+.task em{font-size:8.5px;font-style:normal;color:var(--c);font-weight:800;letter-spacing:.5px;margin-left:auto;flex:none}
+
+.cal{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.cell{background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:5px 4px;min-height:54px}
+.cell.now{border-color:var(--a1)}
+.cell u{display:block;text-decoration:none;font-family:ui-monospace,Menlo,monospace;font-size:9.5px;color:var(--mut);text-align:right;font-weight:700}
+.cell.now u{color:var(--a1)}
+.pill{margin-top:3px;font-size:7.5px;font-weight:700;padding:2px 4px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--pb);color:var(--pc)}
+
+.case{border-radius:12px;padding:9px 11px;display:flex;align-items:center;gap:8px;background:var(--dangbg);border:1px solid var(--dangbrd);border-left:3px solid var(--dang)}
+.case code{font-family:ui-monospace,Menlo,monospace;font-size:10px;color:var(--a1);font-weight:700}
+.case span{font-size:11.5px;color:var(--txt);flex:1}
+.case em{font-style:normal;font-size:9px;font-weight:800;color:var(--dang)}
+
+.swat{display:flex;gap:6px;margin-top:4px}
+.swat div{flex:1;height:26px;border-radius:7px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;font-size:7px;font-weight:700;color:rgba(0,0,0,.55)}
+.pick{margin-top:12px;text-align:center;font-size:11px;color:var(--mut);font-weight:700;letter-spacing:.4px}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>Tres paletas para tu Task Manager</h1>
+  <p>La misma pantalla renderizada en cada propuesta, para que compares en concreto y no sobre una lista de códigos. Cambia entre claro y oscuro: la paleta que elijas tiene que verse bien en los dos, porque la app sigue el modo del sistema.</p>
+  <div class="modes">
+    <button id="b-claro" class="on" onclick="setMode('claro')">☀️ CLARO</button>
+    <button id="b-osc" onclick="setMode('oscuro')">🌙 OSCURO</button>
+  </div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+const P = {
+  A: {
+    nombre:'A · Nórdica',
+    desc:'La más cercana a las capturas que mandaste: base casi blanca, mucho aire y acentos saturados solo donde importa. Es la apuesta segura y la que mejor envejece.',
+    claro:{ bg:'#F5F6F8', card:'#FFFFFF', txt:'#161A22', mut:'#8B93A5', brd:'#E6E9F0', ink:'#0B1F17',
+            a1:'#0EA47A', a2:'#F43F5E', a3:'#7C6BF5', a4:'#F59E0B',
+            dang:'#E11D48', dangbg:'#FFF1F3', dangbrd:'#FBCFD8', pb:'#DCFBEF', pc:'#0B7A5A' },
+    oscuro:{ bg:'#0E1014', card:'#171A21', txt:'#E7E9EF', mut:'#868D9E', brd:'#242833', ink:'#08130F',
+            a1:'#34D8A6', a2:'#FF7089', a3:'#A79BFF', a4:'#FFC15E',
+            dang:'#FF7089', dangbg:'rgba(255,112,137,.11)', dangbrd:'rgba(255,112,137,.32)', pb:'rgba(52,216,166,.16)', pc:'#34D8A6' }
+  },
+  B: {
+    nombre:'B · Grafito y cítrico',
+    desc:'Nace en oscuro, con grises casi negros y un verde lima eléctrico como acento único. Se ve técnico y actual, pero el lima cansa si se abusa: por eso va solo en lo accionable.',
+    claro:{ bg:'#F4F5F3', card:'#FFFFFF', txt:'#15171A', mut:'#82878F', brd:'#E4E6E2', ink:'#12160A',
+            a1:'#5B8C0A', a2:'#E2503B', a3:'#3D6FD9', a4:'#C98A00',
+            dang:'#D6422C', dangbg:'#FDF0ED', dangbrd:'#F6CCC3', pb:'#EDF6D6', pc:'#4C7508' },
+    oscuro:{ bg:'#0A0B0D', card:'#15171B', txt:'#ECEDEF', mut:'#868A93', brd:'#22252B', ink:'#101408',
+            a1:'#C3F53C', a2:'#FF6B52', a3:'#5AA9FF', a4:'#FFB627',
+            dang:'#FF6B52', dangbg:'rgba(255,107,82,.12)', dangbrd:'rgba(255,107,82,.34)', pb:'rgba(195,245,60,.15)', pc:'#C3F53C' }
+  },
+  C: {
+    nombre:'C · Arena cálida',
+    desc:'Base color papel y acentos terrosos: terracota, salvia y arcilla. Es la más distinta a un panel de trabajo típico y la que menos cansa de noche, aunque los avisos gritan menos.',
+    claro:{ bg:'#FAF7F2', card:'#FFFFFF', txt:'#2A2622', mut:'#8E857A', brd:'#EDE6DB', ink:'#1B2A20',
+            a1:'#4F8A6B', a2:'#C1553A', a3:'#7C6A9C', a4:'#B5852F',
+            dang:'#B24A32', dangbg:'#FBEEE9', dangbrd:'#EBC9BB', pb:'#E4F0E8', pc:'#3D6E54' },
+    oscuro:{ bg:'#14110E', card:'#1F1B17', txt:'#EDE6DC', mut:'#9A8F82', brd:'#2C2721', ink:'#121A14',
+            a1:'#7FC49C', a2:'#E8836A', a3:'#B3A0D6', a4:'#E0B45F',
+            dang:'#E8836A', dangbg:'rgba(232,131,106,.12)', dangbrd:'rgba(232,131,106,.32)', pb:'rgba(127,196,156,.16)', pc:'#7FC49C' }
+  }
+};
+
+let MODE='claro';
+function setMode(m){
+  MODE=m;
+  document.getElementById('b-claro').className = m==='claro'?'on':'';
+  document.getElementById('b-osc').className = m==='oscuro'?'on':'';
+  render();
+}
+function vars(p){
+  return Object.entries(p).map(([k,v])=>'--'+k+':'+v).join(';');
+}
+function demo(key){
+  const d=P[key], c=d[MODE];
+  const style = vars(c);
+  return `<div class="demo" style="${style}">
+    <div class="dhead">
+      <div class="dname">${d.nombre}</div>
+      <div class="ddesc">${d.desc}</div>
+      <div class="swat">
+        <div style="background:${c.a1}">acción</div>
+        <div style="background:${c.a2}">urgente</div>
+        <div style="background:${c.a3}">delegar</div>
+        <div style="background:${c.a4}">casos</div>
+      </div>
+    </div>
+    <div class="dbody">
+      <div class="mrow"><span class="mdate">MARTES, 8 DE SEPTIEMBRE</span><span class="mclock">09:41</span></div>
+      <div class="hero"><b>Buenos días 👋</b><span>3 urgentes · 2 eventos</span></div>
+      <div class="chips">
+        <div class="chip" style="--c:${c.a2}"><p>URGENTES</p><b>3</b></div>
+        <div class="chip" style="--c:${c.a4}"><p>CASOS</p><b>10</b></div>
+      </div>
+      <div class="lbl">TABLERO</div>
+      <div class="task" style="--c:${c.a2}"><i></i><span>Sacar impresoras DV</span><em>URGENTE</em></div>
+      <div class="task" style="--c:${c.a1}"><i></i><span>Capacitación Exchange</span><em>PLANIFICAR</em></div>
+      <div class="task" style="--c:${c.a3}"><i></i><span>Cambio Gelen</span><em>DELEGAR</em></div>
+      <div class="lbl">AGENDA</div>
+      <div class="cal">
+        <div class="cell"><u>7</u></div>
+        <div class="cell now" style="--pb:${c.pb};--pc:${c.pc}"><u>8</u><div class="pill">09:30 Turno</div><div class="pill" style="background:${c.dangbg};color:${c.dang}">17:30 Caja</div></div>
+        <div class="cell" style="--pb:${c.pb};--pc:${c.pc}"><u>9</u><div class="pill">GFK</div></div>
+        <div class="cell"><u>10</u></div>
+        <div class="cell"><u>11</u></div>
+      </div>
+      <div class="lbl">CASOS</div>
+      <div class="case"><code>HELPME-197254</code><span>Error bluetooth</span><em>🚨 3d</em></div>
+      <div class="pick">— opción ${key} —</div>
+    </div>
+  </div>`;
+}
+function render(){
+  document.getElementById('grid').innerHTML = ['A','B','C'].map(demo).join('');
+  document.body.style.background = MODE==='claro' ? '#EFEFF2' : '#0E0F14';
+  document.body.style.color = MODE==='claro' ? '#16181D' : '#E7E9EF';
+  document.querySelectorAll('.top p').forEach(p=>p.style.color = MODE==='claro'?'#6B7280':'#9AA0AE');
+}
+render();
+</script>
+</body>
+</html>
