@@ -170,7 +170,7 @@ a{color:var(--ac);text-decoration:none}
 .ph h2{font-size:11px;font-weight:650;letter-spacing:.07em;text-transform:uppercase;color:var(--txt2)}
 .ph .ct{font-size:11px;font-family:var(--fm);color:var(--mut);font-weight:600}
 .ph .sp{margin-left:auto;display:flex;gap:5px;align-items:center}
-.pb{padding:8px}
+.pb{padding:8px;min-width:0}
 .pb.tight{padding:5px}
 .pb.flat{padding:0}
 
@@ -201,7 +201,8 @@ textarea{resize:vertical;min-height:76px;line-height:1.5}
 label.lb{display:block;font-size:10.5px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);margin:0 0 5px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .frow{display:flex;gap:9px;flex-wrap:wrap}
-.frow>*{flex:1;min-width:0}
+.frow>*{flex:1 1 148px;min-width:0}
+.frow.btns>*{flex:0 1 auto}
 
 .tag{
   display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;
@@ -233,9 +234,9 @@ label.lb{display:block;font-size:10.5px;font-weight:650;letter-spacing:.05em;tex
 }
 .row:hover{background:var(--sur2)}
 .row.sel{background:var(--acbg)}
-.row .tx{flex:1;min-width:0;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.row .sc{font-size:11.5px;color:var(--mut);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.row .body{flex:1;min-width:0}
+.row .tx{display:block;min-width:0;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .sc{display:block;font-size:11.5px;color:var(--mut);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .body{flex:1 1 auto;min-width:0;overflow:hidden}
 .row .rt{display:flex;align-items:center;gap:6px;flex:0 0 auto}
 .row.done .tx{color:var(--mut);text-decoration:line-through}
 .rowgrip{color:var(--mut);opacity:0;cursor:grab;flex:0 0 12px;display:grid;place-items:center;touch-action:none}
@@ -259,7 +260,8 @@ label.lb{display:block;font-size:10.5px;font-weight:650;letter-spacing:.05em;tex
 /* ══════════════════════════════════════════════════════════════
    4. TABLERO — rejilla de widgets
    ══════════════════════════════════════════════════════════════ */
-.dash{display:grid;grid-template-columns:repeat(12,1fr);gap:13px;align-items:start}
+.dash{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:13px;align-items:start}
+.dash>*{min-width:0}
 .w4{grid-column:span 4} .w5{grid-column:span 5} .w6{grid-column:span 6}
 .w7{grid-column:span 7} .w8{grid-column:span 8} .w12{grid-column:span 12}
 
@@ -274,7 +276,7 @@ label.lb{display:block;font-size:10.5px;font-weight:650;letter-spacing:.05em;tex
 .hero .bigclock b{font-size:38px;font-weight:600;letter-spacing:-.035em;display:block;line-height:1}
 .hero .bigclock span{font-size:11.5px;color:var(--mut);letter-spacing:.02em}
 
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;grid-column:span 12}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;grid-column:span 12}
 .kpi{
   background:var(--sur);border:1px solid var(--brd);border-radius:var(--r);padding:12px 13px;
   text-align:left;position:relative;transition:border-color .13s,transform .13s;box-shadow:var(--sh);
@@ -317,21 +319,62 @@ label.lb{display:block;font-size:10.5px;font-weight:650;letter-spacing:.05em;tex
 .bar i{display:block;height:100%;background:var(--ac);border-radius:3px;transition:width .35s}
 .bar i.dang{background:var(--dang)} .bar i.warn{background:var(--warn)} .bar i.ok{background:var(--ok)}
 
-/* enfoque */
-.foco{text-align:center;padding:14px 12px 16px}
-.foco .ring{width:118px;height:118px;margin:0 auto 10px;position:relative}
-.foco .ring svg{transform:rotate(-90deg);width:118px;height:118px}
-.foco .ring circle{fill:none;stroke-width:7;stroke-linecap:round}
-.foco .ring .bgc{stroke:var(--sur3)}
-.foco .ring .fgc{stroke:var(--ac);transition:stroke-dashoffset .9s linear}
-.foco .ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:25px;font-weight:600;letter-spacing:-.03em;font-family:var(--fm)}
-.foco .lbl{font-size:12.5px;color:var(--txt2);margin-bottom:11px;min-height:19px;padding:0 6px}
-.foco .ctr{display:flex;gap:6px;justify-content:center}
+/* acciones rápidas: la franja de iconos para crear y adjuntar */
+.qa{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px}
+.qa.seis{grid-template-columns:repeat(6,1fr)}
+.qab{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+  padding:14px 6px;border-radius:var(--r);background:var(--sur2);border:1px solid var(--brd);
+  font-size:11px;font-weight:600;color:var(--txt2);transition:border-color .13s,background-color .13s,transform .13s;
+}
+.qab:hover{border-color:var(--ac);background:var(--acbg);color:var(--ac)}
+.qab:active{transform:scale(.96)}
+.qab svg{width:20px;height:20px}
+.qa.mini .qab{padding:9px 4px;font-size:10px;gap:5px}
+.qa.mini .qab svg{width:16px;height:16px}
+
+/* archivo desplegable */
+.arch{border:1px solid var(--brd);border-radius:var(--r-lg);background:var(--sur);box-shadow:var(--sh);overflow:hidden;margin-top:13px}
+.arch>summary{
+  list-style:none;cursor:pointer;padding:11px 14px;display:flex;align-items:center;gap:9px;
+  font-size:11px;font-weight:650;letter-spacing:.07em;text-transform:uppercase;color:var(--txt2);
+}
+.arch>summary::-webkit-details-marker{display:none}
+.arch>summary .cv{transition:transform .18s;color:var(--mut)}
+.arch[open]>summary .cv{transform:rotate(90deg)}
+.arch>summary .ct{margin-left:auto;font-family:var(--fm);color:var(--mut);font-weight:600;letter-spacing:0}
+.arch .cuerpo{padding:5px 5px 8px;border-top:1px solid var(--brd);max-height:420px;overflow-y:auto}
+
+/* boceto y grabadora */
+.lienzo{width:100%;height:300px;border-radius:var(--r);border:1px solid var(--brd);background:#fff;touch-action:none;display:block}
+.recmed{display:flex;align-items:center;gap:12px;padding:14px;border-radius:var(--r);background:var(--sur2);border:1px solid var(--brd)}
+.recmed .pt{width:44px;height:44px;border-radius:50%;background:var(--dang);color:#fff;display:grid;place-items:center;flex:0 0 44px}
+.recmed.on .pt{animation:pul 1.1s infinite}
+.recmed .info{flex:1;min-width:0}
+.recmed .info b{display:block;font-size:19px;font-family:var(--fm);letter-spacing:-.02em}
+.recmed .info span{font-size:11.5px;color:var(--mut)}
+.ondas{display:flex;align-items:center;gap:2px;height:22px}
+.ondas i{width:3px;background:var(--ac);border-radius:2px;height:20%}
+
+/* adjunto que no es imagen */
+.adjf{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:9px;background:var(--sur2);border:1px solid var(--brd);margin-bottom:5px}
+.adjf .ico{width:28px;height:28px;border-radius:8px;background:var(--sur3);display:grid;place-items:center;flex:0 0 28px;color:var(--mut)}
+.adjf .nom{flex:1;min-width:0}
+.adjf .nom b{display:block;font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.adjf .nom span{font-size:10.5px;color:var(--mut)}
+.adjf audio{height:32px;max-width:190px}
 
 /* ══════════════════════════════════════════════════════════════
    5. TABLERO DE TAREAS
    ══════════════════════════════════════════════════════════════ */
-.cap{display:flex;gap:8px;margin-bottom:13px}
+.cap{display:flex;flex-direction:column;gap:8px;margin-bottom:13px}
+.capopts{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.prios{display:inline-flex;background:var(--sur2);border:1px solid var(--brd);border-radius:9px;padding:2px;gap:2px}
+.prios button{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;font-size:11.5px;font-weight:650;color:var(--mut);transition:background-color .13s,color .13s}
+.prios button .pd{width:7px;height:7px;border-radius:2px;background:currentColor}
+.prios button.on{background:var(--sur);color:var(--pc);box-shadow:var(--sh)}
+.capopts select{width:auto;flex:0 0 auto;padding:6px 9px;font-size:12px;border-radius:9px}
+.capopts .sp{margin-left:auto;display:flex;gap:7px}
 .capin{flex:1;position:relative}
 .capin input{padding-right:74px;padding-left:34px;height:42px;font-size:14px;border-radius:11px}
 .capin .lead{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--mut);pointer-events:none}
@@ -342,7 +385,8 @@ label.lb{display:block;font-size:10.5px;font-weight:650;letter-spacing:.05em;tex
 .caphint code{font-family:var(--fm);background:var(--sur2);border:1px solid var(--brd);padding:1px 5px;border-radius:5px;font-size:10.5px}
 .mic.rec{color:var(--dang);animation:pul 1.1s infinite}
 
-.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:start}
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
+.cols>*{min-width:0}
 .col{background:var(--sur);border:1px solid var(--brd);border-radius:var(--r-lg);box-shadow:var(--sh);min-height:110px}
 .col.over{border-color:var(--ac);background:var(--acbg)}
 .colh{display:flex;align-items:center;gap:8px;padding:11px 13px 8px}
@@ -385,7 +429,7 @@ label.lb{display:block;font-size:10.5px;font-weight:650;letter-spacing:.05em;tex
 .caso .lv{width:3px;align-self:stretch;border-radius:3px;background:var(--ok);flex:0 0 3px}
 .caso .lv.warn{background:var(--warn)} .caso .lv.dang{background:var(--dang)}
 .caso .id{font-family:var(--fm);font-size:12px;font-weight:600;flex:0 0 auto}
-.caso .ds{font-size:13px;color:var(--txt2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.caso .ds{font-size:13px;color:var(--txt2);flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .caso .ag{font-size:11px;font-family:var(--fm);color:var(--mut);flex:0 0 auto}
 .acts{display:flex;gap:3px;flex:0 0 auto}
 .acts .ib{width:27px;height:27px;border-radius:7px}
@@ -460,6 +504,7 @@ label.lb{display:block;font-size:10.5px;font-weight:650;letter-spacing:.05em;tex
 }
 .toast.on{opacity:1;transform:translate(-50%,0)}
 .toast svg{width:15px;height:15px;flex:0 0 15px;color:var(--ac)}
+.toast .und{margin-left:4px;padding:3px 10px;border-radius:7px;background:var(--acbg);color:var(--ac);font-size:12px;font-weight:650;flex:0 0 auto}
 
 /* asistente flotante */
 .fab{
@@ -579,11 +624,19 @@ label.lb{display:block;font-size:10.5px;font-weight:650;letter-spacing:.05em;tex
 .mnav{display:none}
 @media(max-width:960px){
   .cols{grid-template-columns:1fr}
-  .kpis{grid-template-columns:repeat(2,1fr)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   .w4,.w5,.w6,.w7,.w8{grid-column:span 12}
 }
 @media(max-width:760px){
   .side{display:none}
+  .dash{grid-template-columns:1fr}
+  .hero,.kpis,.w4,.w5,.w6,.w7,.w8,.w12{grid-column:auto}
+  .frow>*{flex:1 1 140px}
+  .frow.btns>*{flex:1 1 46%}
+  .qa{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .caphint{display:none}
+  .capopts select{flex:1 1 auto;min-width:0}
+  .prios button{padding:5px 8px;font-size:11px}
   .content{padding:14px 13px calc(96px + env(safe-area-inset-bottom))}
   .top{padding:9px 13px;padding-top:calc(9px + env(safe-area-inset-top))}
   .top h1{font-size:15px}
@@ -674,6 +727,17 @@ label.lb{display:block;font-size:10.5px;font-weight:650;letter-spacing:.05em;tex
 <symbol id="i-avance" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></symbol>
 <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5M9 3h6l-1 6 3 3v2H7v-2l3-3-1-6z"/></symbol>
 <symbol id="i-foto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></symbol>
+<symbol id="i-camara" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 8.5V17a2 2 0 01-2 2H4a2 2 0 01-2-2V8.5a2 2 0 012-2h1.6a1 1 0 00.83-.45l1.14-1.7a1 1 0 01.83-.45h4.2a1 1 0 01.83.45l.5.75"/><circle cx="11" cy="12.5" r="3.2"/><path d="M18.5 2.5v5M21 5h-5"/></symbol>
+<symbol id="i-escanear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 012-2h3M3 16v3a2 2 0 002 2h3M21 8V5a2 2 0 00-2-2h-3"/><path d="M7 9h8M7 12.5h6M7 16h4"/><path d="M18.5 15v5M21 17.5h-5"/></symbol>
+<symbol id="i-archivo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18.5 10.5l-7.4 7.4a4.2 4.2 0 01-6-6l8-8a2.8 2.8 0 014 4l-7.9 8a1.4 1.4 0 01-2-2l7.3-7.3"/><path d="M18.5 16v5M21 18.5h-5"/></symbol>
+<symbol id="i-boceto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19c1.5-6 3.5-9 5.5-9s2.5 3 1 5-3.5 1.5-3.5-1 3-6 7-6"/><path d="M18.5 15v5M21 17.5h-5"/></symbol>
+<symbol id="i-grabadora" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="7" r="3.2"/><path d="M2.5 20v-1.2c0-2.4 2.7-4.3 6-4.3s6 1.9 6 4.3V20"/><path d="M18 8.5v7M21 6.5v11"/></symbol>
+<symbol id="i-evento" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V6a2 2 0 00-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2h8"/><path d="M2 9h18M7 2v4M15 2v4"/><path d="M6 13h.01M10 13h.01M6 16.5h.01M10 16.5h.01"/><path d="M18.5 15v5M21 17.5h-5"/></symbol>
+<symbol id="i-cv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></symbol>
+<symbol id="i-clip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5l-8.9 8.9a5 5 0 01-7.1-7.1l9.2-9.2a3.4 3.4 0 014.8 4.8l-9.2 9.2a1.7 1.7 0 01-2.4-2.4l8.5-8.5"/></symbol>
+<symbol id="i-audio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4M7 6.5v11M11 3.5v17M15 7.5v9M19 10.5v3"/></symbol>
+<symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></symbol>
+<symbol id="i-goma" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 20H8.5L3 14.5a2 2 0 010-2.8l8-8a2 2 0 012.8 0l6.5 6.5a2 2 0 010 2.8L13 20"/><path d="M7 16.5L14.5 9"/></symbol>
 <symbol id="i-salir" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
 </svg>
 
@@ -768,14 +832,16 @@ label.lb{display:block;font-size:10.5px;font-weight:650;letter-spacing:.05em;tex
       <div style="flex:1.2"><label class="lb">Prioridad</label>
         <select id="mt-cat"><option value="urgente">Urgente</option><option value="planificar">Planificar</option><option value="delegar">Delegar</option></select></div>
       <div><label class="lb">Vence</label><input type="date" id="mt-venc"></div>
-      <div><label class="lb">Repite</label>
-        <select id="mt-rep"><option value="">No repite</option><option value="diaria">Cada día</option><option value="laboral">Días de semana</option><option value="semanal">Cada semana</option><option value="quincenal">Cada 2 semanas</option><option value="mensual">Cada mes</option></select></div>
+      <div><label class="lb">Se repite</label>
+        <select id="mt-rep"><option value="">No se repite</option><option value="diaria">Cada día</option><option value="laboral">Días de semana</option><option value="semanal">Cada semana</option><option value="quincenal">Cada 2 semanas</option><option value="mensual">Cada mes</option></select></div>
+      <div><label class="lb">Recordar</label>
+        <select id="mt-rec"><option value="">Sin recordatorio</option><option value="1">Cada día</option><option value="2">Cada 2 días</option><option value="3">Cada 3 días</option><option value="7">Cada semana</option><option value="14">Cada 2 semanas</option></select></div>
     </div>
     <div><label class="lb">Subtareas</label><div class="checklist" id="mt-ck"></div>
       <button class="btn sm gho" style="margin-top:5px" onclick="addCheck()"><svg><use href="#i-mas"/></svg>Añadir subtarea</button></div>
     <div><label class="lb">Notas</label><textarea id="mt-notas" placeholder="Detalle, pasos, contactos…"></textarea></div>
-    <div><label class="lb">Imágenes</label><div class="adjgrid" id="mt-adj"></div>
-      <input type="file" id="mt-file" accept="image/*" multiple style="display:none" onchange="subirAdjuntos(this.files)">
+    <div><label class="lb">Añadir</label><div class="qa mini" id="mt-qa"></div></div>
+    <div><label class="lb">Adjuntos</label><div id="mt-arch"></div><div class="adjgrid" id="mt-adj"></div>
       <p class="hint" id="mt-adjh" style="margin-top:5px"></p></div>
   </div>
   <div class="mf">
@@ -810,15 +876,20 @@ label.lb{display:block;font-size:10.5px;font-weight:650;letter-spacing:.05em;tex
 <div class="modal" id="m-caso" role="dialog" aria-label="Caso">
   <div class="mh"><h3 id="mc-tit">Caso</h3><button class="ib" onclick="cerrarCapas()"><svg><use href="#i-x"/></svg></button></div>
   <div class="mb">
-    <div class="frow">
-      <div style="flex:0 0 150px"><label class="lb">N° de caso</label><input type="text" id="mc-id" placeholder="HELPME-000000"></div>
-      <div style="flex:1"><label class="lb">Descripción</label><input type="text" id="mc-desc"></div>
-    </div>
+    <div><label class="lb">N° de caso</label>
+      <input type="text" id="mc-id" placeholder="HELPME-000000" autocapitalize="characters" autocomplete="off"></div>
+    <div><label class="lb">Descripción</label>
+      <input type="text" id="mc-desc" placeholder="De qué se trata"></div>
     <div class="frow">
       <div><label class="lb">Estado</label><select id="mc-est"><option>EN PROGRESO</option><option>EN ESPERA</option></select></div>
       <div><label class="lb">Último movimiento</label><input type="date" id="mc-act"></div>
+      <div><label class="lb">Recordar</label>
+        <select id="mc-rec"><option value="">Sin recordatorio</option><option value="1">Cada día</option><option value="2">Cada 2 días</option><option value="3">Cada 3 días</option><option value="7">Cada semana</option><option value="14">Cada 2 semanas</option></select></div>
     </div>
     <div><label class="lb">Bitácora</label><textarea id="mc-notas" placeholder="Qué se ha hecho, con quién, qué falta…"></textarea></div>
+    <div><label class="lb">Añadir</label><div class="qa mini" id="mc-qa"></div></div>
+    <div><label class="lb">Adjuntos</label><div id="mc-arch"></div><div class="adjgrid" id="mc-adj"></div>
+      <p class="hint" id="mc-adjh" style="margin-top:5px"></p></div>
     <div id="mc-hist"></div>
   </div>
   <div class="mf">
@@ -868,8 +939,49 @@ label.lb{display:block;font-size:10.5px;font-weight:650;letter-spacing:.05em;tex
   </div>
 </div>
 
+<div class="modal" id="m-boceto" role="dialog" aria-label="Boceto">
+  <div class="mh"><h3>Boceto</h3><button class="ib" onclick="cerrarCapas()"><svg><use href="#i-x"/></svg></button></div>
+  <div class="mb">
+    <canvas class="lienzo" id="lienzo"></canvas>
+    <div class="capopts">
+      <div class="swatches" id="bo-cols"></div>
+      <select id="bo-grosor" style="width:auto;flex:0 0 auto">
+        <option value="2">Fino</option><option value="4" selected>Medio</option><option value="9">Grueso</option>
+      </select>
+      <span class="sp"><button class="btn gho" onclick="limpiarLienzo()"><svg><use href="#i-goma"/></svg>Borrar todo</button></span>
+    </div>
+  </div>
+  <div class="mf"><span class="sp"><button class="btn gho" onclick="cerrarCapas()">Cancelar</button>
+    <button class="btn pri" onclick="guardarBoceto()">Guardar boceto</button></span></div>
+</div>
+
+<div class="modal" id="m-grab" role="dialog" aria-label="Grabadora">
+  <div class="mh"><h3>Grabadora</h3><button class="ib" onclick="cerrarCapas()"><svg><use href="#i-x"/></svg></button></div>
+  <div class="mb">
+    <div class="recmed" id="rec-med">
+      <span class="pt"><svg><use href="#i-mic"/></svg></span>
+      <span class="info"><b class="num" id="rec-t">00:00</b><span id="rec-est">Toca grabar para empezar</span></span>
+      <span class="ondas" id="rec-ondas"></span>
+    </div>
+    <div id="rec-prev"></div>
+    <label class="hint" style="display:flex;gap:8px;align-items:center;cursor:pointer">
+      <input type="checkbox" id="rec-trans" style="width:auto;flex:0 0 auto" checked>
+      Transcribir con el asistente y pegarlo en las notas</label>
+  </div>
+  <div class="mf">
+    <button class="btn pri" id="rec-btn" onclick="grabAlternar()"><svg><use href="#i-mic"/></svg>Grabar</button>
+    <span class="sp"><button class="btn gho" onclick="cerrarCapas()">Cancelar</button>
+    <button class="btn pri" id="rec-ok" onclick="guardarGrabacion()" disabled>Guardar</button></span>
+  </div>
+</div>
+
+<input type="file" id="in-camara" accept="image/*" capture="environment" style="display:none" onchange="recibirCamara(this.files, 'foto')">
+<input type="file" id="in-escanear" accept="image/*" capture="environment" style="display:none" onchange="recibirCamara(this.files, 'escaneo')">
+<input type="file" id="in-galeria" accept="image/*" multiple style="display:none" onchange="recibirCamara(this.files, 'foto')">
+<input type="file" id="in-archivo" multiple style="display:none" onchange="recibirArchivos(this.files)">
+
 <div class="lightbox" id="lightbox" onclick="this.classList.remove('on')"><img id="lightimg" alt=""></div>
-<div class="toast" id="toast"><svg><use href="#i-ok"/></svg><span id="toast-tx"></span></div>
+<div class="toast" id="toast"><svg><use href="#i-ok"/></svg><span id="toast-tx"></span><button class="und" id="toast-und" style="display:none" onclick="ejecutarDeshacer()">Deshacer</button></div>
 
 <div class="login" id="login">
   <div class="lcard">
@@ -958,6 +1070,8 @@ const EVCOL = {
 };
 const ESTADOS = {'EN PROGRESO':{sig:'EN ESPERA'}, 'EN ESPERA':{sig:'EN PROGRESO'}};
 const REPS = {diaria:'cada día', laboral:'días de semana', semanal:'cada semana', quincenal:'cada 2 semanas', mensual:'cada mes'};
+/* cada cuántos días insistir con el recordatorio */
+const RECS = {'1':'cada día', '2':'cada 2 días', '3':'cada 3 días', '7':'cada semana', '14':'cada 2 semanas'};
 const DIAS_ALERTA = 2;
 const ACENTOS = ['indigo','verde','azul','ambar','rosa'];
 const ACENTO_HEX = {indigo:'#6470F3', verde:'#12A374', azul:'#2C82E0', ambar:'#D08507', rosa:'#D9459A'};
@@ -1002,13 +1116,21 @@ function toggleModo(){ localStorage.setItem('dtm4-modo', modo()==='claro'?'oscur
 /* ══════════════════════════════════════════════════════════════
    AVISOS EN PANTALLA
    ══════════════════════════════════════════════════════════════ */
-let toastT=null;
-function toast(m, icono){
+let toastT=null, DESHACER=null;
+function toast(m, icono, deshacer){
   $('toast-tx').textContent=m;
   $('toast').querySelector('svg use').setAttribute('href','#i-'+(icono||'ok'));
+  const b=$('toast-und');
+  DESHACER=deshacer||null;
+  b.style.display = deshacer ? 'block' : 'none';
   $('toast').classList.add('on');
   clearTimeout(toastT);
-  toastT=setTimeout(()=>$('toast').classList.remove('on'), 4200);
+  toastT=setTimeout(()=>{ $('toast').classList.remove('on'); DESHACER=null; }, deshacer?7000:4200);
+}
+function ejecutarDeshacer(){
+  const f=DESHACER; DESHACER=null;
+  $('toast').classList.remove('on');
+  if(f) f();
 }
 function setSync(estado, txt){
   const d=$('sync-dot');
@@ -1052,6 +1174,7 @@ function normalizar(){
     t.ck=t.ck.filter(c=>c&&typeof c.t==='string').map(c=>({t:c.t, d:!!c.d}));
     if(typeof t.venc!=='string') t.venc='';
     if(!REPS[t.rep]) t.rep='';
+    if(!RECS[t.rec]) t.rec='';
     if(!t.creado) t.creado=hoy();
     if(t.done&&!t.doneAt) t.doneAt=Date.now();
     if(!t.done) delete t.doneAt;
@@ -1062,6 +1185,8 @@ function normalizar(){
     if(!ESTADOS[c.estado]) c.estado='EN PROGRESO';
     if(typeof c.notas!=='string') c.notas='';
     if(!Array.isArray(c.hist)) c.hist=[];
+    if(!Array.isArray(c.adj)) c.adj=[];
+    if(!RECS[c.rec]) c.rec='';
     if(!c.act) c.act=hoy();
     if(c.cat&&!CATS[c.cat]) delete c.cat;
   });
@@ -1109,18 +1234,16 @@ function cargarDeDoc(d){
   localStorage.setItem('dtm4-data', JSON.stringify(S));
 }
 
-/* tareas terminadas hace más de un día pasan al registro de cierres */
+/* Restos de versiones anteriores: cualquier tarea que quedó marcada
+   como lista dentro del tablero se manda al archivo al arrancar. */
 function archivarHechas(){
-  const ahora=Date.now(); let movio=false;
-  S.tareas=S.tareas.filter(t=>{
-    if(t.done && t.doneAt && (ahora-t.doneAt)>=24*3600*1000){
-      S.tareasCerradas.unshift({text:t.text, cat:t.cat, cerrado:hoy()});
-      movio=true; return false;
-    }
-    return true;
-  });
+  const quedan=S.tareas.filter(t=>!t.done);
+  if(quedan.length===S.tareas.length) return;
+  S.tareas.filter(t=>t.done).forEach(t=>
+    S.tareasCerradas.unshift(Object.assign({}, t, {cerrado:t.cerrado||hoy()})));
+  S.tareas=quedan;
   if(S.tareasCerradas.length>400) S.tareasCerradas.length=400;
-  if(movio) aplicar();
+  aplicar();
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1191,6 +1314,15 @@ function revisarAlertas(){
   const v=vencenHoy();
   if(v.length) lanzar('vence-'+h, v.length===1?'Una tarea vence hoy':v.length+' tareas vencen hoy',
     v.slice(0,4).map(t=>'• '+t.text).join('\n'));
+  // recordatorios propios: se disparan cada N días contados desde que se creó
+  pendientes().filter(t=>t.rec).forEach(t=>{
+    if(dif(h, t.creado||h) % Number(t.rec) === 0)
+      lanzar('rec-t-'+t.tid, 'Recordatorio', t.text);
+  });
+  S.casos.filter(c=>c.rec).forEach(c=>{
+    if(dif(h, c.act||h) % Number(c.rec) === 0 && dif(h, c.act||h) > 0)
+      lanzar('rec-c-'+c.id, 'Recordatorio de caso', c.id+' — '+c.desc);
+  });
   localStorage.setItem('dtm4-avisado', JSON.stringify(n));
 }
 
@@ -1316,7 +1448,7 @@ function escucharBandeja(u){
         const m=texto.match(/([A-Za-zÁÉÍÓÚÑ]{2,10}-?\s?\d{4,8})/);
         const num=m?m[1].toUpperCase().replace(/\s/g,''):texto.split(' ')[0].toUpperCase();
         const desc=m?texto.replace(m[1],'').replace(/^[\s:,-]+/,'').trim():texto;
-        S.casos.push({id:num, desc:desc||'(sin descripción)', estado:'EN PROGRESO', act:hoy(), notas:'', hist:[]});
+        S.casos.push({id:num, desc:desc||'(sin descripción)', estado:'EN PROGRESO', act:hoy(), notas:'', rec:'', adj:[], hist:[]});
         creadas++;
       }else{
         S.bandeja.unshift({bid:uid(), tipo:tipo||'nota', texto, sub:String(d.sub||''), url:String(d.url||''),
@@ -1346,7 +1478,7 @@ function bandejaACaso(bid){
   const m=b.texto.match(/([A-Za-zÁÉÍÓÚÑ]{2,10}-?\s?\d{4,8})/);
   const num=m?m[1].toUpperCase().replace(/\s/g,''):('CASO-'+Date.now().toString().slice(-6));
   S.casos.push({id:num, desc:b.texto.replace(m?m[1]:'','').replace(/^[\s:,-]+/,'').trim()||b.texto,
-                estado:'EN PROGRESO', act:hoy(), notas:b.url||'', hist:[]});
+                estado:'EN PROGRESO', act:hoy(), notas:b.url||'', rec:'', adj:[], hist:[]});
   S.bandeja.splice(i,1);
   aplicar(); toast('Convertido en caso '+num);
 }
@@ -1429,10 +1561,12 @@ function interpretar(entrada){
   let cat='planificar', venc='', hora='', rep='';
 
   // prioridad
+  let marcoCat=true;
   if(quitar(/\s(!!|!urg\w*|!u)\s/i)) cat='urgente';
   else if(quitar(/\s(!del\w*|!d)\s/i)) cat='delegar';
   else if(quitar(/\s(!plan\w*|!p)\s/i)) cat='planificar';
   else if(/\burgente\b/i.test(s)) cat='urgente';
+  else marcoCat=false;
 
   // repetición (antes que las fechas, porque "cada lunes" contiene un día).
   // Se recorren todas las formas y se repite el barrido, porque una misma
@@ -1489,7 +1623,7 @@ function interpretar(entrada){
   }
 
   const texto=s.replace(/\s+/g,' ').trim().replace(/^[,;:\-–]\s*/,'');
-  return {texto: texto || String(entrada||'').trim(), cat, venc, rep, hora};
+  return {texto: texto || String(entrada||'').trim(), cat, venc, rep, hora, marcoCat};
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1500,8 +1634,11 @@ function crearTarea(entrada, extra){
   if(!p.texto) return null;
   const t=Object.assign({
     tid:uid(), done:false, text:p.texto, cat:p.cat, notas:'', adj:[],
-    venc:p.venc, rep:p.rep, ck:[], creado:hoy()
+    venc:p.venc, rep:p.rep, rec:'', ck:[], creado:hoy()
   }, extra||{});
+  // si el texto trae !urgente o "cada semana", eso pesa más que el selector
+  if(p.marcoCat) t.cat=p.cat;
+  if(p.rep) t.rep=p.rep;
   S.tareas.push(t);
   // con hora explícita también queda bloqueada en la agenda
   if(p.hora && p.venc){
@@ -1513,19 +1650,27 @@ function crearTarea(entrada, extra){
 function capturar(){
   const inp=$('cap-in'); if(!inp) return;
   const v=inp.value.trim(); if(!v) return;
-  const t=crearTarea(v);
+  const t=crearTarea(v, {cat:capCat, rep:capRep});
   inp.value='';
   aplicar();
   if(t) toast('Tarea creada'+(t.venc?' · vence '+fechaRel(t.venc):''));
 }
+/* Cerrar una tarea la saca de la lista en el acto y la manda al
+   archivo. Queda unos segundos para deshacerlo desde el aviso. */
 function togTarea(tid){
-  const t=S.tareas.find(x=>x.tid===tid); if(!t) return;
-  t.done=!t.done;
-  if(t.done){
-    t.doneAt=Date.now();
-    if(t.rep) regenerar(t);
-  }else delete t.doneAt;
+  const i=S.tareas.findIndex(x=>x.tid===tid); if(i<0) return;
+  const t=S.tareas[i];
+  if(t.rep) regenerar(t);
+  const copia=Object.assign({}, t);
+  S.tareas.splice(i,1);
+  S.tareasCerradas.unshift(Object.assign({}, copia, {done:true, doneAt:Date.now(), cerrado:hoy()}));
+  if(S.tareasCerradas.length>400) S.tareasCerradas.length=400;
   aplicar();
+  toast('Listo: "'+t.text.slice(0,40)+'"', 'ok', ()=>{
+    S.tareasCerradas=S.tareasCerradas.filter(x=>x.tid!==copia.tid);
+    S.tareas.splice(Math.min(i, S.tareas.length), 0, copia);
+    aplicar();
+  });
 }
 /* una tarea repetitiva no se cierra: reaparece con la fecha siguiente */
 function regenerar(t){
@@ -1552,9 +1697,10 @@ function moverTarea(tid, cat){
 }
 function reabrirTarea(i){
   const t=S.tareasCerradas.splice(i,1)[0]; if(!t) return;
-  S.tareas.push({tid:uid(), done:false, text:t.text, cat:CATS[t.cat]?t.cat:'planificar',
-                 notas:'', adj:[], venc:'', rep:'', ck:[], creado:hoy()});
-  aplicar();
+  S.tareas.push(Object.assign({}, t, {tid:t.tid||uid(), done:false,
+    cat:CATS[t.cat]?t.cat:'planificar', adj:Array.isArray(t.adj)?t.adj:[],
+    ck:Array.isArray(t.ck)?t.ck.map(c=>({t:c.t,d:false})):[], doneAt:undefined, cerrado:undefined}));
+  aplicar(); toast('Tarea reabierta');
 }
 
 /* ---------- casos ---------- */
@@ -1574,14 +1720,20 @@ function cicloCaso(id){
 function terminarCaso(id){
   const i=S.casos.findIndex(x=>x.id===id); if(i<0) return;
   const c=S.casos.splice(i,1)[0];
-  S.cerrados.unshift({id:c.id, desc:c.desc, cerrado:hoy()});
+  S.cerrados.unshift(Object.assign({}, c, {cerrado:hoy()}));
   if(S.cerrados.length>400) S.cerrados.length=400;
-  aplicar(); toast(c.id+' cerrado');
+  aplicar();
+  toast(c.id+' cerrado', 'ok', ()=>{
+    S.cerrados=S.cerrados.filter(x=>!(x.id===c.id && x.cerrado===hoy()));
+    S.casos.splice(Math.min(i, S.casos.length), 0, c);
+    aplicar();
+  });
 }
 function reabrirCaso(i){
   const c=S.cerrados.splice(i,1)[0]; if(!c) return;
-  S.casos.push({id:c.id, desc:c.desc, estado:'EN PROGRESO', act:hoy(), notas:'', hist:[{f:hoy(),t:'Reabierto'}]});
-  aplicar();
+  S.casos.push(Object.assign({}, c, {estado:'EN PROGRESO', act:hoy(),
+    adj:Array.isArray(c.adj)?c.adj:[], hist:(Array.isArray(c.hist)?c.hist:[]).concat([{f:hoy(),t:'Reabierto'}])}));
+  aplicar(); toast(c.id+' reabierto');
 }
 
 /* ---------- enlaces ---------- */
@@ -1598,7 +1750,7 @@ const favicon = u => { try{ return 'https://www.google.com/s2/favicons?sz=64&dom
    ══════════════════════════════════════════════════════════════ */
 const VISTAS = {
   hoy:     {tit:'Hoy',        sub:()=>fechaLarga(hoy())},
-  tareas:  {tit:'Tareas',     sub:()=>pendientes().length+' pendientes · '+S.tareas.filter(t=>t.done).length+' listas'},
+  tareas:  {tit:'Tareas',     sub:()=>pendientes().length+' pendientes · '+S.tareasCerradas.length+' en el archivo'},
   agenda:  {tit:'Agenda',     sub:()=>evsDe(SEL||hoy()).length+' eventos el día seleccionado'},
   casos:   {tit:'Casos',      sub:()=>S.casos.length+' abiertos · '+casosRojos().length+' detenidos'},
   biblio:  {tit:'Biblioteca', sub:()=>S.enlaces.length+' enlaces guardados'},
@@ -1645,7 +1797,6 @@ function despuesDePintar(){
   if(VIEW==='hoy'||VIEW==='agenda'){ posicionarAhora(); centrarTimeline(); }
   if(VIEW==='tareas') activarArrastre();
   if(VIEW==='ajustes') pintarAjustes();
-  if(VIEW==='hoy') pintarFoco();
   const s=$('side-mail');
   if(s) s.textContent = USER ? (USER.email||USER.displayName||'cuenta de Google') : 'sin sesión';
   const av=$('side-av');
@@ -1669,8 +1820,9 @@ function filaTarea(t, opciones){
     '</span>'+
     '<span class="rt">'+
       (t.ck.length?'<span class="tag">'+hechas+'/'+t.ck.length+'</span>':'')+
-      (t.adj.length?'<span class="tag">'+ico('foto')+'</span>':'')+
-      (t.rep?'<span class="tag ac" title="Repite '+REPS[t.rep]+'">'+ico('repetir')+'</span>':'')+
+      ((t.adj||[]).length?'<span class="tag">'+ico('clip')+(t.adj.length>1?t.adj.length:'')+'</span>':'')+
+      (t.rep?'<span class="tag ac" title="Se repite '+REPS[t.rep]+'">'+ico('repetir')+'</span>':'')+
+      (t.rec?'<span class="tag ac" title="Recuerda '+RECS[t.rec]+'">'+ico('campana')+'</span>':'')+
       (t.venc?'<span class="tag '+clase+'">'+fechaRel(t.venc)+'</span>':'')+
     '</span></div>';
 }
@@ -1681,6 +1833,8 @@ function filaCaso(c){
     '<span class="id">'+esc(c.id)+'</span>'+
     '<span class="ds">'+esc(c.desc)+'</span>'+
     (c.estado==='EN ESPERA'?'<span class="tag info">EN ESPERA</span>':'')+
+    (c.adj&&c.adj.length?'<span class="tag">'+ico('clip')+'</span>':'')+
+    (c.rec?'<span class="tag ac" title="Recuerda '+esc(RECS[c.rec])+'">'+ico('campana')+'</span>':'')+
     '<span class="ag">'+(n.d===0?'hoy':n.d+'d')+'</span>'+
     '<span class="acts">'+
       '<button class="ib" title="Registrar avance" onclick="event.stopPropagation();tocarCaso(\''+escA(c.id)+'\')">'+ico('avance')+'</button>'+
@@ -1739,41 +1893,36 @@ function vistaHoy(){
      kpi('alerta','Detenidos', rojos.length, DIAS_ALERTA+'+ días sin mover', rojos.length?'hot':'', "setView('casos')")+
      '</div>';
 
-  // línea de tiempo
+  // la franja de crear reemplaza al cronómetro que había aquí
+  h+='<div class="w5">'+panel('Añadir', franjaAcciones(''), {
+    acc:'<button class="btn sm pri" onclick="setView(\'tareas\')">'+ico('mas')+'Tarea</button>', pb:'tight'})+'</div>';
+
   h+='<div class="w7">'+panel('Tu día', lineaTiempo(hoy()), {
     ct: evs.length+' evento'+(evs.length===1?'':'s'),
-    acc:'<button class="btn sm pri" onclick="abrirEv(null,\''+hoy()+'\')">'+ico('mas')+'Evento</button>',
-    pb:'flat'
-  })+'</div>';
+    acc:'<button class="btn sm gho" onclick="setView(\'agenda\')">Agenda</button>',
+    pb:'flat'})+'</div>';
 
-  // enfoque
-  h+='<div class="w5">'+panel('Enfoque', bloqueFoco(), {acc:
-    '<button class="btn sm gho" onclick="setView(\'metricas\')">Ver métricas</button>', pb:'flat'})+'</div>';
-
-  // pendientes de hoy
-  const lista=p.slice().sort(ordenTareas).slice(0,8);
+  const lista=p.slice().sort(ordenTareas).slice(0,7);
   h+='<div class="w7">'+panel('Lo primero', lista.length
       ? lista.map(t=>filaTarea(t,{})).join('')
       : vacio('ok','Todo al día','No te queda nada pendiente.'),
       {ct:p.length+'', acc:'<button class="btn sm gho" onclick="setView(\'tareas\')">Ver todas</button>', pb:'tight'})+'</div>';
 
-  // casos que piden atención
   const ojo=rojos.concat(casosAmbar()).slice(0,6);
-  h+='<div class="w5">'+panel('Casos que piden atención', ojo.length
-      ? ojo.map(filaCaso).join('')
-      : vacio('ok','Sin casos detenidos','Todos con movimiento reciente.'),
+  if(ojo.length)
+    h+='<div class="w5">'+panel('Casos que piden atención', ojo.map(filaCaso).join(''),
       {ct:S.casos.length+'', acc:'<button class="btn sm gho" onclick="setView(\'casos\')">Ver todos</button>', pb:'tight'})+'</div>';
 
-  if(S.bandeja.length){
+  if(S.bandeja.length)
     h+='<div class="w12">'+panel('Te llegaron cosas',
       S.bandeja.slice(0,4).map(filaBandeja).join(''),
       {ct:S.bandeja.length+'', acc:'<button class="btn sm gho" onclick="setView(\'bandeja\')">Revisar</button>', pb:'tight'})+'</div>';
-  }
-  if(fijos.length){
+
+  if(fijos.length)
     h+='<div class="w12">'+panel('Accesos fijados',
       '<div class="lgrid">'+fijos.map(tarjetaLink).join('')+'</div>',
       {acc:'<button class="btn sm gho" onclick="setView(\'biblio\')">Biblioteca</button>'})+'</div>';
-  }
+
   return h+'</div>';
 }
 function kpi(icono, titulo, valor, pie, clase, accion){
@@ -1850,42 +1999,71 @@ function posicionarAhora(){
 /* ══════════════════════════════════════════════════════════════
    VISTA: TAREAS
    ══════════════════════════════════════════════════════════════ */
-function vistaTareas(){
-  let h='<div class="cap"><div class="capin">'+
-    '<span class="lead">'+ico('mas')+'</span>'+
-    '<input type="text" id="cap-in" autocomplete="off" placeholder="Nueva tarea… (prueba: revisar informe mañana 15:00 !urgente)">'+
-    '<button class="ib mic" id="cap-mic" onclick="dictar(\'cap-in\')" title="Dictar">'+ico('mic')+'</button>'+
-    '<button class="btn pri sm go" onclick="capturar()">Añadir</button>'+
+let capCat='planificar', capRep='';
+function barraCaptura(){
+  return '<div class="cap">'+
+    '<div class="capin">'+
+      '<span class="lead">'+ico('mas')+'</span>'+
+      '<input type="text" id="cap-in" autocomplete="off" placeholder="¿Qué hay que hacer?">'+
+      '<button class="ib mic" id="cap-mic" onclick="dictar(\'cap-in\')" title="Dictar">'+ico('mic')+'</button>'+
+      '<button class="btn pri sm go" onclick="capturar()">Añadir</button>'+
+    '</div>'+
+    '<div class="capopts">'+
+      '<div class="prios">'+CATKEYS.map(k=>
+        '<button class="'+(capCat===k?'on':'')+'" style="--pc:'+CATS[k].c+'" onclick="capCat=\''+k+'\';render()">'+
+        '<span class="pd" style="background:'+CATS[k].c+'"></span>'+CATS[k].label+'</button>').join('')+'</div>'+
+      '<select onchange="capRep=this.value">'+
+        ['','diaria','laboral','semanal','quincenal','mensual'].map(r=>
+          '<option value="'+r+'"'+(capRep===r?' selected':'')+'>'+(r?'Se repite '+REPS[r]:'No se repite')+'</option>').join('')+
+      '</select>'+
+      '<span class="sp"><button class="btn" onclick="capturarConDetalle()" title="Más detalles o adjuntar">'+
+        ico('mas')+'Más</button></span>'+
     '</div></div>'+
-    '<p class="caphint">Entiende fechas y prioridad al vuelo: <code>mañana</code>, <code>el lunes</code>, <code>en 3 días</code>, '+
-    '<code>12/09</code>, <code>a las 15:00</code>, <code>cada semana</code>, <code>!urgente</code>, <code>!delegar</code>.</p>';
+    '<p class="caphint">También entiende fechas al vuelo: <code>mañana</code>, <code>el lunes</code>, '+
+    '<code>en 3 días</code>, <code>12/09</code>, <code>a las 15:00</code>.</p>';
+}
+/* El botón "Más" crea la tarea y abre su ficha, que es donde están
+   la fecha, el recordatorio, las subtareas y los adjuntos. */
+function capturarConDetalle(){
+  const inp=$('cap-in');
+  const t=crearTarea((inp&&inp.value.trim())||'Nueva tarea', {cat:capCat, rep:capRep});
+  if(inp) inp.value='';
+  aplicar();
+  if(t) abrirTarea(t.tid);
+}
+
+function vistaTareas(){
+  let h=barraCaptura();
 
   h+='<div class="cols">';
   CATKEYS.forEach(k=>{
     const c=CATS[k];
-    const lista=S.tareas.filter(t=>t.cat===k && !t.done).sort(ordenTareas);
-    const listas=S.tareas.filter(t=>t.cat===k && t.done);
+    const lista=S.tareas.filter(t=>t.cat===k).sort(ordenTareas);
     h+='<div class="col" data-cat="'+k+'">'+
       '<div class="colh"><span class="cd" style="background:'+c.c+'"></span><b>'+c.label+'</b>'+
         '<span class="ct">'+lista.length+'</span></div>'+
       '<div class="colb" data-drop="'+k+'">'+
         (lista.length?lista.map(t=>filaTarea(t,{grip:true})).join('')
                      :'<div class="empty" style="padding:14px 8px;font-size:11.5px">Nada aquí</div>')+
-        (listas.length?'<div class="divi"></div><div class="subh">Listas <span class="ct">'+listas.length+'</span></div>'+
-                       listas.map(t=>filaTarea(t,{})).join(''):'')+
       '</div></div>';
   });
   h+='</div>';
-
-  if(S.tareasCerradas.length){
-    h+='<div style="margin-top:13px">'+panel('Registro de cierres',
-      S.tareasCerradas.slice(0,30).map((t,i)=>
-        '<div class="row"><span class="body"><span class="tx" style="color:var(--mut)">'+esc(t.text)+'</span></span>'+
+  h+=archivoTareas();
+  return h;
+}
+/* Lo cerrado no ensucia la pantalla: vive dentro de un desplegable. */
+function archivoTareas(){
+  if(!S.tareasCerradas.length) return '';
+  return '<details class="arch">'+
+    '<summary>'+'<span class="cv">'+ico('cv')+'</span>Archivo de tareas cerradas'+
+      '<span class="ct">'+S.tareasCerradas.length+'</span></summary>'+
+    '<div class="cuerpo">'+S.tareasCerradas.slice(0,120).map((t,i)=>
+      '<div class="row" style="cursor:default">'+
+        '<span class="chk on" style="cursor:default">'+ico('ok')+'</span>'+
+        '<span class="body"><span class="tx" style="color:var(--mut);text-decoration:line-through">'+esc(t.text)+'</span></span>'+
         '<span class="rt"><span class="tag">'+fechaRel(t.cerrado)+'</span>'+
         '<button class="btn sm gho" onclick="reabrirTarea('+i+')">Reabrir</button></span></div>'
-      ).join(''), {ct:S.tareasCerradas.length+'', pb:'tight'})+'</div>';
-  }
-  return h;
+    ).join('')+'</div></details>';
 }
 
 /* arrastrar entre columnas — funciona con dedo y con ratón */
@@ -2044,13 +2222,15 @@ function vistaCasos(){
     {ct:lista.length+(BUSCA?' de '+S.casos.length:''), pb:'tight'})+'</div>';
 
   if(S.cerrados.length){
-    h+='<div style="margin-top:13px">'+panel('Cerrados',
-      S.cerrados.slice(0,40).map((c,i)=>
-        '<div class="row"><span class="body"><span class="tx"><span class="num" style="font-size:12px;font-weight:600">'+esc(c.id)+'</span> '+
+    h+='<details class="arch"><summary><span class="cv">'+ico('cv')+'</span>Archivo de casos cerrados'+
+       '<span class="ct">'+S.cerrados.length+'</span></summary><div class="cuerpo">'+
+      S.cerrados.slice(0,120).map((c,i)=>
+        '<div class="row" style="cursor:default"><span class="body"><span class="tx">'+
+        '<span class="num" style="font-size:12px;font-weight:600">'+esc(c.id)+'</span> '+
         '<span style="color:var(--mut)">'+esc(c.desc)+'</span></span></span>'+
         '<span class="rt"><span class="tag">'+fechaRel(c.cerrado)+'</span>'+
         '<button class="btn sm gho" onclick="reabrirCaso('+i+')">Reabrir</button></span></div>'
-      ).join(''), {ct:S.cerrados.length+'', pb:'tight'})+'</div>';
+      ).join('')+'</div></details>';
   }
   return h;
 }
@@ -2140,69 +2320,273 @@ function vaciarBandeja(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   ENFOQUE — temporizador ligado a una tarea
+   ACCIONES RÁPIDAS
+   La franja de iconos: cámara, escáner, archivos, boceto,
+   grabadora y evento. Aparece en el tablero para crear algo nuevo
+   y dentro de cada ficha para colgarle cosas a lo que ya existe.
    ══════════════════════════════════════════════════════════════ */
-let FOCO = {tid:null, resta:25*60, largo:25*60, corriendo:false, timer:null};
-function pintarFoco(){
-  const r=$('foco-ring'); if(!r) return;
-  const circ=2*Math.PI*52;
-  r.style.strokeDasharray=circ;
-  r.style.strokeDashoffset=circ*(1-(FOCO.largo?FOCO.resta/FOCO.largo:0));
-  const n=$('foco-num');
-  if(n) n.textContent=String(Math.floor(FOCO.resta/60)).padStart(2,'0')+':'+String(FOCO.resta%60).padStart(2,'0');
-  const b=$('foco-play'); if(b) b.innerHTML=ico(FOCO.corriendo?'pausa':'play')+(FOCO.corriendo?'Pausar':'Empezar');
+
+/* A quién se le está colgando el adjunto. Sin dueño, la acción crea
+   una tarea nueva y se lo cuelga a ella. */
+let ADJ_DUENO = null;      // {tipo:'tarea'|'caso', id}
+
+const ACCIONES = [
+  {k:'camara',    ic:'camara',    t:'Cámara'},
+  {k:'escanear',  ic:'escanear',  t:'Escanear'},
+  {k:'archivo',   ic:'archivo',   t:'Archivos'},
+  {k:'boceto',    ic:'boceto',    t:'Boceto'},
+  {k:'grabadora', ic:'grabadora', t:'Grabadora'},
+  {k:'evento',    ic:'evento',    t:'Evento'}
+];
+function franjaAcciones(clases){
+  return '<div class="qa'+(clases||'')+'">'+ACCIONES.map(a=>
+    '<button class="qab" onclick="accion(\''+a.k+'\')" title="'+esc(a.t)+'">'+ico(a.ic)+esc(a.t)+'</button>'
+  ).join('')+'</div>';
 }
-function bloqueFoco(){
-  const t=FOCO.tid?S.tareas.find(x=>x.tid===FOCO.tid):null;
-  const sug=pendientes().sort(ordenTareas)[0];
-  const circ=2*Math.PI*52;
-  const min=Math.floor(FOCO.resta/60), seg=FOCO.resta%60;
-  return '<div class="foco">'+
-    '<div class="ring"><svg viewBox="0 0 118 118">'+
-      '<circle class="bgc" cx="59" cy="59" r="52"></circle>'+
-      '<circle class="fgc" id="foco-ring" cx="59" cy="59" r="52" '+
-        'style="stroke-dasharray:'+circ+';stroke-dashoffset:'+(circ*(1-FOCO.resta/FOCO.largo))+'"></circle>'+
-    '</svg><b class="num" id="foco-num">'+String(min).padStart(2,'0')+':'+String(seg).padStart(2,'0')+'</b></div>'+
-    '<div class="lbl">'+(t?esc(t.text):(sug?'Sugerencia: <b>'+esc(sug.text)+'</b>':'Elige una tarea y concéntrate'))+'</div>'+
-    '<div class="ctr">'+
-      '<button class="btn pri" id="foco-play" onclick="focoPlay()">'+ico(FOCO.corriendo?'pausa':'play')+(FOCO.corriendo?'Pausar':'Empezar')+'</button>'+
-      '<button class="btn gho" onclick="focoReset()">'+ico('reset')+'</button>'+
-      '<button class="btn gho" onclick="focoElegir()">Tarea</button>'+
-    '</div>'+
-    '<p class="hint" style="margin-top:9px">'+focoHoyTxt()+'</p></div>';
+function accion(k){
+  if(k==='camara')    { $('in-camara').click(); return; }
+  if(k==='escanear')  { $('in-escanear').click(); return; }
+  if(k==='archivo')   { $('in-archivo').click(); return; }
+  if(k==='boceto')    { abrirBoceto(); return; }
+  if(k==='grabadora') { abrirGrabadora(); return; }
+  if(k==='evento')    { abrirEv(null, SEL||hoy()); return; }
 }
-function focoHoyTxt(){
-  const m=S.focos.filter(f=>f.d===hoy()).reduce((a,f)=>a+f.min,0);
-  if(!m) return 'Aún no registras minutos de enfoque hoy.';
-  return 'Hoy llevas <b>'+m+' min</b> de enfoque en '+S.focos.filter(f=>f.d===hoy()).length+' bloque(s).';
+/* Las franjas dentro de las fichas fijan el dueño antes de disparar. */
+function accionEn(tipo, id, k){ ADJ_DUENO={tipo, id}; accion(k); }
+
+/* Devuelve el objeto al que hay que colgarle el adjunto. Si no hay
+   dueño, se crea una tarea al vuelo con el nombre que se le pase. */
+function duenoAdjunto(nombreSiSeCrea){
+  if(ADJ_DUENO && ADJ_DUENO.tipo==='tarea'){
+    const t=S.tareas.find(x=>x.tid===ADJ_DUENO.id);
+    if(t) return {obj:t, nuevo:false};
+  }
+  if(ADJ_DUENO && ADJ_DUENO.tipo==='caso'){
+    const c=S.casos.find(x=>x.id===ADJ_DUENO.id);
+    if(c) return {obj:c, nuevo:false};
+  }
+  const t={tid:uid(), done:false, text:nombreSiSeCrea||'Nota rápida', cat:'planificar',
+           notas:'', adj:[], venc:'', rep:'', rec:'', ck:[], creado:hoy()};
+  S.tareas.push(t);
+  ADJ_DUENO={tipo:'tarea', id:t.tid};
+  return {obj:t, nuevo:true};
 }
-function focoPlay(){
-  if(FOCO.corriendo){ clearInterval(FOCO.timer); FOCO.corriendo=false; pintarFoco(); return; }
-  if(!FOCO.tid){ const s=pendientes().sort(ordenTareas)[0]; if(s) FOCO.tid=s.tid; }
-  FOCO.corriendo=true;
-  FOCO.timer=setInterval(()=>{
-    FOCO.resta--;
-    if(FOCO.resta<=0){
-      clearInterval(FOCO.timer); FOCO.corriendo=false;
-      S.focos.push({d:hoy(), min:Math.round(FOCO.largo/60), tid:FOCO.tid||''});
-      FOCO.resta=FOCO.largo;
-      if(permNotif()==='granted'){ try{ new Notification('Bloque de enfoque terminado',{body:'25 minutos completos. Tómate un respiro.',tag:'foco',icon:'icon-180.png'}); }catch(e){} }
-      toast('Bloque de enfoque completo','ok');
-      aplicar();
-      return;
+/* Repinta la ficha abierta, si es que hay alguna. */
+function refrescarFicha(){
+  if(editT){ const t=S.tareas.find(x=>x.tid===editT); if(t) pintarAdjuntos('mt', t); }
+  if(editCaso){ const c=S.casos.find(x=>x.id===editCaso); if(c) pintarAdjuntos('mc', c); }
+}
+/* Vuelve a la ficha que estaba abierta antes de irse al boceto o a la
+   grabadora, para no dejar al usuario mirando el tablero. */
+function volverAFicha(dueno){
+  if(!dueno) return false;
+  if(dueno.tipo==='tarea' && S.tareas.some(t=>t.tid===dueno.id)){ abrirTarea(dueno.id); return true; }
+  if(dueno.tipo==='caso' && S.casos.some(c=>c.id===dueno.id)){ abrirCaso(dueno.id); return true; }
+  return false;
+}
+
+/* ---------- cámara, galería y escáner ---------- */
+async function recibirCamara(files, modo){
+  const lista=[...files];
+  $('in-camara').value=''; $('in-escanear').value=''; $('in-galeria').value='';
+  if(!lista.length) return;
+  if(!ref){ toast('Necesitas conexión para guardar adjuntos','alerta'); return; }
+  const {obj, nuevo}=duenoAdjunto(modo==='escaneo'?'Documento escaneado':'Foto');
+  let ok=0;
+  for(const f of lista){
+    try{
+      const img=await comprimir(f, modo==='escaneo');
+      const guardado=await guardarAdjunto({tipo:'img', img, nombre:f.name||'foto.jpg'});
+      if(guardado){ obj.adj.push(guardado); ok++; }
+    }catch(e){ toast('No pude guardar "'+(f.name||'la imagen')+'": '+e.message,'alerta'); }
+  }
+  if(ok){
+    aplicar(); refrescarFicha();
+    toast(ok===1 ? (modo==='escaneo'?'Documento escaneado':'Foto guardada')+(nuevo?' en una tarea nueva':'')
+                 : ok+' imágenes guardadas'+(nuevo?' en una tarea nueva':''), 'ok');
+    if(nuevo && !editT && !editCaso) abrirTarea(obj.tid);
+  }
+}
+/* ---------- archivos ---------- */
+const LIMITE_ADJ = 700*1024;    // un documento de Firestore no pasa de 1 MB
+async function recibirArchivos(files){
+  const lista=[...files];
+  $('in-archivo').value='';
+  if(!lista.length) return;
+  if(!ref){ toast('Necesitas conexión para guardar adjuntos','alerta'); return; }
+  const {obj, nuevo}=duenoAdjunto('Archivo adjunto');
+  let ok=0;
+  for(const f of lista){
+    try{
+      if(/^image\//.test(f.type)){
+        const img=await comprimir(f, false);
+        const g=await guardarAdjunto({tipo:'img', img, nombre:f.name});
+        if(g){ obj.adj.push(g); ok++; }
+        continue;
+      }
+      if(f.size>LIMITE_ADJ){
+        toast('"'+f.name+'" pesa '+pesoTxt(f.size)+' y el máximo son '+pesoTxt(LIMITE_ADJ)+'. Súbelo a Drive y guarda el enlace.','alerta');
+        continue;
+      }
+      const datos=await leerDataURL(f);
+      const g=await guardarAdjunto({tipo:'file', img:datos, nombre:f.name, mime:f.type||'application/octet-stream', peso:f.size});
+      if(g){ obj.adj.push(g); ok++; }
+    }catch(e){ toast('No pude guardar "'+f.name+'": '+e.message,'alerta'); }
+  }
+  if(ok){
+    aplicar(); refrescarFicha();
+    toast(ok===1?'Archivo adjuntado'+(nuevo?' en una tarea nueva':''):ok+' archivos adjuntados','ok');
+    if(nuevo && !editT && !editCaso) abrirTarea(obj.tid);
+  }
+}
+const pesoTxt = b => b>=1048576 ? (b/1048576).toFixed(1)+' MB' : Math.round(b/1024)+' KB';
+function leerDataURL(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(String(r.result));
+    r.onerror=()=>rej(new Error('no se pudo leer'));
+    r.readAsDataURL(file);
+  });
+}
+
+/* ---------- boceto ---------- */
+let boCtx=null, boPintando=false, boColor='#111417';
+function abrirBoceto(){
+  abrirModal('m-boceto');
+  setTimeout(()=>{
+    const c=$('lienzo');
+    const r=c.getBoundingClientRect();
+    const dpr=Math.min(window.devicePixelRatio||1, 2);
+    c.width=Math.round(r.width*dpr); c.height=Math.round(r.height*dpr);
+    boCtx=c.getContext('2d');
+    boCtx.scale(dpr,dpr);
+    boCtx.fillStyle='#fff'; boCtx.fillRect(0,0,r.width,r.height);
+    boCtx.lineCap='round'; boCtx.lineJoin='round';
+    pintarColoresBoceto();
+    if(!c.dataset.listo){
+      c.dataset.listo='1';
+      c.addEventListener('pointerdown', boIni);
+      c.addEventListener('pointermove', boMueve);
+      c.addEventListener('pointerup', boFin);
+      c.addEventListener('pointerleave', boFin);
     }
-    pintarFoco();
-  },1000);
-  pintarFoco();
-  if(VIEW!=='hoy') toast('Enfoque en marcha');
+  }, 220);
 }
-function focoReset(){ clearInterval(FOCO.timer); FOCO.corriendo=false; FOCO.resta=FOCO.largo; pintarFoco(); }
-function focoElegir(){
-  const p=pendientes().sort(ordenTareas);
-  if(!p.length){ toast('No tienes tareas pendientes','alerta'); return; }
-  const i=p.findIndex(t=>t.tid===FOCO.tid);
-  FOCO.tid=p[(i+1)%p.length].tid;
-  if(VIEW==='hoy') render(); else toast('Enfoque en: '+p[(i+1)%p.length].text);
+const BO_COLORES=['#111417','#E5484D','#1E6FCB','#0E8F5B','#D08507'];
+function pintarColoresBoceto(){
+  $('bo-cols').innerHTML=BO_COLORES.map(c=>
+    '<button class="sw'+(boColor===c?' on':'')+'" style="background:'+c+'" onclick="boColor=\''+c+'\';pintarColoresBoceto()"></button>').join('');
+}
+function boPunto(e){
+  const r=$('lienzo').getBoundingClientRect();
+  return {x:e.clientX-r.left, y:e.clientY-r.top};
+}
+function boIni(e){
+  e.preventDefault(); boPintando=true;
+  const p=boPunto(e);
+  boCtx.strokeStyle=boColor; boCtx.lineWidth=Number($('bo-grosor').value);
+  boCtx.beginPath(); boCtx.moveTo(p.x,p.y);
+}
+function boMueve(e){
+  if(!boPintando) return;
+  e.preventDefault();
+  const p=boPunto(e);
+  boCtx.lineTo(p.x,p.y); boCtx.stroke();
+}
+function boFin(){ boPintando=false; }
+function limpiarLienzo(){
+  const c=$('lienzo'), r=c.getBoundingClientRect();
+  boCtx.fillStyle='#fff'; boCtx.fillRect(0,0,r.width,r.height);
+}
+async function guardarBoceto(){
+  if(!ref){ toast('Necesitas conexión para guardar el boceto','alerta'); return; }
+  const img=$('lienzo').toDataURL('image/png');
+  const {obj, nuevo}=duenoAdjunto('Boceto');
+  const dueno=ADJ_DUENO;
+  const g=await guardarAdjunto({tipo:'img', img, nombre:'boceto.png'});
+  if(!g){ return; }
+  obj.adj.push(g);
+  cerrarCapas(); aplicar();
+  toast('Boceto guardado'+(nuevo?' en una tarea nueva':''));
+  volverAFicha(dueno);
+}
+
+/* ---------- grabadora ---------- */
+let grabMR=null, grabTrozos=[], grabBlob=null, grabT0=0, grabTimer=null, grabStream=null;
+function abrirGrabadora(){
+  grabBlob=null; grabTrozos=[];
+  $('rec-t').textContent='00:00';
+  $('rec-est').textContent='Toca grabar para empezar';
+  $('rec-prev').innerHTML='';
+  $('rec-ok').disabled=true;
+  $('rec-med').classList.remove('on');
+  $('rec-btn').innerHTML=ico('mic')+'Grabar';
+  $('rec-ondas').innerHTML='';
+  abrirModal('m-grab');
+}
+async function grabAlternar(){
+  if(grabMR && grabMR.state==='recording'){ grabMR.stop(); return; }
+  if(!navigator.mediaDevices || !window.MediaRecorder){ toast('Este navegador no permite grabar audio','alerta'); return; }
+  try{ grabStream=await navigator.mediaDevices.getUserMedia({audio:true}); }
+  catch(e){ toast('Necesito permiso del micrófono','alerta'); return; }
+  grabTrozos=[]; grabBlob=null;
+  const tipo=['audio/mp4','audio/webm','audio/ogg'].find(t=>MediaRecorder.isTypeSupported(t))||'';
+  grabMR=new MediaRecorder(grabStream, tipo?{mimeType:tipo}:undefined);
+  grabMR.ondataavailable=e=>{ if(e.data.size) grabTrozos.push(e.data); };
+  grabMR.onstop=()=>{
+    clearInterval(grabTimer);
+    if(grabStream) grabStream.getTracks().forEach(t=>t.stop());
+    grabBlob=new Blob(grabTrozos, {type:(grabMR.mimeType||'audio/webm').split(';')[0]});
+    grabMR=null;
+    $('rec-med').classList.remove('on');
+    $('rec-btn').innerHTML=ico('mic')+'Grabar de nuevo';
+    $('rec-est').textContent=pesoTxt(grabBlob.size)+' listos para guardar';
+    $('rec-ondas').innerHTML='';
+    $('rec-ok').disabled = grabBlob.size<1200 || !ref;
+    $('rec-prev').innerHTML='<audio controls src="'+URL.createObjectURL(grabBlob)+'" style="width:100%;margin-top:10px"></audio>';
+  };
+  grabMR.start();
+  grabT0=Date.now();
+  $('rec-med').classList.add('on');
+  $('rec-btn').innerHTML=ico('pausa')+'Detener';
+  $('rec-est').textContent='Grabando… máximo 3 minutos';
+  $('rec-ondas').innerHTML=Array.from({length:7}, ()=>'<i></i>').join('');
+  grabTimer=setInterval(()=>{
+    const s=Math.floor((Date.now()-grabT0)/1000);
+    $('rec-t').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+    $('rec-ondas').querySelectorAll('i').forEach(b=>b.style.height=(18+Math.random()*70)+'%');
+    if(s>=180 && grabMR && grabMR.state==='recording') grabMR.stop();
+  }, 250);
+}
+async function guardarGrabacion(){
+  if(!grabBlob || !ref) return;
+  if(grabBlob.size>LIMITE_ADJ){
+    toast('La grabación pesa '+pesoTxt(grabBlob.size)+' y el máximo son '+pesoTxt(LIMITE_ADJ)+'. Graba algo más corto.','alerta');
+    return;
+  }
+  const transcribirTambien=$('rec-trans').checked && iaKey();
+  const datos=await leerDataURL(grabBlob);
+  const {obj, nuevo}=duenoAdjunto('Nota de voz');
+  const dueno=ADJ_DUENO;
+  const g=await guardarAdjunto({tipo:'audio', img:datos, nombre:'nota-de-voz', mime:grabBlob.type, peso:grabBlob.size});
+  if(!g) return;
+  obj.adj.push(g);
+  const blob=grabBlob;
+  cerrarCapas(); aplicar();
+  toast('Grabación guardada'+(nuevo?' en una tarea nueva':''));
+  volverAFicha(dueno);
+  if(transcribirTambien){
+    toast('Transcribiendo la grabación…','mic');
+    try{
+      const txt=await transcribir(blob);
+      if(txt){
+        obj.notas=(obj.notas?obj.notas+'\n\n':'')+txt;
+        if(nuevo && obj.text==='Nota de voz') obj.text=txt.slice(0,70);
+        aplicar(); refrescarFicha();
+        toast('Transcripción lista');
+      }
+    }catch(e){ toast('No pude transcribir: '+e.message,'alerta'); }
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -2218,8 +2602,6 @@ function vistaMetricas(){
   const cerradasPorDia=dias.map(d=>S.tareasCerradas.filter(t=>t.cerrado===d).length
                                  + S.tareas.filter(t=>t.done&&t.doneAt&&fmt(new Date(t.doneAt))===d).length);
   const max=Math.max(1,...cerradasPorDia);
-  const focoPorDia=dias.map(d=>S.focos.filter(f=>f.d===d).reduce((a,f)=>a+f.min,0));
-  const maxF=Math.max(1,...focoPorDia);
   const totalSem=cerradasPorDia.slice(-7).reduce((a,b)=>a+b,0);
   const totalAnt=cerradasPorDia.slice(0,7).reduce((a,b)=>a+b,0);
   const delta=totalSem-totalAnt;
@@ -2234,20 +2616,14 @@ function vistaMetricas(){
   let h='<div class="dash">';
   h+='<div class="kpis">'+
     kpi('ok','Cerradas 7 días', totalSem, (delta>=0?'+':'')+delta+' vs. semana previa', delta<0?'warn':'', "setView('tareas')")+
-    kpi('reloj','Minutos de enfoque', focoPorDia.slice(-7).reduce((a,b)=>a+b,0), 'últimos 7 días','', "setView('hoy')")+
+    kpi('clip','Con adjuntos', S.tareas.filter(t=>(t.adj||[]).length).length+S.casos.filter(c=>(c.adj||[]).length).length, 'tareas y casos','', "setView('tareas')")+
     kpi('caso','Casos abiertos', S.casos.length, casosRojos().length+' detenidos', casosRojos().length?'hot':'', "setView('casos')")+
     kpi('fuego','Racha', racha(), racha()===1?'día seguido':'días seguidos','', "setView('metricas')")+
     '</div>';
 
-  h+='<div class="w6">'+panel('Tareas cerradas por día',
+  h+='<div class="w12">'+panel('Tareas cerradas por día',
     '<div class="spark">'+cerradasPorDia.map((v,i)=>
       '<i class="'+(i>=7?'top':'')+'" style="height:'+Math.max(4,(v/max)*100)+'%" title="'+dias[i]+': '+v+'"></i>').join('')+'</div>'+
-    '<div class="sparklb">'+dias.map((d,i)=>'<span>'+(i%2===0?dParse(d).getDate():'')+'</span>').join('')+'</div>',
-    {ct:'14 días'})+'</div>';
-
-  h+='<div class="w6">'+panel('Minutos de enfoque',
-    '<div class="spark">'+focoPorDia.map((v,i)=>
-      '<i class="'+(i>=7?'top':'')+'" style="height:'+Math.max(4,(v/maxF)*100)+'%" title="'+dias[i]+': '+v+' min"></i>').join('')+'</div>'+
     '<div class="sparklb">'+dias.map((d,i)=>'<span>'+(i%2===0?dParse(d).getDate():'')+'</span>').join('')+'</div>',
     {ct:'14 días'})+'</div>';
 
@@ -2270,7 +2646,7 @@ function vistaMetricas(){
 
   h+='<div class="w12">'+panel('Respaldo',
     '<p class="hint">Baja todo lo que hay en el panel a un archivo, o llévatelo a Excel. El respaldo se puede volver a cargar aquí mismo.</p>'+
-    '<div class="frow" style="margin-top:11px">'+
+    '<div class="frow btns" style="margin-top:11px">'+
       '<button class="btn" onclick="exportarJSON()">'+ico('descarga')+'Respaldo completo</button>'+
       '<button class="btn" onclick="exportarCSV()">'+ico('descarga')+'Tareas y casos a Excel</button>'+
       '<button class="btn" onclick="exportarICS()">'+ico('descarga')+'Agenda a .ics</button>'+
@@ -2353,7 +2729,7 @@ function importarJSON(file){
    ══════════════════════════════════════════════════════════════ */
 function ocultarCapas(){
   $('scrim').classList.remove('on');
-  ['m-tarea','m-ev','m-caso','m-link','pal'].forEach(id=>$(id).classList.remove('on'));
+  ['m-tarea','m-ev','m-caso','m-link','m-boceto','m-grab','pal'].forEach(id=>$(id).classList.remove('on'));
 }
 function cerrarCapas(){
   ocultarCapas();
@@ -2369,12 +2745,15 @@ function abrirModal(id){
 /* ---------- tarea ---------- */
 function abrirTarea(tid){
   const t=S.tareas.find(x=>x.tid===tid); if(!t) return;
-  editT=tid; ckTmp=t.ck.map(c=>({t:c.t, d:c.d}));
+  editT=tid; editCaso=null; ADJ_DUENO={tipo:'tarea', id:tid};
+  ckTmp=t.ck.map(c=>({t:c.t, d:c.d}));
   $('mt-tit').textContent='Editar tarea';
   $('mt-tx').value=t.text; $('mt-cat').value=t.cat;
-  $('mt-venc').value=t.venc||''; $('mt-rep').value=t.rep||'';
+  $('mt-venc').value=t.venc||''; $('mt-rep').value=t.rep||''; $('mt-rec').value=t.rec||'';
   $('mt-notas').value=t.notas||'';
-  pintarChecklist(); pintarAdjuntos(t);
+  $('mt-qa').innerHTML=ACCIONES.map(a=>
+    '<button class="qab" onclick="accionEn(\'tarea\',\''+t.tid+'\',\''+a.k+'\')">'+ico(a.ic)+esc(a.t)+'</button>').join('');
+  pintarChecklist(); pintarAdjuntos('mt', t);
   abrirModal('m-tarea');
   setTimeout(()=>{ if(innerWidth>760) $('mt-tx').focus(); },140);
 }
@@ -2395,7 +2774,7 @@ function guardarTareaModal(){
   const tx=$('mt-tx').value.trim();
   if(!tx){ toast('La tarea necesita un título','alerta'); return; }
   t.text=tx; t.cat=$('mt-cat').value; t.venc=$('mt-venc').value;
-  t.rep=$('mt-rep').value; t.notas=$('mt-notas').value;
+  t.rep=$('mt-rep').value; t.rec=$('mt-rec').value; t.notas=$('mt-notas').value;
   t.ck=ckTmp.filter(c=>c.t.trim()).map(c=>({t:c.t.trim(), d:c.d}));
   cerrarCapas(); aplicar(); toast('Tarea guardada');
 }
@@ -2455,12 +2834,20 @@ function borrarEvModal(){
 /* ---------- caso ---------- */
 function abrirCaso(id){
   const c=id?S.casos.find(x=>x.id===id):null;
-  editCaso=id||null;
+  editCaso=id||null; editT=null;
+  ADJ_DUENO = c ? {tipo:'caso', id:c.id} : null;
   $('mc-tit').textContent=c?'Caso '+c.id:'Nuevo caso';
   $('mc-id').value=c?c.id:''; $('mc-desc').value=c?c.desc:'';
   $('mc-est').value=c?c.estado:'EN PROGRESO';
   $('mc-act').value=c?c.act:hoy();
+  $('mc-rec').value=c?(c.rec||''):'';
   $('mc-notas').value=c?(c.notas||''):'';
+  // sin caso todavía no hay a quién colgarle nada: primero se guarda
+  $('mc-qa').innerHTML = c
+    ? ACCIONES.map(a=>'<button class="qab" onclick="accionEn(\'caso\',\''+escA(c.id)+'\',\''+a.k+'\')">'+ico(a.ic)+esc(a.t)+'</button>').join('')
+    : '<p class="hint" style="grid-column:1/-1;padding:4px 2px">Guarda el caso y podrás colgarle fotos, archivos, bocetos o notas de voz.</p>';
+  if(c) pintarAdjuntos('mc', c);
+  else { $('mc-adj').innerHTML=''; $('mc-arch').innerHTML=''; $('mc-adjh').textContent=''; }
   $('mc-hist').innerHTML = (c&&c.hist.length)
     ? '<label class="lb">Movimientos</label>'+c.hist.slice(0,8).map(x=>
         '<div class="row" style="cursor:default;min-height:30px"><span class="body"><span class="sc">'+
@@ -2477,12 +2864,17 @@ function guardarCasoModal(){
     const c=S.casos.find(x=>x.id===editCaso); if(!c){ cerrarCapas(); return; }
     if(id!==c.id && S.casos.some(x=>x.id===id)){ toast('Ya tienes un caso con ese número','alerta'); return; }
     const cambioEstado = c.estado!==$('mc-est').value;
-    c.id=id; c.desc=desc||c.desc; c.estado=$('mc-est').value; c.act=$('mc-act').value||hoy(); c.notas=$('mc-notas').value;
+    c.id=id; c.desc=desc||c.desc; c.estado=$('mc-est').value; c.act=$('mc-act').value||hoy();
+    c.rec=$('mc-rec').value; c.notas=$('mc-notas').value;
     if(cambioEstado) c.hist.unshift({f:hoy(), t:'Pasó a '+c.estado});
   }else{
     if(S.casos.some(x=>x.id===id)){ toast('Ya tienes un caso con ese número','alerta'); return; }
     S.casos.push({id, desc:desc||'(sin descripción)', estado:$('mc-est').value,
-                  act:$('mc-act').value||hoy(), notas:$('mc-notas').value, hist:[{f:hoy(),t:'Caso creado'}]});
+                  act:$('mc-act').value||hoy(), rec:$('mc-rec').value, notas:$('mc-notas').value,
+                  adj:[], hist:[{f:hoy(),t:'Caso creado'}]});
+    // recién creado ya se le puede colgar algo: la ficha se queda abierta
+    aplicar(); abrirCaso(id); toast('Caso '+id+' creado');
+    return;
   }
   cerrarCapas(); aplicar(); toast('Caso guardado');
 }
@@ -2527,47 +2919,98 @@ function borrarLinkModal(){
 
 /* ══════════════════════════════════════════════════════════════
    ADJUNTOS
-   Las imágenes se comprimen y se guardan en una subcolección
-   aparte, porque un documento de Firestore no puede pasar de 1 MB.
+   Cada adjunto vive en su propio documento de la subcolección
+   adjuntos/, porque un documento de Firestore no pasa de 1 MB y
+   así el panel no se infla. En la tarea o el caso solo queda su
+   identificador y cuatro datos para poder pintarlo.
    ══════════════════════════════════════════════════════════════ */
-function pintarAdjuntos(t){
-  const g=$('mt-adj');
-  g.innerHTML=t.adj.map(a=>
-    adjCache[a.aid]
-      ? '<div class="adj" onclick="verGrande(\''+a.aid+'\')"><img src="'+adjCache[a.aid]+'" alt="">'+
-        '<button class="x" onclick="event.stopPropagation();quitarAdjunto(\''+a.aid+'\')">✕</button></div>'
-      : '<div class="adj" id="adj-'+a.aid+'"><div class="ld">cargando…</div>'+
-        '<button class="x" onclick="event.stopPropagation();quitarAdjunto(\''+a.aid+'\')">✕</button></div>'
-  ).join('')+'<div class="adj add" onclick="$(\'mt-file\').click()">'+ico('mas')+'</div>';
-  $('mt-adjh').textContent = FIRESTORE_OK ? 'Las imágenes se guardan comprimidas en tu panel.' : 'Necesitas conexión para subir imágenes.';
-  t.adj.forEach(a=>{ if(!adjCache[a.aid]) traerAdjunto(t, a.aid); });
+async function guardarAdjunto(a){
+  if(!ref){ toast('Necesitas conexión para guardar adjuntos','alerta'); return null; }
+  if(a.img.length > 980000){
+    toast('Ese adjunto pesa demasiado para guardarlo aquí. Súbelo a Drive y guarda el enlace.','alerta');
+    return null;
+  }
+  const aid=uid();
+  try{
+    await ref.collection('adjuntos').doc(aid).set({
+      img:a.img, tipo:a.tipo, nombre:a.nombre||'', mime:a.mime||'', creado:new Date().toISOString()
+    });
+  }catch(e){ toast('No se pudo subir el adjunto: '+e.message,'alerta'); return null; }
+  adjCache[aid]=a.img;
+  return {aid, tipo:a.tipo, nombre:a.nombre||'', mime:a.mime||'', peso:a.peso||a.img.length};
 }
-async function traerAdjunto(t, aid){
+async function traerAdjunto(prefijo, aid){
   if(!ref) return;
   try{
-    const s=await ref.collection('adjuntos').doc(aid).get();
-    const d=s.data();
-    if(d&&d.img){
+    const snap=await ref.collection('adjuntos').doc(aid).get();
+    const d=snap.data();
+    if(d && d.img){
       adjCache[aid]=d.img;
-      const el=$('adj-'+aid);
-      if(el) el.innerHTML='<img src="'+d.img+'" alt="">'+
-        '<button class="x" onclick="event.stopPropagation();quitarAdjunto(\''+aid+'\')">✕</button>';
-      if(el) el.onclick=()=>verGrande(aid);
+      const cont=$(prefijo+'-adj');
+      if(cont){
+        const dueno = prefijo==='mt' ? S.tareas.find(x=>x.tid===editT) : S.casos.find(x=>x.id===editCaso);
+        if(dueno) pintarAdjuntos(prefijo, dueno);
+      }
     }
   }catch(e){}
 }
-function comprimir(file){
+function pintarAdjuntos(prefijo, dueno){
+  const imgs=dueno.adj.filter(a=>!a.tipo || a.tipo==='img');
+  const otros=dueno.adj.filter(a=>a.tipo && a.tipo!=='img');
+
+  const g=$(prefijo+'-adj');
+  g.innerHTML=imgs.map(a=>
+    adjCache[a.aid]
+      ? '<div class="adj" onclick="verGrande(\''+a.aid+'\')"><img src="'+adjCache[a.aid]+'" alt="">'+
+        '<button class="x" onclick="event.stopPropagation();quitarAdjunto(\''+prefijo+'\',\''+a.aid+'\')">✕</button></div>'
+      : '<div class="adj" id="adj-'+a.aid+'"><div class="ld">cargando…</div>'+
+        '<button class="x" onclick="event.stopPropagation();quitarAdjunto(\''+prefijo+'\',\''+a.aid+'\')">✕</button></div>'
+  ).join('');
+
+  $(prefijo+'-arch').innerHTML=otros.map(a=>{
+    const esAudio=a.tipo==='audio';
+    const src=adjCache[a.aid];
+    return '<div class="adjf">'+
+      '<span class="ico">'+ico(esAudio?'audio':'doc')+'</span>'+
+      '<span class="nom"><b>'+esc(a.nombre||(esAudio?'nota de voz':'archivo'))+'</b>'+
+        '<span>'+(a.peso?pesoTxt(a.peso):'')+(a.mime?' · '+esc(a.mime.split('/').pop()):'')+'</span></span>'+
+      (esAudio && src ? '<audio controls src="'+src+'"></audio>'
+                      : (src ? '<a class="btn sm" href="'+src+'" download="'+escA(a.nombre||'archivo')+'">'+ico('descarga')+'</a>' : '<span class="hint">cargando…</span>'))+
+      '<button class="ib" onclick="quitarAdjunto(\''+prefijo+'\',\''+a.aid+'\')">'+ico('x')+'</button>'+
+    '</div>';
+  }).join('');
+
+  $(prefijo+'-adjh').textContent = ref
+    ? (dueno.adj.length ? dueno.adj.length+' adjunto(s). Se guardan comprimidos en tu panel.'
+                        : 'Usa los botones de arriba para colgar fotos, archivos, bocetos o notas de voz.')
+    : 'Necesitas conexión para subir adjuntos.';
+
+  dueno.adj.forEach(a=>{ if(!adjCache[a.aid]) traerAdjunto(prefijo, a.aid); });
+}
+/* Con escaneo=true se pasa a gris y se sube el contraste, que es lo
+   que hace que una foto de un papel se lea como un documento. */
+function comprimir(file, escaneo){
   return new Promise((res,rej)=>{
     const r=new FileReader();
     r.onload=()=>{
       const img=new Image();
       img.onload=()=>{
-        const MAX=1280;
+        const MAX = escaneo ? 1600 : 1280;
         let {width:w, height:h}=img;
         if(w>MAX||h>MAX){ const f=MAX/Math.max(w,h); w=Math.round(w*f); h=Math.round(h*f); }
         const c=document.createElement('canvas'); c.width=w; c.height=h;
-        c.getContext('2d').drawImage(img,0,0,w,h);
-        res(c.toDataURL('image/jpeg',0.72));
+        const cx=c.getContext('2d');
+        cx.drawImage(img,0,0,w,h);
+        if(escaneo){
+          const d=cx.getImageData(0,0,w,h), p=d.data;
+          for(let i=0;i<p.length;i+=4){
+            const gris=0.299*p[i]+0.587*p[i+1]+0.114*p[i+2];
+            const v=Math.max(0, Math.min(255, (gris-128)*1.55+142));
+            p[i]=p[i+1]=p[i+2]=v;
+          }
+          cx.putImageData(d,0,0);
+        }
+        res(c.toDataURL('image/jpeg', escaneo?0.78:0.72));
       };
       img.onerror=()=>rej(new Error('no es una imagen'));
       img.src=r.result;
@@ -2576,28 +3019,14 @@ function comprimir(file){
     r.readAsDataURL(file);
   });
 }
-async function subirAdjuntos(files){
-  const t=S.tareas.find(x=>x.tid===editT); if(!t||!files.length) return;
-  if(!ref){ toast('Necesitas conexión para subir imágenes','alerta'); return; }
-  for(const f of files){
-    try{
-      const img=await comprimir(f);
-      if(img.length>950000){ toast('"'+f.name+'" pesa demasiado incluso comprimida','alerta'); continue; }
-      const aid=uid();
-      await ref.collection('adjuntos').doc(aid).set({img, tid:t.tid, creado:new Date().toISOString()});
-      adjCache[aid]=img;
-      t.adj.push({aid});
-    }catch(e){ toast('No pude subir "'+f.name+'": '+e.message,'alerta'); }
-  }
-  $('mt-file').value='';
-  pintarAdjuntos(t); guardar();
-}
-function quitarAdjunto(aid){
-  const t=S.tareas.find(x=>x.tid===editT); if(!t) return;
-  t.adj=t.adj.filter(a=>a.aid!==aid);
+function quitarAdjunto(prefijo, aid){
+  const dueno = prefijo==='mt' ? S.tareas.find(x=>x.tid===editT) : S.casos.find(x=>x.id===editCaso);
+  if(!dueno) return;
+  dueno.adj=dueno.adj.filter(a=>a.aid!==aid);
   delete adjCache[aid];
   if(ref) ref.collection('adjuntos').doc(aid).delete().catch(()=>{});
-  pintarAdjuntos(t); guardar();
+  pintarAdjuntos(prefijo, dueno);
+  guardar();
 }
 function verGrande(aid){
   const d=adjCache[aid]; if(!d) return;
@@ -2634,7 +3063,11 @@ const COMANDOS = [
   {ic:'caso',    t:'Nuevo caso',          k:'caso ticket nuevo',        a:()=>abrirCaso(null)},
   {ic:'enlace',  t:'Nuevo enlace',        k:'enlace link guardar',      a:()=>abrirLinkModal(null)},
   {ic:'bot',     t:'Abrir el asistente',  k:'asistente ia gemini chat', a:()=>abrirIA()},
-  {ic:'play',    t:'Empezar un bloque de enfoque', k:'enfoque pomodoro concentrar', a:()=>{ setView('hoy'); focoPlay(); }},
+  {ic:'camara',    t:'Tomar una foto',          k:'camara foto imagen adjuntar', a:()=>{ ADJ_DUENO=null; accion('camara'); }},
+  {ic:'escanear',  t:'Escanear un documento',   k:'escanear documento papel',    a:()=>{ ADJ_DUENO=null; accion('escanear'); }},
+  {ic:'archivo',   t:'Adjuntar un archivo',     k:'archivo adjuntar subir',      a:()=>{ ADJ_DUENO=null; accion('archivo'); }},
+  {ic:'boceto',    t:'Hacer un boceto',         k:'boceto dibujo dibujar',       a:()=>{ ADJ_DUENO=null; accion('boceto'); }},
+  {ic:'grabadora', t:'Grabar una nota de voz',  k:'grabar audio voz grabadora',  a:()=>{ ADJ_DUENO=null; accion('grabadora'); }},
   {ic:'luna',    t:'Cambiar tema claro / oscuro',  k:'tema oscuro claro modo',      a:()=>toggleModo()},
   {ic:'campana', t:'Activar avisos',      k:'avisos notificaciones',    a:()=>pedirPush()},
   {ic:'descarga',t:'Descargar respaldo',  k:'respaldo exportar backup', a:()=>exportarJSON()}
@@ -2979,7 +3412,7 @@ function correoACaso(id){
   const m=GMAILS.find(x=>x.id===id); if(!m) return;
   const mm=m.asunto.match(/([A-Za-z]{2,10}-?\s?\d{4,8})/);
   const num=mm?mm[1].toUpperCase().replace(/\s/g,''):('CASO-'+Date.now().toString().slice(-6));
-  S.casos.push({id:num, desc:m.asunto, estado:'EN PROGRESO', act:hoy(),
+  S.casos.push({id:num, desc:m.asunto, estado:'EN PROGRESO', act:hoy(), rec:'', adj:[],
                 notas:'De: '+m.de+'\nhttps://mail.google.com/mail/u/0/#inbox/'+m.id,
                 hist:[{f:hoy(), t:'Creado desde un correo'}]});
   aplicar(); toast('Caso '+num+' creado');
@@ -3153,7 +3586,8 @@ function ejecutarIA(nombre, a){
         if(!num) return {error:'Falta el número del caso.'};
         if(S.casos.some(c=>c.id===num)) return {error:'Ya existe un caso '+num+'.'};
         S.casos.push({id:num, desc:String(a.descripcion||'(sin descripción)'), estado:'EN PROGRESO',
-                      act:hoy(), notas:String(a.notas||''), hist:[{f:hoy(), t:'Creado por el asistente'}]});
+                      act:hoy(), notas:String(a.notas||''), rec:'', adj:[],
+                      hist:[{f:hoy(), t:'Creado por el asistente'}]});
         return ok('Caso '+num+' ingresado', {numero:num});
       }
       case 'cambiar_estado_caso':{
@@ -3564,7 +3998,7 @@ async function arrancar(){
   setView('hoy');
 
   tick(); setInterval(tick, 1000);
-  setInterval(archivarHechas, 60*1000);
+  archivarHechas();
   setInterval(revisarAlertas, 5*60*1000);
   setTimeout(revisarAlertas, 3500);
   setInterval(()=>{ if(VIEW==='hoy') render(); }, 60*1000);
