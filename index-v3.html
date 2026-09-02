@@ -207,18 +207,42 @@ details summary::before{content:'▸ '}details[open] summary::before{content:'�
 .lightbox.on{display:flex}
 .lightbox img{max-width:100%;max-height:100%;border-radius:10px}
 
-/* asistente */
-.chat{display:flex;flex-direction:column;gap:9px;min-height:96px;max-height:44vh;overflow-y:auto;padding:6px 2px;margin-top:10px;border-top:1px solid var(--brd);border-bottom:1px solid var(--brd)}
+/* asistente flotante */
+.fab{position:fixed;right:16px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:56;width:62px;height:62px;border-radius:50%;border:3px solid var(--card);background:linear-gradient(150deg,var(--a1),var(--a3));font-size:28px;line-height:1;cursor:pointer;box-shadow:0 12px 28px -8px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:0;transition:transform .15s}
+.fab:active{transform:scale(.92)}
+.fab.off{display:none}
+.fabtip{position:fixed;right:90px;bottom:calc(38px + env(safe-area-inset-bottom));z-index:56;max-width:190px;background:#111318;color:#fff;border-radius:15px;padding:11px 15px;font-size:12.5px;font-weight:600;line-height:1.4;text-align:center;box-shadow:0 12px 28px -10px rgba(0,0,0,.6);display:none;cursor:pointer}
+.fabtip.on{display:block;animation:tipin .25s ease}
+@keyframes tipin{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:none}}
+
+.popup{position:fixed;right:16px;bottom:calc(94px + env(safe-area-inset-bottom));z-index:57;width:min(384px,calc(100vw - 32px));max-height:min(650px,calc(100vh - 132px));background:var(--card);border:1px solid var(--brd);border-radius:22px;box-shadow:0 28px 64px -22px rgba(0,0,0,.55);display:none;flex-direction:column;overflow:hidden}
+.popup.on{display:flex;animation:popin .2s ease}
+.popup.big{width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 118px)}
+@keyframes popin{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+.pophead{display:flex;align-items:flex-start;gap:11px;padding:14px 12px 13px 15px;border-bottom:1px solid var(--brd);background:linear-gradient(115deg,var(--a1bg),var(--a3bg))}
+.popav{width:44px;height:44px;border-radius:50%;background:linear-gradient(150deg,var(--a1),var(--a3));display:flex;align-items:center;justify-content:center;font-size:23px;flex:none}
+.poptit{flex:1;min-width:0;padding-top:2px}
+.poptit b{display:block;font-size:16px;font-weight:800;color:var(--heading);line-height:1.2}
+.poptit span{display:block;font-size:10.5px;color:var(--mut);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.popctl{display:grid;grid-template-columns:repeat(2,auto);gap:2px;flex:none}
+.pbtn{background:none;border:none;color:var(--mut);font-size:13px;cursor:pointer;padding:5px 6px;border-radius:9px;line-height:1;width:auto;font-family:inherit}
+.pbtn:active{background:var(--card);color:var(--a1)}
+.popfoot{padding:10px 13px calc(13px + env(safe-area-inset-bottom));border-top:1px solid var(--brd)}
+
+.chat{flex:1;display:flex;flex-direction:column;gap:9px;min-height:140px;overflow-y:auto;padding:14px 14px 6px}
 .msg{max-width:88%;padding:10px 13px;border-radius:16px;font-size:12.5px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
 .msg.yo{align-self:flex-end;background:linear-gradient(140deg,var(--a1),var(--a3));color:var(--ink);font-weight:600;border-bottom-right-radius:5px}
 .msg.ia{align-self:flex-start;background:var(--card2);border:1px solid var(--brd);color:var(--txt);border-bottom-left-radius:5px}
-.msg.err{align-self:flex-start;background:var(--dangbg);border:1px solid var(--dangbrd);color:var(--dang)}
+.msg.err{align-self:flex-start;max-width:100%;background:var(--dangbg);border:1px solid var(--dangbrd);color:var(--dang)}
 .msg .acts{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
 .msg .acc{font-size:9.5px;font-weight:800;letter-spacing:.4px;background:var(--a1bg);color:var(--a1);border-radius:8px;padding:3px 7px}
-.chatbar{display:flex;gap:8px;margin-top:10px}
-.chatbar .btn{flex:none;padding:11px 16px}
-.sugs{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
-.sug{font-size:10.5px;background:var(--card2);border:1px solid var(--brd);color:var(--mut);border-radius:11px;padding:6px 10px;cursor:pointer;font-family:inherit;font-weight:600;width:auto}
+.iahola{font-size:12.5px;color:var(--mut);line-height:1.55;text-align:center;padding:8px 6px 4px}
+.sugs{display:flex;flex-direction:column;gap:9px;padding:4px 0 2px}
+.sug{width:100%;font-size:12.5px;background:none;border:1px solid var(--brd);color:var(--txt);border-radius:15px;padding:13px 14px;cursor:pointer;font-family:inherit;font-weight:600;line-height:1.4;text-align:center}
+.sug:active{border-color:var(--a1);color:var(--a1)}
+.chatbar{display:flex;gap:8px}
+.chatbar input{flex:1;border-radius:14px}
+.chatbar .btn{flex:none;padding:11px 16px;border-radius:14px}
 
 @media(max-width:640px){
   .stats{grid-template-columns:repeat(2,1fr);gap:8px}
@@ -235,6 +259,12 @@ details summary::before{content:'▸ '}details[open] summary::before{content:'�
   .wcell .mpill{display:none}
   .wcell .mdots{display:flex}
   .whead .wn{font-size:14px}
+  /* el widget sube por encima de la barra de navegación fija */
+  .fab{width:54px;height:54px;font-size:25px;right:13px;bottom:calc(84px + env(safe-area-inset-bottom))}
+  .fabtip{right:75px;bottom:calc(97px + env(safe-area-inset-bottom));max-width:165px;font-size:12px}
+  .popup,.popup.big{left:8px;right:8px;width:auto;bottom:calc(78px + env(safe-area-inset-bottom));max-height:calc(100vh - 168px)}
+  .popav{width:40px;height:40px;font-size:21px}
+  .poptit b{font-size:15px}
 }
 </style>
 </head>
@@ -244,7 +274,6 @@ details summary::before{content:'▸ '}details[open] summary::before{content:'�
 <div class="hdr">
   <div class="brand"><h1>✨ DAILY TASK MANAGER</h1></div>
   <div class="hdrctl">
-    <button class="iconbtn" id="ia-btn" onclick="abrirIA()" title="Asistente">🤖</button>
     <button class="iconbtn" id="theme-btn" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
     <button class="iconbtn" id="notif-btn" onclick="pedirPush()" title="Notificaciones">🔕</button>
     <div class="syncwrap">
@@ -442,18 +471,26 @@ details summary::before{content:'▸ '}details[open] summary::before{content:'�
   </div>
 </div>
 
-<div class="sheet" id="asheet">
-  <h3>🤖 Asistente</h3>
-  <p class="hint">Pídele que cree tareas, ingrese casos, cambie estados o te resuma lo pendiente. Aplica los cambios en tu panel al instante.</p>
-  <div class="chat" id="ia-chat"></div>
-  <div class="sugs" id="ia-sugs"></div>
-  <div class="chatbar">
-    <input id="ia-in" autocomplete="off" placeholder="Ej: crea una tarea urgente para llamar a Isa">
-    <button class="btn go" id="ia-send" onclick="enviarIA()">Enviar</button>
+<div class="fabtip" id="ia-tip" onclick="abrirIA()">Estoy aquí para ayudarte</div>
+<button class="fab" id="ia-fab" onclick="abrirIA()" title="Asistente" aria-label="Abrir asistente">🤖</button>
+
+<div class="popup" id="asheet" role="dialog" aria-label="Asistente">
+  <div class="pophead">
+    <div class="popav">🤖</div>
+    <div class="poptit"><b>Asistente</b><span>Tu copiloto del Daily Task Manager</span></div>
+    <div class="popctl">
+      <button class="pbtn" id="ia-exp" onclick="expandirIA()" title="Ampliar">⤢</button>
+      <button class="pbtn" onclick="cerrarIA()" title="Cerrar">✕</button>
+      <button class="pbtn" onclick="cerrarIA();toggleSet()" title="Configuración">⚙️</button>
+      <button class="pbtn" onclick="limpiarIA()" title="Nueva conversación">🗑</button>
+    </div>
   </div>
-  <div class="addrow" style="margin-top:10px">
-    <button class="btn sm" onclick="limpiarIA()">🧹 Nueva conversación</button>
-    <button class="btn sm" onclick="cerrarSheets()">Cerrar</button>
+  <div class="chat" id="ia-chat"></div>
+  <div class="popfoot">
+    <div class="chatbar">
+      <input id="ia-in" autocomplete="off" placeholder="Escribe lo que necesitas…">
+      <button class="btn go" id="ia-send" onclick="enviarIA()">Enviar</button>
+    </div>
   </div>
 </div>
 
@@ -1172,7 +1209,7 @@ function addCaso(){ const n=$('in-cnum').value.trim(), d=$('in-cdesc').value.tri
   S.casos.push({id:n||'s/n',desc:d,estado:'EN PROGRESO',act:hoy()}); $('in-cnum').value=''; $('in-cdesc').value=''; render(); push(); }
 
 /* ---------- hojas ---------- */
-function cerrarSheets(){ $('scrim').classList.remove('on'); $('sheet').classList.remove('on'); $('tsheet').classList.remove('on'); $('asheet').classList.remove('on'); editingEv=null; editingT=null; }
+function cerrarSheets(){ $('scrim').classList.remove('on'); $('sheet').classList.remove('on'); $('tsheet').classList.remove('on'); editingEv=null; editingT=null; }
 function buildSwatches(){
   $('ev-colors').innerHTML=Object.keys(COLORS).map(k=>
     '<div class="sw'+(k===evColor?' on':'')+'" style="background:'+COLORS[k].v+'" onclick="pickColor(\''+k+'\')"></div>').join('');
@@ -1479,25 +1516,49 @@ async function llamarGemini(){
 
 function pintarIA(){
   const c=$('ia-chat');
-  c.innerHTML = IA_MSJ.length ? IA_MSJ.map(m=>
-    '<div class="msg '+m.who+'">'+esc(m.text)+
-    (m.acts&&m.acts.length?'<div class="acts">'+m.acts.map(a=>'<span class="acc">'+esc(a)+'</span>').join('')+'</div>':'')+
-    '</div>').join('')
-    : '<div class="msg ia">¡Hola! Puedo crear tareas, ingresar casos, cambiar estados, agendar eventos o resumirte lo pendiente. Dime qué necesitas.</div>';
+  let h='';
+  if(IA_MSJ.length){
+    h=IA_MSJ.map(m=>'<div class="msg '+m.who+'">'+esc(m.text)+
+      (m.acts&&m.acts.length?'<div class="acts">'+m.acts.map(a=>'<span class="acc">'+esc(a)+'</span>').join('')+'</div>':'')+
+      '</div>').join('');
+  }else if(!iaKey()){
+    h='<div class="iahola">Para conversar conmigo necesitas una clave gratuita de Gemini. Se guarda solo en este dispositivo.</div>'+
+      '<div class="sugs">'+
+      '<button class="sug" onclick="window.open(\'https://aistudio.google.com/apikey\',\'_blank\')">1 · Crear la clave en aistudio.google.com/apikey</button>'+
+      '<button class="sug" onclick="cerrarIA();toggleSet()">2 · Pegarla en ⚙️ Configuración</button>'+
+      '</div>';
+  }else{
+    h='<div class="iahola">¡Hola! Soy tu asistente del Daily Task Manager. Puedo crear tareas, ingresar casos, cambiar estados, agendar eventos y resumirte lo pendiente. Pregúntame algo como:</div>'+
+      '<div class="sugs">'+IA_SUGS.map(s=>'<button class="sug" onclick="usarSug('+escAttr(JSON.stringify(s))+')">'+esc(s)+'</button>').join('')+'</div>';
+  }
+  c.innerHTML=h;
   c.scrollTop=c.scrollHeight;
-  $('ia-sugs').innerHTML = IA_MSJ.length?'':IA_SUGS.map(s=>'<button class="sug" onclick="usarSug('+escAttr(JSON.stringify(s))+')">'+esc(s)+'</button>').join('');
 }
-function usarSug(t){ const i=$('ia-in'); i.value=t; i.focus(); if(!/[: ]$/.test(t)) enviarIA(); }
+function usarSug(t){ const i=$('ia-in'); i.value=t; i.focus(); if(!/[: -]$/.test(t)) enviarIA(); }
 function limpiarIA(){ IA_HIST=[]; IA_MSJ=[]; pintarIA(); }
 
 function abrirIA(){
-  cerrarSheets();
-  $('scrim').classList.add('on'); $('asheet').classList.add('on');
-  if(!iaKey()){
-    IA_MSJ=[{who:'err',text:'Para usar el asistente necesitas una clave gratuita de Gemini.\n\n1. Entra a aistudio.google.com/apikey con tu cuenta de Google.\n2. Toca "Create API key" y cópiala.\n3. Pégala en ⚙️ Configuración → Clave de Gemini y guarda.\n\nQueda guardada solo en este dispositivo.'}];
-  }
+  ocultarTip();
+  $('asheet').classList.add('on');
+  $('ia-fab').classList.add('off');
   pintarIA();
-  setTimeout(()=>{ if(iaKey()) $('ia-in').focus(); },120);
+  setTimeout(()=>{ if(iaKey()&&innerWidth>640) $('ia-in').focus(); },140);
+}
+function cerrarIA(){ $('asheet').classList.remove('on'); $('ia-fab').classList.remove('off'); }
+function expandirIA(){
+  const p=$('asheet').classList.toggle('big');
+  $('ia-exp').textContent = p?'⤡':'⤢';
+  $('ia-exp').title = p?'Reducir':'Ampliar';
+}
+function ocultarTip(){ $('ia-tip').classList.remove('on'); clearTimeout(window._tip); }
+function saludarTip(){
+  if(sessionStorage.getItem('dtm-tip')) return;         // una sola vez por sesión
+  sessionStorage.setItem('dtm-tip','1');
+  window._tip=setTimeout(()=>{
+    if($('asheet').classList.contains('on')) return;
+    $('ia-tip').classList.add('on');
+    window._tip=setTimeout(ocultarTip,7000);
+  },3500);
 }
 
 async function enviarIA(){
@@ -1526,7 +1587,9 @@ async function enviarIA(){
 
 document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&document.activeElement&&document.activeElement.id==='ia-in'){ e.preventDefault(); enviarIA(); }
+  if(e.key==='Escape'&&$('asheet').classList.contains('on')) cerrarIA();
 });
+saludarTip();
 
 conectar();
 </script>
