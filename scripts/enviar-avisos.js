@@ -11,6 +11,9 @@ const { GoogleAuth } = require('google-auth-library');
 
 const PROYECTO = 'taskmanager-8f795';
 const DIAS_ALERTA = 2;
+const FUSO = 'America/Santiago';
+const HORA_DESDE = 9;    // primer aviso del día
+const HORA_HASTA = 22;   // a las 22:00 se corta hasta la mañana siguiente
 const { VAPID_PUBLIC, VAPID_PRIVATE, VAPID_CONTACTO, GCP_SA_KEY } = process.env;
 
 const faltan = Object.entries({ VAPID_PUBLIC, VAPID_PRIVATE, GCP_SA_KEY })
@@ -44,10 +47,26 @@ function conv(v) {
   if (v.mapValue) return Object.fromEntries(Object.entries(v.mapValue.fields || {}).map(([k, x]) => [k, conv(x)]));
   return null;
 }
-const hoy = () => new Date().toISOString().slice(0, 10);
+// La fecha y la hora se miran siempre en Chile, igual que la app en el
+// teléfono. Con UTC, a partir de las 21:00 de Chile ya es el día siguiente y
+// los días sin movimiento salían inflados en uno.
+function enChile(d = new Date()) {
+  const p = new Intl.DateTimeFormat('en-CA', {
+    timeZone: FUSO, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23'
+  }).formatToParts(d).reduce((a, x) => (a[x.type] = x.value, a), {});
+  return { fecha: `${p.year}-${p.month}-${p.day}`, hora: Number(p.hour) };
+}
+const hoy = () => enChile().fecha;
 const diasSin = act => act ? Math.floor((new Date(hoy()) - new Date(act)) / 86400000) : 0;
 
 async function main() {
+  const { hora } = enChile();
+  if (hora < HORA_DESDE || hora >= HORA_HASTA) {
+    console.log(`🌙 En Chile son las ${String(hora).padStart(2, '0')}:00, fuera del horario de avisos (${HORA_DESDE}:00–${HORA_HASTA}:00). No envío nada.`);
+    return;
+  }
+  console.log(`🕐 En Chile son las ${String(hora).padStart(2, '0')}:00. Reviso los casos detenidos.`);
+
   const auth = new GoogleAuth({ credentials: credenciales, scopes: ['https://www.googleapis.com/auth/datastore'] });
   const token = (await (await auth.getClient()).getAccessToken()).token;
   const get = async url => {
