@@ -2,9 +2,11 @@ name: Avisos de casos detenidos
 
 on:
   schedule:
-    # 12:00 y 19:00 UTC = 09:00 y 16:00 en Chile (horario de verano, UTC-3).
-    # En invierno (UTC-4) llegan una hora antes.
-    - cron: '0 12,19 * * 1-5'
+    # Cada hora dentro de la ventana que cubre las 09:00–21:59 de Chile en
+    # verano (UTC-3) y en invierno (UTC-4). El horario exacto lo decide el
+    # script mirando la hora real de Santiago, así que el cambio de hora no
+    # lo desajusta: las corridas que caen fuera terminan sin enviar nada.
+    - cron: '0 12-23,0-1 * * *'
   workflow_dispatch:        # permite dispararlo a mano desde la pestaña Actions
 
 jobs:
