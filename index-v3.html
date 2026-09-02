@@ -477,7 +477,7 @@ details summary::before{content:'▸ '}details[open] summary::before{content:'�
 <div class="popup" id="asheet" role="dialog" aria-label="Asistente">
   <div class="pophead">
     <div class="popav">🤖</div>
-    <div class="poptit"><b>Asistente</b><span>Tu copiloto del Daily Task Manager</span></div>
+    <div class="poptit"><b>Asistente</b><span id="ia-sub">Tu copiloto del Daily Task Manager</span></div>
     <div class="popctl">
       <button class="pbtn" id="ia-exp" onclick="expandirIA()" title="Ampliar">⤢</button>
       <button class="pbtn" onclick="cerrarIA()" title="Cerrar">✕</button>
@@ -782,6 +782,7 @@ function saveCfg(){
   localStorage.setItem('dtm-paleta',$('cfg-paleta').value);
   // la clave del asistente vive aparte: solo en este equipo, nunca en Firestore.
   const k=$('cfg-ia').value.trim();
+  if(k!==iaKey()){ localStorage.removeItem('dtm-ia-modelo'); IA_MODELO=''; }   // otra clave, otros modelos disponibles
   if(k) localStorage.setItem('dtm-ia',k); else localStorage.removeItem('dtm-ia');
   const antes=JSON.stringify(cfg()||{ics:'',icsApple:'',icsGoogle:''});
   const nuevo={ics:$('cfg-ics').value.trim(),icsApple:$('cfg-ics-apple').value.trim(),icsGoogle:$('cfg-ics-google').value.trim()};
@@ -1335,7 +1336,11 @@ function quitarAdjunto(aid){
  * su cuenta: solo puede usar las herramientas declaradas abajo, y cada una
  * termina en render()+push() igual que si el cambio se hiciera a mano.
  */
-const IA_MODELO='gemini-2.5-flash';
+// Google retira modelos cada cierto tiempo, así que no fijamos ninguno: se
+// pregunta cuáles hay disponibles con la clave de cada persona y se elige el
+// flash más nuevo. Esta lista es solo el plan B si esa consulta falla.
+const IA_MODELOS_BASE=['gemini-flash-latest','gemini-3.6-flash','gemini-2.5-flash'];
+let IA_MODELO=localStorage.getItem('dtm-ia-modelo')||'';
 const IA_SUGS=['¿Qué tengo pendiente hoy?','Crea una tarea urgente: ','Ingresa el caso HELPME- ','Resume los casos detenidos'];
 let IA_HIST=[], IA_MSJ=[], IA_ACC=[], IA_BUSY=false;
 const iaKey=()=>localStorage.getItem('dtm-ia')||'';
@@ -1478,12 +1483,71 @@ function ctxIA(){
 }
 
 function errorIA(status,j){
-  const m=((j&&j.error&&j.error.message)||'').slice(0,180);
+  const m=((j&&j.error&&j.error.message)||'').slice(0,300);
   if(status===400&&/API key/i.test(m)) return 'La clave de Gemini no es válida. Revísala en ⚙️.';
   if(status===403) return 'Google rechazó la clave. Asegúrate de haberla creado en aistudio.google.com/apikey y de que la API de Gemini esté activa en ese proyecto.';
+  if(status===404) return 'Google retiró los modelos que conozco y no encontré uno de reemplazo con tu clave. Vuelve a intentar; si sigue igual, avísame el mensaje: '+m;
   if(status===429) return 'Llegaste al límite gratuito de Gemini (por minuto o por día). Espera un rato y vuelve a intentar.';
   if(status===503) return 'Gemini está saturado en este momento. Prueba de nuevo en unos segundos.';
   return 'Gemini respondió con error '+status+(m?': '+m:'.');
+}
+
+/* Descubre qué modelos acepta la clave de esta persona. Google va retirando
+ * versiones (2.5-flash dejó de estar disponible para cuentas nuevas), así que
+ * en vez de fijar un nombre preguntamos y nos quedamos con el flash más nuevo. */
+async function listarModelos(){
+  const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key='+encodeURIComponent(iaKey()));
+  if(!r.ok) return [];
+  const j=await r.json();
+  return (j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent'))
+                       .map(m=>String(m.name||'').replace(/^models\//,''));
+}
+function elegirModelo(lista){
+  const descartar=/embedding|aqa|imagen|image|tts|audio|live|veo|robotics|learnlm|gemma|-lite|thinking|preview|exp\b/i;
+  const buenos=lista.filter(n=>/^gemini-/.test(n)&&/flash/.test(n)&&!descartar.test(n));
+  if(!buenos.length) return '';
+  const ver=n=>{ const m=n.match(/gemini-(\d+)(?:[.-](\d+))?/); return m?parseInt(m[1],10)*100+parseInt(m[2]||0,10):0; };
+  buenos.sort((a,b)=>ver(b)-ver(a)||a.length-b.length);   // versión más alta y nombre más simple
+  return buenos[0];
+}
+async function resolverModelo(redescubrir){
+  if(IA_MODELO&&!redescubrir) return IA_MODELO;
+  let elegido='';
+  try{ elegido=elegirModelo(await listarModelos()); }catch(e){}
+  if(!elegido) elegido=IA_MODELOS_BASE.find(m=>m!==IA_MODELO)||IA_MODELOS_BASE[0];
+  fijarModelo(elegido);
+  return elegido;
+}
+function fijarModelo(m){
+  IA_MODELO=m;
+  localStorage.setItem('dtm-ia-modelo',m);
+  const s=$('ia-sub'); if(s) s.textContent='Tu copiloto del Daily Task Manager · '+m;
+}
+function pedirGemini(modelo,body){
+  return fetch('https://generativelanguage.googleapis.com/v1beta/models/'+modelo+':generateContent?key='+encodeURIComponent(iaKey()),
+    {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(async r=>({status:r.status, ok:r.ok, j:await r.json().catch(()=>null)}));
+}
+/* Una llamada, reintentando si el modelo ya no existe o si rechaza thinkingConfig. */
+async function generar(body){
+  let modelo=await resolverModelo(false);
+  let r=await pedirGemini(modelo,body);
+  if(r.status===404){
+    modelo=await resolverModelo(true);
+    r=await pedirGemini(modelo,body);
+    for(const m of IA_MODELOS_BASE){
+      if(r.status!==404) break;
+      if(m===modelo) continue;
+      r=await pedirGemini(m,body);
+      if(r.status!==404) fijarModelo(m);
+    }
+  }
+  const msj=(r.j&&r.j.error&&r.j.error.message)||'';
+  if(r.status===400&&/think/i.test(msj)&&body.generationConfig.thinkingConfig){
+    delete body.generationConfig.thinkingConfig;   // modelos que no permiten apagar el razonamiento
+    r=await pedirGemini(IA_MODELO,body);
+  }
+  return r;
 }
 
 async function llamarGemini(){
@@ -1494,9 +1558,8 @@ async function llamarGemini(){
     generationConfig:{temperature:0.3,maxOutputTokens:1200,thinkingConfig:{thinkingBudget:0}}
   };
   for(let vuelta=0;vuelta<5;vuelta++){
-    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+IA_MODELO+':generateContent?key='+encodeURIComponent(iaKey()),
-      {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    let j=null; try{ j=await r.json(); }catch(e){}
+    const r=await generar(body);
+    const j=r.j;
     if(!r.ok) throw new Error(errorIA(r.status,j));
     const cand=((j&&j.candidates)||[])[0];
     if(!cand) throw new Error('Gemini no devolvió respuesta. Intenta de nuevo.');
@@ -1541,6 +1604,7 @@ function abrirIA(){
   ocultarTip();
   $('asheet').classList.add('on');
   $('ia-fab').classList.add('off');
+  if(IA_MODELO) fijarModelo(IA_MODELO);
   pintarIA();
   setTimeout(()=>{ if(iaKey()&&innerWidth>640) $('ia-in').focus(); },140);
 }
