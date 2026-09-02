@@ -1,0 +1,36 @@
+name: Resumen diario
+
+on:
+  schedule:
+    # 11:30 UTC = 08:30 en Chile en verano (UTC-3) y 07:30 en invierno (UTC-4).
+    # 12:30 UTC = 09:30 en verano y 08:30 en invierno. Se disparan las dos y el
+    # script decide cuál corresponde según la hora real de Santiago, así que el
+    # cambio de hora no lo desajusta.
+    - cron: '30 11,12 * * 1-5'
+  workflow_dispatch:        # permite dispararlo a mano desde la pestaña Actions
+
+jobs:
+  resumir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install --no-save google-auth-library@9.15.0
+      - name: Enviar el resumen si en Chile son las 8
+        run: |
+          HORA=$(TZ=America/Santiago date +%H)
+          if [ "$HORA" != "08" ]; then
+            echo "🌙 En Chile son las ${HORA}:30, no toca el resumen. Salgo sin enviar nada."
+            exit 0
+          fi
+          node scripts/resumen-diario.js
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          SMTP_PARA: ${{ secrets.SMTP_PARA }}
