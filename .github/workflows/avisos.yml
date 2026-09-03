@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - run: npm install --no-save web-push@3.6.7 google-auth-library@9.15.0
       - run: node scripts/enviar-avisos.js
         env:

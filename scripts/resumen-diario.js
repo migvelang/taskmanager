@@ -31,12 +31,30 @@ if (!TEAMS_WEBHOOK && !SMTP_HOST) {
   process.exit(1);
 }
 
-let credenciales;
-try { credenciales = JSON.parse(GCP_SA_KEY); }
-catch (e) {
-  console.error('❌ GCP_SA_KEY no es un JSON válido. Pega el archivo completo de la cuenta de servicio.');
+/* El secreto puede venir como el JSON tal cual o codificado en base64,
+   porque pegar un JSON de varias líneas se presta para errores. El
+   diagnóstico dice qué llegó sin mostrar nada del contenido. */
+function leerCredenciales(txt) {
+  const bruto = String(txt || '').trim();
+  const intentos = [bruto];
+  if (/^[A-Za-z0-9+/=\s]+$/.test(bruto) && bruto.length > 100) {
+    try { intentos.push(Buffer.from(bruto, 'base64').toString('utf8')); } catch (e) {}
+  }
+  for (const t of intentos) {
+    try {
+      const j = JSON.parse(t);
+      if (j && j.client_email && j.private_key) return j;
+      console.error('❌ GCP_SA_KEY es un JSON válido pero no es una cuenta de servicio: le faltan client_email o private_key.');
+      process.exit(1);
+    } catch (e) {}
+  }
+  console.error('❌ GCP_SA_KEY no se pudo leer como JSON.');
+  console.error(`   Recibí ${bruto.length} caracteres y empiezan por "${bruto.slice(0, 1) || '(vacío)'}".`);
+  console.error('   Tiene que ser el archivo .json completo de la cuenta de servicio, desde la primera { hasta la última }.');
+  console.error('   Consola de Firebase → Configuración del proyecto → Cuentas de servicio → Generar nueva clave privada.');
   process.exit(1);
 }
+const credenciales = leerCredenciales(GCP_SA_KEY);
 
 const RAIZ = `https://firestore.googleapis.com/v1/projects/${PROYECTO}/databases/(default)/documents`;
 
