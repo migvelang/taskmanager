@@ -1345,7 +1345,7 @@ function revisarAlertas(){
    AJUSTES GUARDADOS EN ESTE EQUIPO
    Las claves y enlaces privados nunca suben a Firestore.
    ══════════════════════════════════════════════════════════════ */
-const CFG_DEF = {ics:'', icsApple:'', icsGoogle:'', gClient:'', teams:''};
+const CFG_DEF = {ics:'', icsApple:'', icsGoogle:'', gClient:'', gMail:'metadata', teams:''};
 function cfg(){
   try{ return Object.assign({}, CFG_DEF, JSON.parse(localStorage.getItem('dtm4-cfg'))||{}); }
   catch(e){ return Object.assign({}, CFG_DEF); }
@@ -2816,7 +2816,7 @@ function abrirEv(eid, dia){
   evColor=e?e.color:'ac'; pintarSwatches();
   $('me-del').style.display=e?'inline-flex':'none';
   $('me-gc').checked=false;
-  $('me-gc-wrap').style.display = (gAutorizado()&&!e) ? 'block' : 'none';
+  $('me-gc-wrap').style.display = (gAutorizado('cal')&&!e) ? 'block' : 'none';
   $('me-src').style.display = (e&&e.gcal)?'block':'none';
   if(e&&e.gcal) $('me-src').textContent='Este evento también existe en tu Google Calendar; los cambios se envían allá.';
   abrirModal('m-ev');
@@ -3251,11 +3251,47 @@ async function transcribir(blob){
    pega en Ajustes. El permiso se pide la primera vez y el token
    dura una hora; después se vuelve a pedir en silencio.
    ══════════════════════════════════════════════════════════════ */
-const GSCOPES = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/gmail.modify';
-let gToken=null, gVence=0, gCliente=null, gListo=false, GMAILS=[];
+/* Los permisos se piden por separado y solo cuando hacen falta. Si el
+   correo se atasca en la pantalla de consentimiento, el calendario
+   sigue funcionando igual. */
+const GAREAS = {
+  cal:  {scope:'https://www.googleapis.com/auth/calendar.events', nombre:'Calendar'},
+  mail: {scope:null, nombre:'Gmail'}      // el alcance depende de lo elegido en Ajustes
+};
+/* gmail.metadata deja leer remitente y asunto y NO es un alcance
+   restringido, así que se autoriza sin auditoría. A cambio no entrega
+   el resumen del mensaje ni permite marcar como leído: para eso hace
+   falta gmail.modify, que Google sí clasifica como restringido. */
+const GMAIL_SCOPES = {
+  metadata:'https://www.googleapis.com/auth/gmail.metadata',
+  modify:  'https://www.googleapis.com/auth/gmail.modify'
+};
+const modoCorreo = () => (cfg().gMail === 'modify' ? 'modify' : 'metadata');
+const scopeArea = a => a==='mail' ? GMAIL_SCOPES[modoCorreo()] : GAREAS[a].scope;
 
-const gAutorizado = () => !!gToken && Date.now() < gVence;
-function gClientId(){ return cfg().gClient.trim(); }
+let GTOK = {cal:null, mail:null};        // {t, v} por área
+let gClientes = {}, gListo=false, gEspera={}, GMAILS=[];
+
+const gClientId = () => cfg().gClient.trim();
+function gAutorizado(area){
+  const g=GTOK[area||'cal'];
+  return !!(g && g.t && Date.now() < g.v);
+}
+const gAlgoAutorizado = () => gAutorizado('cal') || gAutorizado('mail');
+
+function guardarTokens(){
+  try{ localStorage.setItem('dtm4-gtok', JSON.stringify(GTOK)); }catch(e){}
+}
+function cargarTokens(){
+  try{
+    const g=JSON.parse(localStorage.getItem('dtm4-gtok')||'null');
+    if(!g) return;
+    // el formato viejo guardaba un solo token para todo
+    if(g.t && g.v) GTOK={cal:{t:g.t, v:g.v}, mail:null};
+    else GTOK={cal:g.cal||null, mail:g.mail||null};
+    ['cal','mail'].forEach(a=>{ if(GTOK[a] && GTOK[a].v<=Date.now()+30000) GTOK[a]=null; });
+  }catch(e){}
+}
 
 async function gCargar(){
   if(gListo) return true;
@@ -3263,46 +3299,67 @@ async function gCargar(){
   try{ await cargarScript('https://accounts.google.com/gsi/client', 8000); }
   catch(e){ return false; }
   if(!window.google || !google.accounts || !google.accounts.oauth2) return false;
-  gCliente=google.accounts.oauth2.initTokenClient({
-    client_id: gClientId(),
-    scope: GSCOPES,
-    callback: resp=>{
-      if(resp && resp.access_token){
-        gToken=resp.access_token;
-        gVence=Date.now()+((resp.expires_in||3600)-90)*1000;
-        localStorage.setItem('dtm4-gtok', JSON.stringify({t:gToken, v:gVence}));
-        if(gEspera){ const f=gEspera; gEspera=null; f(); }
-      }else if(gEspera){ gEspera=null; toast('No se autorizó el acceso a Google','alerta'); }
-    }
-  });
   gListo=true;
-  try{
-    const g=JSON.parse(localStorage.getItem('dtm4-gtok')||'null');
-    if(g && g.v>Date.now()+30000){ gToken=g.t; gVence=g.v; }
-  }catch(e){}
+  cargarTokens();
   return true;
 }
-let gEspera=null;
-/* pide permiso solo cuando hace falta; si ya hay token vigente, sigue de largo */
-function gConToken(fn, forzar){
+function clienteDe(area){
+  const scope=scopeArea(area);
+  const clave=area+'|'+scope;
+  if(gClientes[clave]) return gClientes[clave];
+  gClientes[clave]=google.accounts.oauth2.initTokenClient({
+    client_id: gClientId(),
+    scope,
+    callback: resp=>{
+      const f=gEspera[area]; gEspera[area]=null;
+      if(resp && resp.access_token){
+        GTOK[area]={t:resp.access_token, v:Date.now()+((resp.expires_in||3600)-90)*1000};
+        guardarTokens();
+        if(f) f();
+        if(VIEW==='ajustes'||VIEW==='bandeja') render();
+      }else{
+        explicarNegativa(area, resp);
+      }
+    },
+    error_callback: err=>{ gEspera[area]=null; explicarNegativa(area, err); }
+  });
+  return gClientes[clave];
+}
+/* access_denied casi siempre es la pantalla de consentimiento, no el código. */
+function explicarNegativa(area, resp){
+  const tipo=(resp && (resp.error || resp.type)) || '';
+  if(tipo==='popup_closed' || tipo==='popup_closed_by_user'){ toast('Cerraste la ventana de Google','alerta'); return; }
+  if(tipo==='access_denied' || tipo==='admin_policy_enforced'){
+    toast('Google rechazó el permiso de '+GAREAS[area].nombre+'. Revisa las causas en Ajustes.','alerta');
+    setView('ajustes');
+    return;
+  }
+  toast('No se autorizó el acceso a '+GAREAS[area].nombre+(tipo?' ('+tipo+')':''),'alerta');
+}
+/* Pide permiso solo si hace falta; si ya hay token vigente, sigue de largo. */
+function gConToken(area, fn, forzar){
   (async ()=>{
     if(!await gCargar()){ toast('Falta el ID de cliente de Google en Ajustes','alerta'); return; }
-    if(gAutorizado() && !forzar){ fn(); return; }
-    gEspera=fn;
-    gCliente.requestAccessToken({prompt: forzar?'consent':''});
+    if(gAutorizado(area) && !forzar){ fn(); return; }
+    gEspera[area]=fn;
+    clienteDe(area).requestAccessToken({prompt: forzar?'consent':''});
   })();
 }
 function gDesconectar(){
-  gToken=null; gVence=0;
+  GTOK={cal:null, mail:null};
   localStorage.removeItem('dtm4-gtok');
   GCAL=[]; GMAILS=[];
   render(); toast('Google desconectado de este dispositivo');
 }
-async function gApi(url, opciones){
+async function gApi(url, opciones, area){
+  area=area||'cal';
   const o=Object.assign({headers:{}}, opciones||{});
-  o.headers=Object.assign({Authorization:'Bearer '+gToken, 'Content-Type':'application/json'}, o.headers);
+  o.headers=Object.assign({Authorization:'Bearer '+GTOK[area].t, 'Content-Type':'application/json'}, o.headers);
   const r=await fetch(url, o);
-  if(r.status===401||r.status===403){ gToken=null; gVence=0; throw new Error('el permiso de Google venció, vuelve a conectarlo'); }
+  if(r.status===401||r.status===403){
+    GTOK[area]=null; guardarTokens();
+    throw new Error('el permiso de '+GAREAS[area].nombre+' venció o falta, vuelve a conectarlo');
+  }
   const j=await r.json().catch(()=>null);
   if(!r.ok) throw new Error((j&&j.error&&j.error.message)||('error '+r.status));
   return j;
@@ -3320,7 +3377,7 @@ function gcalCuerpo(ev){
   return {summary:ev.t, start:{date:ev.d}, end:{date:dSuma(ev.d,1)}};
 }
 function gcalCrear(ev){
-  gConToken(async ()=>{
+  gConToken('cal', async ()=>{
     try{
       const j=await gApi('https://www.googleapis.com/calendar/v3/calendars/primary/events',
         {method:'POST', body:JSON.stringify(gcalCuerpo(ev))});
@@ -3333,7 +3390,7 @@ function gcalCrear(ev){
 }
 function gcalActualizar(ev){
   if(!ev.gcal) return;
-  gConToken(async ()=>{
+  gConToken('cal', async ()=>{
     try{
       await gApi('https://www.googleapis.com/calendar/v3/calendars/primary/events/'+encodeURIComponent(ev.gcal),
         {method:'PATCH', body:JSON.stringify(gcalCuerpo(ev))});
@@ -3344,7 +3401,7 @@ function gcalActualizar(ev){
 function gcalBorrar(ev){
   if(!ev.gcal) return;
   const id=ev.gcal;
-  gConToken(async ()=>{
+  gConToken('cal', async ()=>{
     try{ await gApi('https://www.googleapis.com/calendar/v3/calendars/primary/events/'+encodeURIComponent(id), {method:'DELETE'}); }
     catch(e){}
     cargarGCal();
@@ -3373,42 +3430,47 @@ function cargarGCal(silencioso){
       if(!silencioso) toast(GCAL.length+' eventos leídos de Google Calendar','cal');
     }catch(e){ if(!silencioso) toast('Google Calendar: '+e.message,'alerta'); }
   };
-  if(gAutorizado()) hacer(); else if(!silencioso) gConToken(hacer);
+  if(gAutorizado('cal')) hacer(); else if(!silencioso) gConToken('cal', hacer);
 }
 
 /* ---------- Gmail ---------- */
 function bloqueGmail(){
   if(!gClientId())
     return '<p class="hint" style="padding:9px">Conecta tu cuenta de Google en Ajustes y aquí verás los correos sin leer, para pasarlos a tarea o a caso de un toque.</p>';
-  if(!gAutorizado())
-    return '<div style="padding:11px"><button class="btn pri" onclick="cargarGmail()">'+ico('google')+'Conectar y ver mi correo</button></div>';
+  if(!gAutorizado('mail'))
+    return '<div style="padding:11px"><button class="btn pri" onclick="cargarGmail()">'+ico('google')+'Conectar y ver mi correo</button>'+
+           '<p class="hint" style="margin-top:8px">El permiso del correo se pide aparte del calendario, así que si uno falla el otro sigue andando.</p></div>';
   if(!GMAILS.length)
     return vacio('correo','Sin correos por revisar','O aún no los he leído: toca Actualizar.');
+  const puedeMarcar = modoCorreo()==='modify';
   return GMAILS.map(m=>
     '<div class="mailrow"><span class="pri-dot" style="background:var(--info);margin-top:6px"></span>'+
-    '<span class="mi"><b>'+esc(m.asunto)+'</b><span>'+esc(m.de)+' · '+esc(m.fecha)+'</span>'+
+    '<span class="mi"><b>'+esc(m.asunto)+'</b><span>'+esc(m.de)+(m.fecha?' · '+esc(m.fecha):'')+'</span>'+
       (m.resumen?'<i>'+esc(m.resumen)+'</i>':'')+'</span>'+
     '<span class="rt" style="display:flex;gap:4px;align-items:flex-start">'+
       '<button class="btn sm" onclick="correoATarea(\''+m.id+'\')">Tarea</button>'+
       '<button class="btn sm" onclick="correoACaso(\''+m.id+'\')">Caso</button>'+
       '<button class="ib" title="Abrir en Gmail" onclick="abrirLink(\'https://mail.google.com/mail/u/0/#inbox/'+m.id+'\')">'+ico('fuera')+'</button>'+
-      '<button class="ib" title="Marcar como leído" onclick="marcarLeido(\''+m.id+'\')">'+ico('ok')+'</button>'+
+      (puedeMarcar?'<button class="ib" title="Marcar como leído" onclick="marcarLeido(\''+m.id+'\')">'+ico('ok')+'</button>'
+                  :'<button class="ib" title="Quitar de esta lista" onclick="ocultarCorreo(\''+m.id+'\')">'+ico('x')+'</button>')+
     '</span></div>').join('');
 }
 function cargarGmail(){
   if(!gClientId()){ toast('Falta el ID de cliente de Google en Ajustes','alerta'); return; }
-  gConToken(async ()=>{
+  gConToken('mail', async ()=>{
     try{
-      const l=await gApi('https://gmail.googleapis.com/gmail/v1/users/me/messages?q='+
-        encodeURIComponent('is:unread in:inbox')+'&maxResults=12');
+      // el alcance ligero no admite el parámetro de búsqueda: se filtra por etiquetas
+      const l=await gApi('https://gmail.googleapis.com/gmail/v1/users/me/messages'+
+        '?labelIds=UNREAD&labelIds=INBOX&maxResults=12', null, 'mail');
       const ids=(l.messages||[]).map(m=>m.id);
       const msgs=[];
       for(const id of ids){
         const m=await gApi('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+id+
-          '?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date');
+          '?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date', null, 'mail');
         const hs={}; ((m.payload||{}).headers||[]).forEach(h=>hs[h.name]=h.value);
         const de=(hs.From||'').replace(/<.*>/,'').replace(/"/g,'').trim() || (hs.From||'');
-        msgs.push({id, asunto:hs.Subject||'(sin asunto)', de, resumen:m.snippet||'',
+        msgs.push({id, asunto:hs.Subject||'(sin asunto)', de,
+                   resumen:m.snippet||'',            // solo llega con el permiso ampliado
                    fecha: hs.Date ? new Date(hs.Date).toLocaleDateString('es-CL',{day:'numeric',month:'short'}) : ''});
       }
       GMAILS=msgs;
@@ -3420,8 +3482,8 @@ function cargarGmail(){
 function correoATarea(id){
   const m=GMAILS.find(x=>x.id===id); if(!m) return;
   S.tareas.push({tid:uid(), done:false, text:m.asunto, cat:'planificar',
-                 notas:'De: '+m.de+'\n'+m.resumen+'\nhttps://mail.google.com/mail/u/0/#inbox/'+m.id,
-                 adj:[], venc:'', rep:'', ck:[], creado:hoy(), origen:'gmail'});
+                 notas:['De: '+m.de, m.resumen, 'https://mail.google.com/mail/u/0/#inbox/'+m.id].filter(Boolean).join('\n'),
+                 adj:[], venc:'', rep:'', rec:'', ck:[], creado:hoy(), origen:'gmail'});
   aplicar(); toast('Correo convertido en tarea');
 }
 function correoACaso(id){
@@ -3433,11 +3495,14 @@ function correoACaso(id){
                 hist:[{f:hoy(), t:'Creado desde un correo'}]});
   aplicar(); toast('Caso '+num+' creado');
 }
+/* Sin el permiso ampliado no se puede tocar el correo, así que esto
+   solo lo saca de la lista de aquí. */
+function ocultarCorreo(id){ GMAILS=GMAILS.filter(m=>m.id!==id); render(); }
 function marcarLeido(id){
-  gConToken(async ()=>{
+  gConToken('mail', async ()=>{
     try{
       await gApi('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+id+'/modify',
-        {method:'POST', body:JSON.stringify({removeLabelIds:['UNREAD']})});
+        {method:'POST', body:JSON.stringify({removeLabelIds:['UNREAD']})}, 'mail');
       GMAILS=GMAILS.filter(m=>m.id!==id);
       render();
     }catch(e){ toast('Gmail: '+e.message,'alerta'); }
@@ -3823,8 +3888,10 @@ function puntos(){
     {ok:!!iaKey(), t:'Poner la clave de Gemini', d:'Para el asistente y para transcribir lo que dictes. Es gratis y va por dispositivo.',
      btn:['Crear la clave',"abrirLink('https://aistudio.google.com/apikey')"]},
     {ok:!!c.gClient, t:'Pegar el ID de cliente de Google', d:'Para crear eventos en tu Google Calendar y pasar correos a tareas.'},
-    {ok:gAutorizado(), t:'Autorizar Google en este dispositivo', d:'El permiso se pide una vez por dispositivo y se renueva solo.',
-     btn:['Conectar','gConToken(()=>{cargarGCal(true);render()}, true)']},
+    {ok:gAutorizado('cal'), t:'Autorizar el calendario de Google', d:'El permiso se pide una vez por dispositivo y se renueva solo.',
+     btn:['Conectar',"gConToken('cal', ()=>{cargarGCal(true);render()}, true)"]},
+    {ok:gAutorizado('mail'), t:'Autorizar el correo', d:'Opcional, y aparte del calendario: si este falla, el otro sigue andando.',
+     btn:['Conectar',"gConToken('mail', ()=>{cargarGmail();render()}, true)"]},
     {ok:!!(c.ics||c.icsApple||c.icsGoogle), t:'Enlazar calendarios de solo lectura',
      d:'Opcional: Outlook y iCloud, para verlos junto a tu agenda.'},
     {ok:!!localStorage.getItem('dtm4-siri'), t:'Armar el atajo de Siri',
@@ -3884,21 +3951,40 @@ function vistaAjustes(){
     '<div><label class="lb">ID de cliente OAuth</label>'+
       '<input type="text" id="cf-gclient" value="'+escA(c.gClient)+'" placeholder="1234-abcd.apps.googleusercontent.com" autocomplete="off">'+
       '<p class="hint" style="margin-top:6px">Con esto puedes crear y editar eventos reales de tu Google Calendar desde aquí, '+
-      'y ver tus correos sin leer para pasarlos a tarea o a caso.</p>'+
+      'y ver tus correos sin leer para pasarlos a tarea o a caso. Los dos permisos se piden por separado.</p>'+
       '<div class="pasos">'+
         '<div class="paso">Entra a <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">console.cloud.google.com/apis/credentials</a> y crea un proyecto si no tienes.</div>'+
-        '<div class="paso">Activa las APIs de <b>Google Calendar</b> y <b>Gmail</b> en la biblioteca de APIs.</div>'+
-        '<div class="paso">En la pantalla de consentimiento, tipo Externo, agrégate como usuario de prueba con tu propio correo.</div>'+
+        '<div class="paso">Activa las APIs de <b>Google Calendar</b> y <b>Gmail</b> en la biblioteca de APIs <b>del mismo proyecto</b>.</div>'+
+        '<div class="paso">Pantalla de consentimiento: tipo <b>Externo</b>, y agrégate en <b>Usuarios de prueba</b> con el mismo correo con el que vas a entrar. Sin ese paso Google responde <code>access_denied</code>.</div>'+
         '<div class="paso">Crea una credencial de tipo <b>ID de cliente de OAuth · Aplicación web</b> y añade <code>'+esc(location.origin)+'</code> en orígenes autorizados de JavaScript.</div>'+
         '<div class="paso">Copia el ID que termina en <code>.apps.googleusercontent.com</code> y pégalo arriba.</div>'+
       '</div>'+
-      '<div class="frow" style="margin-top:11px">'+
-        (gAutorizado()
-          ? '<button class="btn" onclick="cargarGCal()">'+ico('cal')+'Releer calendario</button>'+
-            '<button class="btn" onclick="cargarGmail()">'+ico('correo')+'Releer correo</button>'+
-            '<button class="btn dgr" onclick="gDesconectar()">Desconectar</button>'
-          : '<button class="btn pri" onclick="gConToken(()=>{cargarGCal(true);toast(\'Google conectado\');render()}, true)">'+ico('google')+'Conectar con Google</button>')+
-      '</div></div>');
+      '<div style="margin-top:13px"><label class="lb">Permiso del correo</label>'+
+        '<select id="cf-gmail">'+
+          '<option value="metadata"'+(modoCorreo()==='metadata'?' selected':'')+'>Solo remitente y asunto — fácil de autorizar</option>'+
+          '<option value="modify"'+(modoCorreo()==='modify'?' selected':'')+'>Además resumen y marcar como leído — permiso restringido</option>'+
+        '</select>'+
+        '<p class="hint" style="margin-top:6px">La primera opción usa <code>gmail.metadata</code>, que Google no considera restringido: se autoriza con solo estar en la lista de usuarios de prueba. '+
+        'La segunda usa <code>gmail.modify</code>, que es restringido: funciona igual mientras la app esté en modo de prueba, pero si la publicas Google exige una auditoría de seguridad.</p>'+
+      '</div>'+
+      '<div class="frow btns" style="margin-top:12px">'+
+        (gAutorizado('cal')
+          ? '<button class="btn" onclick="cargarGCal()">'+ico('cal')+'Releer calendario</button>'
+          : '<button class="btn pri" onclick="gConToken(\'cal\', ()=>{cargarGCal(true);toast(\'Calendario conectado\');render()}, true)">'+ico('cal')+'Conectar el calendario</button>')+
+        (gAutorizado('mail')
+          ? '<button class="btn" onclick="cargarGmail()">'+ico('correo')+'Releer correo</button>'
+          : '<button class="btn" onclick="gConToken(\'mail\', ()=>{cargarGmail();render()}, true)">'+ico('correo')+'Conectar el correo</button>')+
+        (gAlgoAutorizado() ? '<button class="btn dgr" onclick="gDesconectar()">Desconectar</button>' : '')+
+      '</div>'+
+      '<details class="arch" style="margin-top:12px"><summary><span class="cv">'+ico('cv')+'</span>Google respondió access_denied</summary>'+
+      '<div class="cuerpo"><div class="pasos">'+
+        '<div class="paso">El correo con el que entras no está en <b>Usuarios de prueba</b> de la pantalla de consentimiento. Es la causa en la gran mayoría de los casos.</div>'+
+        '<div class="paso">La pantalla de consentimiento está en <b>otro proyecto</b> distinto del que emitió el ID de cliente. Revisa que sea el mismo.</div>'+
+        '<div class="paso">Está puesta como <b>Interno</b> y entras con una cuenta de fuera de esa organización, o al revés.</div>'+
+        '<div class="paso">Entras con una cuenta corporativa cuyo administrador bloquea las apps sin verificar. Prueba con una cuenta personal de Gmail.</div>'+
+        '<div class="paso">Publicaste la app en <b>Producción</b> pidiendo el permiso ampliado del correo. Vuélvela a modo de prueba, o cambia el permiso a la primera opción de aquí arriba.</div>'+
+      '</div></div></details>'+
+    '</div>');
 
   h+=grupo('cal','Calendarios publicados (solo lectura)',
     '<div><label class="lb">Outlook / Office 365 (.ics)</label><input type="text" id="cf-ics" value="'+escA(c.ics)+'" placeholder="https://outlook.office365.com/owa/calendar/…"></div>'+
@@ -3955,13 +4041,17 @@ function guardarAjustes(){
   if(k) localStorage.setItem('dtm4-ia', k); else localStorage.removeItem('dtm4-ia');
 
   const antes=JSON.stringify(cfg());
+  const correoAntes=modoCorreo();
   setCfg({
     ics:$('cf-ics').value.trim(),
     icsApple:$('cf-ics-apple').value.trim(),
     icsGoogle:$('cf-ics-google').value.trim(),
     gClient:$('cf-gclient').value.trim(),
+    gMail:$('cf-gmail').value,
     teams:$('cf-teams').value.trim()
   });
+  // otro permiso, otro token: el que había ya no sirve
+  if(modoCorreo()!==correoAntes){ GTOK.mail=null; guardarTokens(); GMAILS=[]; }
   if(antes!==JSON.stringify(cfg())){
     toast('Ajustes guardados, recargando…');
     setTimeout(()=>location.reload(), 700);
@@ -4050,6 +4140,7 @@ async function arrancar(){
   const kb=$('kbd-hint'); if(kb) kb.textContent = MAC?'⌘K':'Ctrl K';
   pintarBotonNotif();
   SEL=hoy();
+  cargarTokens();          // los permisos de Google se leen antes de cualquier sesión
   if(navigator.serviceWorker) revisarSuscripcionPush();
 
   const local=localStorage.getItem('dtm4-data');
@@ -4083,7 +4174,7 @@ async function arrancar(){
     $('login').classList.remove('on');
     conectarPanel(u);
     render();
-    if(cfg().gClient) setTimeout(()=>{ gCargar().then(()=>{ if(gAutorizado()) cargarGCal(true); }); }, 1200);
+    if(cfg().gClient) setTimeout(()=>{ gCargar().then(()=>{ if(gAutorizado('cal')) cargarGCal(true); }); }, 1200);
   });
 }
 window.addEventListener('online', ()=>{ setSync('warn','reconectando'); if(ref) guardar(); });
