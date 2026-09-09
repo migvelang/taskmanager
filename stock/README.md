@@ -9,7 +9,14 @@ Aplicación web (PWA) para consultar el inventario diario de la tienda, optimiza
 - La **Configuración** está protegida con la **clave de administrador** (por defecto `connect2025`). Sin esa clave no se muestra ninguna configuración. La clave se puede cambiar en `index.html` (constante `ADMIN_KEY`).
 - La **subida del archivo diario** vive dentro de Configuración (solo el administrador sube stock).
 
-> ⚠️ **Importante:** al ser una app estática (sin servidor), los usuarios, aprobaciones y el stock se guardan **en el navegador de cada dispositivo** (localStorage). El control de usuarios funciona por dispositivo (ideal para un equipo/tablet compartido en la tienda), **no** se sincroniza entre teléfonos distintos. Para control centralizado entre varios equipos se necesita un backend (por ejemplo Firebase).
+### Modo local y modo nube
+
+La app tiene **dos modos**, según el archivo `index.html`:
+
+- **Local** (por defecto): usuarios, aprobaciones y stock se guardan en el navegador de **cada dispositivo**. Sirve para probar o para un equipo/tablet compartido. No se sincroniza entre teléfonos distintos.
+- **Nube** (recomendado): al pegar tu configuración de **Firebase** en `index.html`, todo queda **compartido entre todos los teléfonos** en tiempo real. Sigue las instrucciones en **`CONFIGURACION-FIREBASE.md`**.
+
+En modo nube, el **administrador** es la cuenta marcada como `admin` en Firebase (solo esa puede subir stock y aprobar/eliminar usuarios). La clave `connect2025` protege abrir la pantalla de configuración.
 
 ## Qué hace
 

@@ -325,6 +325,26 @@ var PRODUCTS=[], META={fecha:null,archivo:null,filas:0};
 var FILT={q:'',linea:'',sub:'',clase:'',subc:'',marca:'',low:false};
 var SETUNLOCKED=false; // configuración desbloqueada en esta apertura
 
+/* ============================================================
+   CONFIGURACIÓN DE FIREBASE  (pega aquí los datos de tu proyecto)
+   Mientras diga "PEGA_AQUI" la app funciona LOCAL (solo este equipo).
+   Al pegar tu configuración real, pasa automáticamente a la NUBE
+   (usuarios y stock compartidos entre todos los teléfonos).
+   ============================================================ */
+var FIREBASE_CONFIG={
+  apiKey:"PEGA_AQUI",
+  authDomain:"PEGA_AQUI",
+  projectId:"PEGA_AQUI",
+  storageBucket:"PEGA_AQUI",
+  messagingSenderId:"PEGA_AQUI",
+  appId:"PEGA_AQUI"
+};
+var EMAIL_DOMAIN='stockcostanera.web';           // dominio interno para armar el correo desde el usuario
+var CLOUD = FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey.indexOf('PEGA_AQUI')<0;
+var CURRENT=null;      // usuario en sesión (local o nube)
+var REGISTERING=false; // evita carreras con el listener de sesión de Firebase
+var CATSUB=null;       // suscripción en tiempo real al catálogo
+
 var PALETTE=[
   {name:'Falabella',c:'#aad503',d:'#7fa002',ink:'#20320a'},
   {name:'Verde',c:'#16a34a',d:'#128040',ink:'#ffffff'},
@@ -392,7 +412,106 @@ async function loginUser(username,clave){
 }
 function currentUser(){ var s=localStorage.getItem(K.SESSION); if(!s) return null;
   return getUsers().find(function(x){return x.username===s;})||null; }
-function logout(){ localStorage.removeItem(K.SESSION); SETUNLOCKED=false; showGate(); }
+function logout(){ if(CLOUD){ Cloud.logout(); } else { localStorage.removeItem(K.SESSION); CURRENT=null; SETUNLOCKED=false; showGate(); } }
+
+/* ===== Backend en la nube (Firebase) ===== */
+var Cloud={
+  app:null, auth:null, db:null, fn:{},
+  async init(){
+    var base='https://www.gstatic.com/firebasejs/10.12.5/';
+    var a=await import(base+'firebase-app.js');
+    var au=await import(base+'firebase-auth.js');
+    var fs=await import(base+'firebase-firestore.js');
+    this.fn={createUser:au.createUserWithEmailAndPassword,signIn:au.signInWithEmailAndPassword,signOut:au.signOut,onAuth:au.onAuthStateChanged,
+      doc:fs.doc,getDoc:fs.getDoc,setDoc:fs.setDoc,updateDoc:fs.updateDoc,deleteDoc:fs.deleteDoc,collection:fs.collection,getDocs:fs.getDocs,writeBatch:fs.writeBatch,onSnapshot:fs.onSnapshot};
+    this.app=a.initializeApp(FIREBASE_CONFIG); this.auth=au.getAuth(this.app); this.db=fs.getFirestore(this.app);
+    var self=this;
+    this.fn.onAuth(this.auth, async function(u){
+      if(REGISTERING) return;
+      if(!u){ CURRENT=null; SETUNLOCKED=false; showGate(); return; }
+      var me=null;
+      try{ var snap=await self.fn.getDoc(self.fn.doc(self.db,'usuarios',u.uid)); me=snap.exists()?snap.data():null; }catch(e){}
+      if(me && me.estado==='aprobado'){ CURRENT=Object.assign({uid:u.uid},me); showApp(); self.subscribeCatalog(); }
+      else { await self.fn.signOut(self.auth); CURRENT=null; showGate(); authMsg('info','Tu cuenta está pendiente de aprobación por el administrador.'); }
+    });
+  },
+  email(username){ return (username||'').trim().toLowerCase()+'@'+EMAIL_DOMAIN; },
+  mapErr(e){ var c=(e&&e.code)||'';
+    if(/invalid-credential|wrong-password|user-not-found|invalid-email/.test(c)) return 'Usuario o clave incorrectos.';
+    if(/too-many-requests/.test(c)) return 'Demasiados intentos. Espera un momento.';
+    if(/network/.test(c)) return 'Sin conexión. Revisa tu internet.';
+    if(/weak-password/.test(c)) return 'La clave debe tener al menos 6 caracteres.';
+    return (e&&e.message)||'Error inesperado.'; },
+  async register(nombre,apellido,clave){
+    nombre=(nombre||'').trim(); apellido=(apellido||'').trim();
+    if(nombre.length<2||apellido.length<2) return {ok:false,msg:'Ingresa tu nombre y apellido.'};
+    if((clave||'').length<6) return {ok:false,msg:'La clave debe tener al menos 6 caracteres.'};
+    var base=(deacc(nombre).trim().split(/\s+/)[0]+'.'+deacc(apellido).trim().split(/\s+/)[0]).toLowerCase().replace(/[^a-z0-9.]/g,'').replace(/^\.+|\.+$/g,'')||'usuario';
+    var attempts=[base, base+Math.floor(10+Math.random()*89), base+Math.floor(100+Math.random()*899)];
+    REGISTERING=true;
+    try{
+      for(var i=0;i<attempts.length;i++){
+        var username=attempts[i];
+        try{
+          var cred=await this.fn.createUser(this.auth, this.email(username), clave);
+          await this.fn.setDoc(this.fn.doc(this.db,'usuarios',cred.user.uid),{nombre:nombre,apellido:apellido,username:username,email:this.email(username),estado:'pendiente',rol:'user',createdAt:new Date().toISOString()});
+          await this.fn.signOut(this.auth);
+          return {ok:true,username:username};
+        }catch(e){ if((e.code||'').indexOf('email-already-in-use')>=0 && i<attempts.length-1) continue;
+          if((e.code||'').indexOf('email-already-in-use')>=0) return {ok:false,msg:'Ese usuario ya existe. Inicia sesión o pídele al administrador que lo revise.'};
+          return {ok:false,msg:this.mapErr(e)}; }
+      }
+    } finally { REGISTERING=false; }
+    return {ok:false,msg:'No se pudo crear el usuario.'};
+  },
+  async login(username,clave){ try{ await this.fn.signIn(this.auth,this.email(username),clave); return {ok:true}; }catch(e){ return {ok:false,msg:this.mapErr(e)}; } },
+  async logout(){ try{ await this.fn.signOut(this.auth); }catch(e){} CURRENT=null; SETUNLOCKED=false; },
+  async listUsers(){ var out=[]; var snap=await this.fn.getDocs(this.fn.collection(this.db,'usuarios'));
+    snap.forEach(function(d){ out.push(Object.assign({id:d.id},d.data())); });
+    out.sort(function(a,b){return (a.createdAt||'').localeCompare(b.createdAt||'');}); return out; },
+  async approve(id){ await this.fn.updateDoc(this.fn.doc(this.db,'usuarios',id),{estado:'aprobado'}); },
+  async remove(id){ await this.fn.deleteDoc(this.fn.doc(this.db,'usuarios',id)); },
+  async saveCatalog(products,meta){
+    var CH=500, parts=Math.ceil(products.length/CH)||0, prev=0;
+    try{ var ms=await this.fn.getDoc(this.fn.doc(this.db,'catalogo','meta')); if(ms.exists()) prev=ms.data().parts||0; }catch(e){}
+    var batch=this.fn.writeBatch(this.db);
+    batch.set(this.fn.doc(this.db,'catalogo','meta'),{fecha:meta.fecha,archivo:meta.archivo,filas:meta.filas,parts:parts,ts:Date.now()});
+    for(var i=0;i<parts;i++) batch.set(this.fn.doc(this.db,'catalogo','p'+i),{rows:products.slice(i*CH,(i+1)*CH)});
+    for(var j=parts;j<prev;j++) batch.delete(this.fn.doc(this.db,'catalogo','p'+j));
+    await batch.commit();
+  },
+  async loadCatalog(){
+    var ms=await this.fn.getDoc(this.fn.doc(this.db,'catalogo','meta'));
+    if(!ms.exists()){ PRODUCTS=[]; META={fecha:null,archivo:null,filas:0}; return; }
+    var m=ms.data(), parts=m.parts||0, proms=[];
+    for(var i=0;i<parts;i++) proms.push(this.fn.getDoc(this.fn.doc(this.db,'catalogo','p'+i)));
+    var snaps=await Promise.all(proms), rows=[];
+    snaps.forEach(function(s){ if(s.exists()) rows=rows.concat(s.data().rows||[]); });
+    PRODUCTS=rows; META={fecha:m.fecha||null,archivo:m.archivo||null,filas:m.filas||rows.length};
+    try{ localStorage.setItem(K.DATA,JSON.stringify(PRODUCTS)); localStorage.setItem(K.META,JSON.stringify(META)); }catch(e){}
+  },
+  subscribeCatalog(){
+    var self=this; if(CATSUB){ try{CATSUB();}catch(e){} CATSUB=null; }
+    try{ CATSUB=this.fn.onSnapshot(this.fn.doc(this.db,'catalogo','meta'), function(){
+      self.loadCatalog().then(function(){ buildFilters(); render(); updateBanner(); if(SETUNLOCKED) renderConfig(); }).catch(function(){});
+    }); }catch(e){}
+  }
+};
+
+/* ===== Dispatchers (nube o local) ===== */
+function isAdmin(){ return CLOUD ? !!(CURRENT&&CURRENT.rol==='admin') : true; }
+async function doRegister(n,a,c){ return CLOUD ? Cloud.register(n,a,c) : registerUser(n,a,c); }
+async function doLogin(u,c){
+  if(CLOUD) return Cloud.login(u,c);
+  var r=await loginUser(u,c);
+  if(r.ok){ localStorage.setItem(K.SESSION,r.user.username); CURRENT=r.user; showApp(); }
+  return r;
+}
+async function persistCatalog(){
+  if(CLOUD){ if(!isAdmin()){ toast('Solo el administrador puede subir stock'); return; } await Cloud.saveCatalog(PRODUCTS,META); }
+  else save();
+}
+async function adminList(){ return CLOUD ? Cloud.listUsers() : getUsers(); }
 
 /* ===== Datos ===== */
 function parseNum(s){ if(!s) return 0; s=String(s).trim(); if(!s) return 0; var neg=s.indexOf('-')>=0; s=s.replace(/[+\-\s]/g,'').replace(/\./g,'').replace(',','.'); var n=parseFloat(s); if(isNaN(n))return 0; return neg?-n:n; }
@@ -427,8 +546,9 @@ async function handleFile(file){
   try{ var txt=await readFile(file); var r=parseData(txt);
     if(!r.arr.length){ toast('No se encontraron productos en el archivo'); return; }
     PRODUCTS=r.arr; META={fecha:new Date().toISOString(),archivo:file.name,filas:r.filas};
-    save(); buildFilters(); render(); updateBanner(); if(SETUNLOCKED) renderConfig();
-    toast('✓ '+PRODUCTS.length+' productos cargados');
+    if(CLOUD) toast('<span class="spin"></span> Subiendo '+PRODUCTS.length+' productos a la nube…');
+    await persistCatalog(); buildFilters(); render(); updateBanner(); if(SETUNLOCKED) renderConfig();
+    toast('✓ '+PRODUCTS.length+' productos '+(CLOUD?'subidos a la nube':'cargados'));
   }catch(e){ console.error(e); toast('Error: '+(e.message||'no se pudo leer el archivo')); }
 }
 function save(){ try{ localStorage.setItem(K.DATA,JSON.stringify(PRODUCTS)); localStorage.setItem(K.META,JSON.stringify(META)); }catch(e){ toast('No se pudieron guardar los datos (memoria llena)'); } }
@@ -587,27 +707,25 @@ function renderConfig(){
     $('cfgKey').addEventListener('keydown',function(e){ if(e.key==='Enter') $('cfgGo').click(); });
     return;
   }
-  var users=getUsers();
-  var pend=users.filter(function(u){return u.estado==='pendiente';});
-  var appr=users.filter(function(u){return u.estado==='aprobado';});
-  var cu=currentUser();
+  var cu=CURRENT;
+  var admin=isAdmin();
   var accentIdx=parseInt(localStorage.getItem(K.ACCENT)||'0',10);
   var fecha=META.fecha?new Date(META.fecha).toLocaleString('es-CL'):'—';
   var h='';
   h+='<div class="dtitle">Configuración</div>';
+  h+='<div style="font-size:11.5px;font-weight:800;color:'+(CLOUD?'var(--ok)':'var(--warn)')+';margin:4px 0 2px">'+(CLOUD?'☁️ NUBE (compartida entre dispositivos)':'📱 LOCAL (solo este equipo)')+'</div>';
 
   // Datos
   h+='<div class="sec"><h4>Datos de inventario</h4>';
   h+='<div style="font-size:13px;color:var(--mut);line-height:1.6">Productos: <b style="color:var(--ink)">'+PRODUCTS.length+'</b><br>Archivo: <b style="color:var(--ink)">'+esc(META.archivo||'—')+'</b><br>Última carga: <b style="color:var(--ink)">'+esc(fecha)+'</b></div>';
-  h+='<div style="display:flex;gap:8px;margin-top:10px"><button class="btn primary" id="cfgUpload" style="flex:1">⬆️ Subir archivo</button><button class="btn danger" id="cfgClear" style="flex:1">🗑️ Borrar datos</button></div></div>';
+  if(admin) h+='<div style="display:flex;gap:8px;margin-top:10px"><button class="btn primary" id="cfgUpload" style="flex:1">⬆️ Subir archivo</button><button class="btn danger" id="cfgClear" style="flex:1">🗑️ Borrar datos</button></div>';
+  else h+='<div style="font-size:12.5px;color:var(--mut);margin-top:8px">Solo el administrador puede subir o borrar el stock.</div>';
+  h+='</div>';
 
   // Usuarios
-  h+='<div class="sec"><h4>Usuarios ('+users.length+')</h4>';
-  if(pend.length){ h+='<div style="font-size:11px;font-weight:800;color:var(--warn);margin:0 0 4px">PENDIENTES DE APROBAR ('+pend.length+')</div>';
-    pend.forEach(function(u){ h+=userRowHTML(u,true); }); }
-  if(appr.length){ h+='<div style="font-size:11px;font-weight:800;color:var(--ok);margin:12px 0 4px">APROBADOS ('+appr.length+')</div>';
-    appr.forEach(function(u){ h+=userRowHTML(u,false); }); }
-  if(!users.length) h+='<div style="color:var(--mut);font-size:13px">Aún no hay usuarios registrados.</div>';
+  h+='<div class="sec"><h4>Usuarios</h4>';
+  if(admin) h+='<div id="usersBox" style="color:var(--mut);font-size:13px">Cargando usuarios…</div>';
+  else h+='<div style="font-size:12.5px;color:var(--mut)">Solo el administrador gestiona los usuarios.</div>';
   h+='</div>';
 
   // Preferencias
@@ -619,35 +737,58 @@ function renderConfig(){
 
   // Sesión
   h+='<div class="sec"><h4>Sesión</h4>';
-  if(cu) h+='<div style="font-size:13px;color:var(--mut);margin-bottom:8px">Conectado como <b style="color:var(--ink)">'+esc(cu.nombre+' '+cu.apellido)+'</b> ('+esc(cu.username)+')</div><button class="btn ghost" id="cfgLogout" style="width:100%">Cerrar sesión</button>';
-  else h+='<div style="font-size:13px;color:var(--mut)">Estás en modo administrador (sin sesión de usuario).</div>';
+  if(cu) h+='<div style="font-size:13px;color:var(--mut);margin-bottom:8px">Conectado como <b style="color:var(--ink)">'+esc((cu.nombre||'')+' '+(cu.apellido||''))+'</b> ('+esc(cu.username||'')+')'+(admin?' · <b style="color:var(--ok)">Administrador</b>':'')+'</div><button class="btn ghost" id="cfgLogout" style="width:100%">Cerrar sesión</button>';
+  else h+='<div style="font-size:13px;color:var(--mut)">Sin sesión de usuario.</div>';
   h+='</div>';
 
-  h+='<div class="sec" style="font-size:11.5px;color:var(--mut);line-height:1.6">Los usuarios, aprobaciones y el stock se guardan <b>solo en este dispositivo</b>. Para compartir el control entre varios teléfonos se necesita un servidor.</div>';
+  h+='<div class="sec" style="font-size:11.5px;color:var(--mut);line-height:1.6">'+(CLOUD?'Los usuarios y el stock se guardan en la nube y se comparten entre todos los dispositivos.':'Modo local: todo se guarda <b>solo en este dispositivo</b>. Pega tu configuración de Firebase en el archivo para activar la nube.')+'</div>';
 
   pad.innerHTML=h;
-  $('cfgUpload').onclick=pickFile;
-  $('cfgClear').onclick=function(){ if(confirm('¿Borrar todo el stock guardado en este dispositivo?')){ clearData(); renderConfig(); toast('Datos borrados'); } };
+  if(admin){
+    var up2=$('cfgUpload'); if(up2)up2.onclick=pickFile;
+    var cl2=$('cfgClear'); if(cl2)cl2.onclick=async function(){ if(confirm('¿Borrar todo el stock?')){ if(CLOUD){ PRODUCTS=[]; META={fecha:null,archivo:null,filas:0}; try{await Cloud.saveCatalog([], META);}catch(e){} buildFilters(); render(); updateBanner(); } else clearData(); renderConfig(); toast('Datos borrados'); } };
+  }
   $('cfgLow').onchange=function(){ localStorage.setItem(K.LOW,this.value); render(); };
   var lo=$('cfgLogout'); if(lo)lo.onclick=function(){ logout(); closeSheet('setSheet'); };
-  // swatches
   var sw=$('cfgSw'); sw.innerHTML=PALETTE.map(function(p,i){return '<button class="sw'+(i===accentIdx?' on':'')+'" data-i="'+i+'" style="background:'+p.c+'"></button>';}).join('');
   Array.prototype.forEach.call(sw.querySelectorAll('.sw'),function(b){b.onclick=function(){applyAccent(+b.getAttribute('data-i'));renderConfig();};});
-  // user actions
-  Array.prototype.forEach.call(pad.querySelectorAll('[data-appr]'),function(b){b.onclick=function(){setUserState(b.getAttribute('data-appr'),'aprobado');};});
-  Array.prototype.forEach.call(pad.querySelectorAll('[data-del]'),function(b){b.onclick=function(){ if(confirm('¿Eliminar a este usuario?')) deleteUser(b.getAttribute('data-del')); };});
+  if(admin) populateUsers();
+}
+async function populateUsers(){
+  var box=$('usersBox'); if(!box) return;
+  var users;
+  try{ users=await adminList(); }catch(e){ box.innerHTML='<span style="color:var(--danger)">No se pudieron cargar los usuarios'+(CLOUD?' (¿tienes permisos de administrador?)':'')+'.</span>'; return; }
+  if(!box) return;
+  var pend=users.filter(function(u){return u.estado==='pendiente';});
+  var appr=users.filter(function(u){return u.estado!=='pendiente';});
+  var h='';
+  if(pend.length){ h+='<div style="font-size:11px;font-weight:800;color:var(--warn);margin:0 0 4px">PENDIENTES DE APROBAR ('+pend.length+')</div>'; pend.forEach(function(u){h+=userRowHTML(u,true);}); }
+  if(appr.length){ h+='<div style="font-size:11px;font-weight:800;color:var(--ok);margin:12px 0 4px">APROBADOS ('+appr.length+')</div>'; appr.forEach(function(u){h+=userRowHTML(u,false);}); }
+  if(!users.length) h='<div style="color:var(--mut);font-size:13px">Aún no hay usuarios registrados.</div>';
+  box.innerHTML=h;
+  Array.prototype.forEach.call(box.querySelectorAll('[data-appr]'),function(b){b.onclick=function(){approveDispatch(b.getAttribute('data-appr'));};});
+  Array.prototype.forEach.call(box.querySelectorAll('[data-del]'),function(b){b.onclick=function(){ if(confirm('¿Eliminar a este usuario?')) deleteDispatch(b.getAttribute('data-del')); };});
 }
 function userRowHTML(u,pending){
+  var id=CLOUD?(u.id||u.username):u.username;
   var ini=((u.nombre||'?')[0]||'?').toUpperCase();
+  var fch=u.createdAt?new Date(u.createdAt).toLocaleDateString('es-CL'):'';
   return '<div class="userrow"><div class="uav">'+esc(ini)+'</div>'+
-    '<div class="uinfo"><div class="un">'+esc(u.nombre+' '+u.apellido)+' '+(pending?'<span class="tagp">Pendiente</span>':'<span class="taga">Aprobado</span>')+'</div>'+
-    '<div class="us">'+esc(u.username)+' · '+new Date(u.createdAt).toLocaleDateString('es-CL')+'</div></div>'+
-    '<div class="uacts">'+(pending?'<button class="minibtn bc" data-appr="'+esc(u.username)+'">✓ Aprobar</button>':'')+
-    '<button class="minibtn" data-del="'+esc(u.username)+'">✕</button></div></div>';
+    '<div class="uinfo"><div class="un">'+esc((u.nombre||'')+' '+(u.apellido||''))+' '+(pending?'<span class="tagp">Pendiente</span>':'<span class="taga">Aprobado</span>')+(u.rol==='admin'?' <span class="taga">Admin</span>':'')+'</div>'+
+    '<div class="us">'+esc(u.username||'')+(fch?' · '+fch:'')+'</div></div>'+
+    '<div class="uacts">'+(pending?'<button class="minibtn bc" data-appr="'+esc(id)+'">✓ Aprobar</button>':'')+
+    '<button class="minibtn" data-del="'+esc(id)+'">✕</button></div></div>';
 }
-function setUserState(username,estado){ var users=getUsers(); var u=users.find(function(x){return x.username===username;}); if(u){u.estado=estado;saveUsers(users);renderConfig();toast('Usuario '+(estado==='aprobado'?'aprobado':'actualizado'));} }
-function deleteUser(username){ var users=getUsers().filter(function(x){return x.username!==username;}); saveUsers(users);
-  if(localStorage.getItem(K.SESSION)===username) logout(); renderConfig(); toast('Usuario eliminado'); }
+async function approveDispatch(id){
+  try{ if(CLOUD) await Cloud.approve(id); else { var us=getUsers(); var u=us.find(function(x){return x.username===id;}); if(u){u.estado='aprobado';saveUsers(us);} }
+    toast('Usuario aprobado'); populateUsers();
+  }catch(e){ toast('No se pudo aprobar (¿permisos de administrador?)'); }
+}
+async function deleteDispatch(id){
+  try{ if(CLOUD) await Cloud.remove(id); else { var us=getUsers().filter(function(x){return x.username!==id;}); saveUsers(us); if(localStorage.getItem(K.SESSION)===id) logout(); }
+    toast('Usuario eliminado'); populateUsers();
+  }catch(e){ toast('No se pudo eliminar (¿permisos de administrador?)'); }
+}
 
 /* ===== Escáner ===== */
 var scanState={stream:null,raf:0,detector:null,zxing:null,running:false};
@@ -697,15 +838,19 @@ function init(){
   $('tabLogin').onclick=function(){switchTab('login');};
   $('tabReg').onclick=function(){switchTab('reg');};
   $('loginForm').addEventListener('submit',async function(e){ e.preventDefault();
-    var r=await loginUser($('lgUser').value,$('lgPass').value);
-    if(r.ok){ localStorage.setItem(K.SESSION,r.user.username); showApp(); } else authMsg('err',esc(r.msg)); });
+    authMsg('info','<span class="spin"></span> Ingresando…');
+    var r=await doLogin($('lgUser').value,$('lgPass').value);
+    if(r.ok){ if(!CLOUD){} /* en la nube, el listener muestra la app */ }
+    else authMsg('err',esc(r.msg)); });
   $('regForm').addEventListener('submit',async function(e){ e.preventDefault();
     if($('rgPass').value!==$('rgPass2').value){ authMsg('err','Las claves no coinciden.'); return; }
-    var r=await registerUser($('rgNombre').value,$('rgApellido').value,$('rgPass').value);
+    authMsg('info','<span class="spin"></span> Enviando registro…');
+    var r=await doRegister($('rgNombre').value,$('rgApellido').value,$('rgPass').value);
     if(r.ok){ switchTab('login'); $('lgUser').value=r.username;
       authMsg('ok','✓ Registro enviado. Tu usuario es <b>'+esc(r.username)+'</b>. Un administrador debe aprobarlo en Configuración antes de que puedas ingresar.'); }
     else authMsg('err',esc(r.msg)); });
   $('gateAdmin').onclick=openConfig;
+  if(CLOUD) $('gateAdmin').classList.add('hide'); // en la nube, el admin entra con su usuario
 
   // App header
   $('btnDark').onclick=toggleDark;
@@ -736,9 +881,15 @@ function init(){
   setInterval(updateBanner,60000);
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
 
-  // ¿Sesión activa y aprobada?
-  var cu=currentUser();
-  if(cu&&cu.estado==='aprobado') showApp(); else { if(localStorage.getItem(K.SESSION)) localStorage.removeItem(K.SESSION); showGate(); }
+  if(CLOUD){
+    // Muestra el catálogo cacheado mientras conecta (arranque rápido / offline)
+    showGate();
+    Cloud.init().catch(function(e){ console.error(e); authMsg('err','No se pudo conectar con el servidor. Revisa la configuración de Firebase.'); });
+  } else {
+    // Modo local: sesión guardada en este equipo
+    var cu=currentUser();
+    if(cu&&cu.estado==='aprobado'){ CURRENT=cu; showApp(); } else { if(localStorage.getItem(K.SESSION)) localStorage.removeItem(K.SESSION); showGate(); }
+  }
 }
 document.addEventListener('DOMContentLoaded',init);
 </script>

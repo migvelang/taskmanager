@@ -1,0 +1,31 @@
+rules_version = '2';
+// Reglas de seguridad de Firestore para "Stock Costanera".
+// Cópialas en: Firebase Console -> Firestore Database -> Reglas -> Publicar.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function firmado() { return request.auth != null; }
+    function yo() { return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data; }
+    function existoYo() { return firmado() && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)); }
+    function esAdmin() { return existoYo() && yo().rol == 'admin'; }
+    function estoyAprobado() { return existoYo() && yo().estado == 'aprobado'; }
+
+    // Usuarios
+    match /usuarios/{uid} {
+      // Cada persona crea SU propia ficha al registrarse: siempre pendiente y rol usuario.
+      allow create: if firmado() && request.auth.uid == uid
+                    && request.resource.data.estado == 'pendiente'
+                    && request.resource.data.rol == 'user';
+      // Puede leer su propia ficha; el administrador puede leer todas.
+      allow read:   if firmado() && (request.auth.uid == uid || esAdmin());
+      // Solo el administrador aprueba, cambia o elimina usuarios.
+      allow update, delete: if esAdmin();
+    }
+
+    // Catálogo de stock
+    match /catalogo/{doc} {
+      allow read:  if estoyAprobado();   // cualquier usuario aprobado puede consultar
+      allow write: if esAdmin();         // solo el administrador sube/borra stock
+    }
+  }
+}
