@@ -1,9 +1,10 @@
 /* Service worker: cachea el "app shell" para uso offline en la bodega. */
-var CACHE='stock-costanera-v1';
+var CACHE='stock-costanera-v2';
 var SHELL=[
   './',
   './index.html',
   './manifest.webmanifest',
+  './vendor/JsBarcode.all.min.js',
   './icons/icon-32.png',
   './icons/icon-180.png',
   './icons/icon-192.png',

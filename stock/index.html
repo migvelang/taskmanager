@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <meta name="theme-color" content="#aad503">
-<title>Stock · Costanera</title>
+<title>Stock Costanera</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
@@ -24,42 +24,39 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0}
-body{
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  background:var(--bg); color:var(--ink); font-size:15px; line-height:1.4;
-  padding-bottom:env(safe-area-inset-bottom);
-}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:var(--bg); color:var(--ink); font-size:15px; line-height:1.4; padding-bottom:env(safe-area-inset-bottom)}
 button{font-family:inherit; cursor:pointer; border:0; background:none; color:inherit}
 input,select{font-family:inherit; font-size:16px}
 img{max-width:100%}
 .hide{display:none!important}
+.wrap{max-width:720px; margin:0 auto; padding:0 14px}
 
 /* Header */
 header{position:sticky; top:0; z-index:30; background:var(--accent); color:var(--accent-ink);
-  padding:calc(env(safe-area-inset-top) + 10px) 14px 10px; box-shadow:var(--shadow)}
-.hrow{display:flex; align-items:center; gap:10px}
+  padding:calc(env(safe-area-inset-top) + 12px) 14px 12px; box-shadow:var(--shadow)}
+.hrow{display:flex; align-items:center; gap:10px; max-width:720px; margin:0 auto}
 .logo{width:34px; height:34px; border-radius:9px; display:block; flex:0 0 auto}
-.htitle{font-weight:800; font-size:18px; letter-spacing:.2px; line-height:1.05}
-.hsub{font-size:11px; opacity:.8; font-weight:600}
+.htitle{font-weight:900; font-size:19px; letter-spacing:.4px}
 .hspace{flex:1}
-.iconbtn{width:38px; height:38px; border-radius:11px; display:grid; place-items:center;
-  background:rgba(0,0,0,.10); color:var(--accent-ink); font-size:18px}
+.iconbtn{width:40px; height:40px; border-radius:12px; display:grid; place-items:center;
+  background:rgba(0,0,0,.10); color:var(--accent-ink); font-size:19px}
 .iconbtn:active{transform:scale(.94)}
 
-/* Update banner */
-.updbar{margin:10px 14px 0; padding:10px 12px; border-radius:12px; font-size:12.5px; font-weight:600;
-  display:flex; align-items:center; gap:8px}
-.updbar.fresh{background:color-mix(in srgb,var(--ok) 14%,var(--card)); color:var(--ok)}
+/* Alert banner */
+.updbar{margin:10px 14px 0; padding:11px 12px; border-radius:12px; font-size:12.5px; font-weight:700;
+  display:flex; align-items:center; gap:8px; max-width:692px}
 .updbar.stale{background:color-mix(in srgb,var(--warn) 16%,var(--card)); color:var(--warn)}
 .updbar.none{background:color-mix(in srgb,var(--danger) 12%,var(--card)); color:var(--danger)}
-.updbar b{font-weight:800}
+.updbar b{font-weight:900}
 
-/* Toolbar */
-.wrap{max-width:720px; margin:0 auto; padding:0 14px}
+/* Tools */
 .tools{display:flex; gap:8px; margin-top:12px}
 .btn{flex:1; padding:12px 10px; border-radius:13px; font-weight:700; font-size:14px;
   display:flex; align-items:center; justify-content:center; gap:8px; background:var(--card); box-shadow:var(--shadow); color:var(--ink)}
 .btn.primary{background:var(--accent); color:var(--accent-ink)}
+.btn.ghost{background:transparent; box-shadow:none; border:1px solid var(--line)}
+.btn.danger{color:var(--danger)}
 .btn:active{transform:scale(.97)}
 .btn .em{font-size:17px}
 
@@ -70,69 +67,81 @@ header{position:sticky; top:0; z-index:30; background:var(--accent); color:var(-
 .search .clr{position:absolute; right:8px; top:50%; transform:translateY(-50%); width:30px;height:30px;border-radius:50%;
   display:grid;place-items:center;color:var(--mut);font-size:18px}
 
-/* Filters */
-.filtbar{display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap}
-.chip{padding:8px 12px; border-radius:999px; font-size:12.5px; font-weight:700; background:var(--card);
-  border:1px solid var(--line); color:var(--mut); display:flex; align-items:center; gap:6px}
-.chip.on{background:var(--accent); color:var(--accent-ink); border-color:transparent}
-.chip .x{opacity:.7}
+/* Filters (always visible) */
 .filters{margin-top:10px; background:var(--card); border-radius:14px; box-shadow:var(--shadow); padding:10px; display:grid; grid-template-columns:1fr 1fr; gap:8px}
-.filters label{font-size:10.5px; font-weight:800; color:var(--mut); text-transform:uppercase; letter-spacing:.5px; display:block; margin:0 0 3px 2px}
+.filters label{font-size:10px; font-weight:800; color:var(--mut); text-transform:uppercase; letter-spacing:.5px; display:block; margin:0 0 3px 2px}
 .filters select{width:100%; padding:10px; border-radius:11px; border:1px solid var(--line); background:var(--bg); color:var(--ink)}
 .filters .full{grid-column:1 / -1}
+.fclear{grid-column:1 / -1; text-align:right}
+.fclear button{font-size:12.5px; font-weight:800; color:var(--accent-d)}
 
-.count{margin:12px 2px 4px; font-size:12.5px; color:var(--mut); font-weight:600; display:flex; justify-content:space-between; align-items:center}
+.count{margin:12px 2px 4px; font-size:12.5px; color:var(--mut); font-weight:700; display:flex; justify-content:space-between; align-items:center}
 
-/* Product list */
-.list{display:flex; flex-direction:column; gap:9px; padding-bottom:24px}
-.card{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:11px; display:flex; gap:11px; align-items:center; text-align:left; width:100%}
+/* List */
+.list{display:flex; flex-direction:column; gap:9px; padding-bottom:28px}
+.card{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:12px; display:flex; gap:10px; align-items:center; width:100%; text-align:left}
 .card:active{transform:scale(.99)}
-.badge{width:46px; height:46px; border-radius:12px; flex:0 0 auto; display:grid; place-items:center; font-weight:800; font-size:13px; letter-spacing:.3px; overflow:hidden}
 .cmid{flex:1; min-width:0}
-.cname{font-weight:700; font-size:14px; line-height:1.25; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
-.cmeta{font-size:11.5px; color:var(--mut); margin-top:3px; display:flex; gap:8px; flex-wrap:wrap}
-.cmeta .brand{font-weight:700; color:var(--ink)}
-.cright{flex:0 0 auto; text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:3px}
-.price{font-weight:800; font-size:13.5px; white-space:nowrap}
-.stock{font-size:11px; font-weight:800; padding:3px 8px; border-radius:999px; white-space:nowrap}
+.cname{font-weight:700; font-size:14.5px; line-height:1.28; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.cmeta{font-size:11.5px; color:var(--mut); margin-top:4px; display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+.cmeta .brand{font-weight:800; color:var(--ink)}
+.cright{flex:0 0 auto; text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:6px}
+.stock{font-size:11px; font-weight:800; padding:4px 9px; border-radius:999px; white-space:nowrap}
 .stock.hi{background:color-mix(in srgb,var(--ok) 16%,var(--card)); color:var(--ok)}
 .stock.lo{background:color-mix(in srgb,var(--warn) 18%,var(--card)); color:var(--warn)}
 .stock.no{background:color-mix(in srgb,var(--danger) 14%,var(--card)); color:var(--danger)}
-.eanpill{font-size:10px; color:var(--mut); font-weight:700}
+.imgbtn{font-size:11px; font-weight:800; color:var(--accent-d); background:color-mix(in srgb,var(--accent) 16%,var(--card)); padding:6px 10px; border-radius:9px; display:inline-flex; gap:5px; align-items:center; white-space:nowrap}
+.eanpill{font-size:10px; color:var(--mut); font-weight:800; background:var(--bg); padding:2px 6px; border-radius:6px}
 
-.empty{text-align:center; color:var(--mut); padding:48px 20px}
+.empty{text-align:center; color:var(--mut); padding:44px 20px}
 .empty .big{font-size:44px; margin-bottom:10px}
 .empty h3{margin:0 0 6px; color:var(--ink)}
 
-/* Modal / sheet */
+/* Sheets */
 .sheet-bg{position:fixed; inset:0; background:rgba(8,10,14,.55); z-index:50; opacity:0; pointer-events:none; transition:opacity .2s}
 .sheet-bg.show{opacity:1; pointer-events:auto}
 .sheet{position:fixed; left:0; right:0; bottom:0; z-index:51; background:var(--card); border-radius:22px 22px 0 0;
   max-height:92vh; overflow:auto; transform:translateY(100%); transition:transform .26s cubic-bezier(.4,0,.2,1);
   padding-bottom:calc(env(safe-area-inset-bottom) + 16px)}
 .sheet.show{transform:translateY(0)}
+/* La configuración se abre también desde el gate (z-index:90), así que va por encima */
+#setBg{z-index:96}
+#setSheet{z-index:97}
 .grip{width:40px; height:5px; border-radius:3px; background:var(--line); margin:9px auto 4px}
-.sheet .pad{padding:6px 16px 0}
-.dhead{display:flex; gap:12px; align-items:center}
-.dphoto{width:96px; height:96px; border-radius:14px; background:var(--bg); object-fit:contain; flex:0 0 auto; border:1px solid var(--line)}
-.dtitle{font-weight:800; font-size:16px; line-height:1.25}
+.sheetx{position:absolute; top:10px; right:12px; width:34px; height:34px; border-radius:50%; background:var(--bg); color:var(--mut); font-size:20px; display:grid; place-items:center; z-index:2}
+.sheet .pad{padding:6px 16px 0; max-width:720px; margin:0 auto}
+.dtitle{font-weight:900; font-size:17px; line-height:1.25}
+
 .dbrandrow{display:flex; align-items:center; gap:8px; margin-top:6px}
-.dprice{font-size:20px; font-weight:900; margin-top:10px}
-.dprice small{font-size:12px; color:var(--mut); font-weight:700}
-.stockbig{margin-top:10px; padding:11px 12px; border-radius:13px; font-weight:800; font-size:14px; display:flex; align-items:center; gap:9px}
+.stockbig{margin-top:12px; padding:12px; border-radius:13px; font-weight:800; font-size:14px; display:flex; align-items:center; gap:9px}
 .warnbox{margin-top:10px; padding:11px 12px; border-radius:13px; background:color-mix(in srgb,var(--warn) 15%,var(--card)); color:var(--warn); font-weight:700; font-size:13px; display:flex; gap:9px; align-items:flex-start}
 .sec{margin-top:16px}
-.sec h4{font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--mut); margin:0 0 7px}
-.eanlist{display:flex; flex-direction:column; gap:7px}
-.eanrow{display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--bg); border-radius:11px; padding:10px 12px}
-.eanrow .code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:700; font-size:14px}
+.sec h4{font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--mut); margin:0 0 8px}
+.eanlist{display:flex; flex-direction:column; gap:8px}
+.eanrow{display:flex; align-items:center; justify-content:space-between; gap:8px; background:var(--bg); border-radius:12px; padding:10px 12px}
+.eanrow .code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:700; font-size:15px}
 .eanrow .lab{font-size:10px; color:var(--mut); font-weight:800; text-transform:uppercase}
-.copybtn{font-size:11px; font-weight:800; color:var(--accent-d); background:color-mix(in srgb,var(--accent) 18%,var(--card)); padding:6px 10px; border-radius:9px}
-.kv{display:grid; grid-template-columns:auto 1fr; gap:6px 14px; font-size:13px}
-.kv .k{color:var(--mut); font-weight:700}
-.kv .v{text-align:right; font-weight:600}
+.eanacts{display:flex; gap:6px; flex:0 0 auto}
+.minibtn{font-size:11px; font-weight:800; padding:7px 9px; border-radius:9px; background:var(--card); border:1px solid var(--line); display:inline-flex; gap:4px; align-items:center}
+.minibtn.bc{background:color-mix(in srgb,var(--accent) 16%,var(--card)); color:var(--accent-ink); border-color:transparent}
 .catpath{font-size:12.5px; color:var(--mut); line-height:1.6}
 .catpath b{color:var(--ink)}
+
+/* Image lightbox */
+.lightbox{position:fixed; inset:0; z-index:70; background:rgba(0,0,0,.9); display:none; flex-direction:column; align-items:center; justify-content:center; padding:20px}
+.lightbox.show{display:flex}
+.lightbox img{max-width:100%; max-height:76vh; border-radius:12px; background:#fff}
+.lightbox .lbclose{position:absolute; top:calc(env(safe-area-inset-top) + 12px); right:16px; width:42px; height:42px; border-radius:50%; background:rgba(255,255,255,.2); color:#fff; font-size:22px}
+.lightbox .lbcap{color:#fff; margin-top:14px; font-weight:700; font-size:14px; text-align:center}
+.lightbox .lbsku{color:#cbd5e1; font-size:12px; margin-top:4px}
+
+/* Barcode modal */
+.bcwrap{position:fixed; inset:0; z-index:72; background:rgba(0,0,0,.75); display:none; align-items:center; justify-content:center; padding:24px}
+.bcwrap.show{display:flex}
+.bccard{background:#fff; border-radius:18px; padding:22px 20px 18px; text-align:center; max-width:360px; width:100%}
+.bccard svg{width:100%; height:auto}
+.bccard .bcnum{font-family:ui-monospace,Menlo,monospace; font-weight:800; font-size:15px; margin-top:4px; color:#12151b}
+.bccard .bcx{margin-top:14px; background:#12151b; color:#fff; padding:10px 18px; border-radius:11px; font-weight:800}
 
 /* Scanner */
 #scan{position:fixed; inset:0; z-index:60; background:#000; display:none; flex-direction:column}
@@ -150,115 +159,147 @@ header{position:sticky; top:0; z-index:30; background:var(--accent); color:var(-
 .scanmanual input{padding:11px 12px;border-radius:11px;border:0;width:170px}
 .scanmanual button{padding:11px 14px;border-radius:11px;background:var(--accent);color:var(--accent-ink);font-weight:800}
 
-/* Settings sheet */
-.swatches{display:flex; flex-wrap:wrap; gap:12px; margin-top:8px}
-.sw{width:44px; height:44px; border-radius:50%; position:relative; box-shadow:var(--shadow)}
-.sw.on::after{content:"✓"; position:absolute; inset:0; display:grid; place-items:center; color:#fff; font-weight:900; text-shadow:0 1px 3px rgba(0,0,0,.5)}
+/* Auth gate */
+#gate{position:fixed; inset:0; z-index:90; background:var(--bg); overflow:auto; display:flex; flex-direction:column}
+.gatehero{background:var(--accent); color:var(--accent-ink); padding:calc(env(safe-area-inset-top) + 34px) 20px 30px; text-align:center}
+.gatehero img{width:76px; height:76px; border-radius:20px; box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.gatehero h1{margin:14px 0 2px; font-size:24px; font-weight:900; letter-spacing:.5px}
+.gatehero p{margin:0; font-weight:700; opacity:.85; font-size:13px}
+.gatecard{max-width:420px; margin:-16px auto 0; width:calc(100% - 32px); background:var(--card); border-radius:18px; box-shadow:var(--shadow); padding:18px 16px}
+.tabs{display:flex; background:var(--bg); border-radius:12px; padding:4px; margin-bottom:14px}
+.tabs button{flex:1; padding:10px; border-radius:9px; font-weight:800; font-size:14px; color:var(--mut)}
+.tabs button.on{background:var(--card); color:var(--ink); box-shadow:var(--shadow)}
+.field{margin-bottom:11px}
+.field label{display:block; font-size:11px; font-weight:800; color:var(--mut); text-transform:uppercase; letter-spacing:.4px; margin:0 0 5px 2px}
+.field input{width:100%; padding:12px; border-radius:12px; border:1px solid var(--line); background:var(--bg); color:var(--ink)}
+.msg{padding:10px 12px; border-radius:11px; font-size:12.5px; font-weight:700; margin-bottom:11px}
+.msg.err{background:color-mix(in srgb,var(--danger) 13%,var(--card)); color:var(--danger)}
+.msg.ok{background:color-mix(in srgb,var(--ok) 14%,var(--card)); color:var(--ok)}
+.msg.info{background:color-mix(in srgb,var(--accent) 16%,var(--card)); color:var(--accent-ink)}
+.gatefoot{text-align:center; padding:18px; margin-top:auto}
+.gatefoot button{color:var(--mut); font-weight:700; font-size:13px}
+
+/* Users admin */
+.userrow{display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--line)}
+.userrow:last-child{border:0}
+.uav{width:38px;height:38px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:900;flex:0 0 auto}
+.uinfo{flex:1; min-width:0}
+.uinfo .un{font-weight:800; font-size:13.5px}
+.uinfo .us{font-size:11.5px; color:var(--mut)}
+.tagp{font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;background:color-mix(in srgb,var(--warn) 18%,var(--card));color:var(--warn)}
+.taga{font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;background:color-mix(in srgb,var(--ok) 16%,var(--card));color:var(--ok)}
+.uacts{display:flex; gap:6px}
 .setrow{display:flex; align-items:center; justify-content:space-between; padding:13px 0; border-bottom:1px solid var(--line)}
 .setrow:last-child{border:0}
-.toggle{width:52px; height:30px; border-radius:999px; background:var(--line); position:relative; transition:background .2s}
-.toggle.on{background:var(--accent)}
-.toggle::after{content:""; position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; transition:left .2s; box-shadow:0 1px 3px rgba(0,0,0,.3)}
-.toggle.on::after{left:25px}
+.swatches{display:flex; flex-wrap:wrap; gap:12px; margin-top:8px}
+.sw{width:42px; height:42px; border-radius:50%; position:relative; box-shadow:var(--shadow)}
+.sw.on::after{content:"✓"; position:absolute; inset:0; display:grid; place-items:center; color:#fff; font-weight:900; text-shadow:0 1px 3px rgba(0,0,0,.5)}
 .filepick{display:none}
-.tinylink{color:var(--accent-d); font-weight:800; font-size:13px}
 
 .toast{position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 20px); transform:translateX(-50%) translateY(20px);
-  background:#12151b; color:#fff; padding:11px 18px; border-radius:999px; font-size:13px; font-weight:700; z-index:80; opacity:0; transition:.25s; pointer-events:none; max-width:90%}
+  background:#12151b; color:#fff; padding:11px 18px; border-radius:999px; font-size:13px; font-weight:700; z-index:120; opacity:0; transition:.25s; pointer-events:none; max-width:90%}
 .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
 .spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;display:inline-block}
 @keyframes sp{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
-<header>
-  <div class="hrow wrap" style="padding:0 0">
-    <img src="icons/icon-180.png" class="logo" alt="">
-    <div>
-      <div class="htitle">Stock Costanera</div>
-      <div class="hsub" id="hsub">Consulta de inventario</div>
+
+<!-- ================= AUTH GATE ================= -->
+<div id="gate">
+  <div class="gatehero">
+    <img src="icons/icon-180.png" alt="">
+    <h1>STOCK COSTANERA</h1>
+    <p>Consulta de inventario</p>
+  </div>
+  <div class="gatecard">
+    <div class="tabs">
+      <button id="tabLogin" class="on">Ingresar</button>
+      <button id="tabReg">Registrarse</button>
     </div>
-    <div class="hspace"></div>
-    <button class="iconbtn" id="btnScan2" title="Escanear">⌘</button>
-    <button class="iconbtn" id="btnSet" title="Ajustes">⚙️</button>
+    <div id="authMsg"></div>
+
+    <form id="loginForm">
+      <div class="field"><label>Nombre de usuario</label><input id="lgUser" autocomplete="username" autocapitalize="none" placeholder="nombre.apellido"></div>
+      <div class="field"><label>Contraseña</label><input id="lgPass" type="password" autocomplete="current-password" placeholder="Tu clave"></div>
+      <button class="btn primary" type="submit" style="width:100%">Ingresar</button>
+    </form>
+
+    <form id="regForm" class="hide">
+      <div class="field"><label>Nombre</label><input id="rgNombre" autocomplete="given-name" placeholder="Ej: Miguel"></div>
+      <div class="field"><label>Apellido</label><input id="rgApellido" autocomplete="family-name" placeholder="Ej: Aránguiz"></div>
+      <div class="field"><label>Clave</label><input id="rgPass" type="password" autocomplete="new-password" placeholder="Crea una clave"></div>
+      <div class="field"><label>Repetir clave</label><input id="rgPass2" type="password" autocomplete="new-password" placeholder="Repite la clave"></div>
+      <button class="btn primary" type="submit" style="width:100%">Enviar registro</button>
+      <p style="font-size:11.5px;color:var(--mut);margin:10px 2px 0;line-height:1.5">Tu cuenta quedará <b>pendiente</b> hasta que el administrador la apruebe en Configuración.</p>
+    </form>
   </div>
-</header>
-
-<div id="updbar" class="updbar none wrap" style="display:flex">Sin datos cargados</div>
-
-<main class="wrap">
-  <div class="tools">
-    <button class="btn primary" id="btnScan"><span class="em">📷</span> Escanear</button>
-    <button class="btn" id="btnUpload"><span class="em">⬆️</span> Subir archivo</button>
+  <div class="gatefoot">
+    <button id="gateAdmin">⚙️ Configuración de administrador</button>
   </div>
-  <input type="file" id="file" class="filepick" accept=".txt,.gz,text/plain,application/gzip">
+</div>
 
-  <div class="search">
-    <span class="mag">🔍</span>
-    <input id="q" inputmode="search" enterkeyhint="search" placeholder="Buscar por SKU, EAN o descripción">
-    <button class="clr hide" id="qclr">×</button>
-  </div>
+<!-- ================= APP ================= -->
+<div id="app" hidden>
+  <header>
+    <div class="hrow">
+      <img src="icons/icon-180.png" class="logo" alt="">
+      <div class="htitle">STOCK COSTANERA</div>
+      <div class="hspace"></div>
+      <button class="iconbtn" id="btnDark" title="Modo oscuro">🌙</button>
+      <button class="iconbtn" id="btnSet" title="Configuración">⚙️</button>
+    </div>
+  </header>
 
-  <div class="filtbar">
-    <button class="chip" id="tglFilters">⚙︎ Filtros</button>
-    <button class="chip hide" id="clrFilters">Limpiar <span class="x">×</span></button>
-    <span id="activeFilters" style="font-size:11.5px;color:var(--mut);font-weight:600"></span>
-  </div>
+  <div id="updbar" class="updbar none wrap">Sin datos cargados</div>
 
-  <div class="filters hide" id="filters">
-    <div><label>Línea</label><select id="fLinea"></select></div>
-    <div><label>Sublínea</label><select id="fSub"></select></div>
-    <div><label>Clase</label><select id="fClase"></select></div>
-    <div><label>Subclase</label><select id="fSubc"></select></div>
-    <div class="full"><label>Marca</label><select id="fMarca"></select></div>
-  </div>
+  <main class="wrap">
+    <div class="tools">
+      <button class="btn primary" id="btnScan"><span class="em">📷</span> Escanear código</button>
+    </div>
 
-  <div class="count"><span id="count"></span><button class="tinylink hide" id="onlyLow">Solo stock bajo</button></div>
-  <div class="list" id="list"></div>
-</main>
+    <div class="search">
+      <span class="mag">🔍</span>
+      <input id="q" inputmode="search" enterkeyhint="search" placeholder="Buscar por SKU, EAN o descripción">
+      <button class="clr hide" id="qclr">×</button>
+    </div>
+
+    <div class="filters" id="filters">
+      <div><label>Línea</label><select id="fLinea"></select></div>
+      <div><label>Sublínea</label><select id="fSub"></select></div>
+      <div><label>Clase</label><select id="fClase"></select></div>
+      <div><label>Subclase</label><select id="fSubc"></select></div>
+      <div class="full"><label>Marca</label><select id="fMarca"></select></div>
+      <div class="fclear"><button id="clrFilters" class="hide">Limpiar filtros ×</button></div>
+    </div>
+
+    <div class="count"><span id="count"></span><button class="imgbtn hide" id="onlyLow">Solo stock bajo</button></div>
+    <div class="list" id="list"></div>
+  </main>
+</div>
 
 <!-- Detail sheet -->
 <div class="sheet-bg" id="sheetBg"></div>
-<div class="sheet" id="sheet">
-  <div class="grip"></div>
-  <div class="pad" id="detail"></div>
+<div class="sheet" id="sheet"><div class="grip"></div><button class="sheetx" data-close="sheet">×</button><div class="pad" id="detail"></div></div>
+
+<!-- Config sheet -->
+<div class="sheet-bg" id="setBg"></div>
+<div class="sheet" id="setSheet"><div class="grip"></div><button class="sheetx" data-close="setSheet">×</button><div class="pad" id="setPad"></div></div>
+
+<!-- Image lightbox -->
+<div class="lightbox" id="lightbox">
+  <button class="lbclose" id="lbClose">×</button>
+  <img id="lbImg" alt="">
+  <div class="lbcap" id="lbCap"></div>
+  <div class="lbsku" id="lbSku"></div>
 </div>
 
-<!-- Settings sheet -->
-<div class="sheet-bg" id="setBg"></div>
-<div class="sheet" id="setSheet">
-  <div class="grip"></div>
-  <div class="pad">
-    <div class="dtitle">Ajustes</div>
-    <div class="sec">
-      <h4>Color de la app</h4>
-      <div class="swatches" id="swatches"></div>
-    </div>
-    <div class="sec">
-      <div class="setrow">
-        <div><div style="font-weight:700">Modo oscuro</div><div style="font-size:12px;color:var(--mut)">Ideal para la bodega</div></div>
-        <div class="toggle" id="tglDark"></div>
-      </div>
-      <div class="setrow">
-        <div><div style="font-weight:700">Umbral de stock bajo</div><div style="font-size:12px;color:var(--mut)">Avisar cuando queden menos de…</div></div>
-        <select id="lowThr" style="padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)">
-          <option value="3">3 unidades</option><option value="2">2 unidades</option>
-          <option value="5">5 unidades</option><option value="10">10 unidades</option>
-        </select>
-      </div>
-    </div>
-    <div class="sec">
-      <h4>Datos</h4>
-      <div style="font-size:13px;color:var(--mut)" id="setInfo"></div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="btn" id="setUpload" style="flex:1">⬆️ Subir archivo</button>
-        <button class="btn" id="setClear" style="flex:1;color:var(--danger)">🗑️ Borrar datos</button>
-      </div>
-    </div>
-    <div class="sec" style="font-size:11.5px;color:var(--mut);line-height:1.6">
-      Sube el archivo diario (<b>.gz</b> o <b>.txt</b>) de inventario disponible. Los datos se guardan solo en este dispositivo.
-      Las imágenes provienen de <code>media.falabella.com</code>.
-    </div>
+<!-- Barcode modal -->
+<div class="bcwrap" id="bcwrap">
+  <div class="bccard">
+    <svg id="bcsvg"></svg>
+    <div class="bcnum" id="bcnum"></div>
+    <button class="bcx" id="bcClose">Cerrar</button>
   </div>
 </div>
 
@@ -266,16 +307,10 @@ header{position:sticky; top:0; z-index:30; background:var(--accent); color:var(-
 <div id="scan">
   <video id="video" playsinline muted></video>
   <div class="scanmask"><div class="scanbox"><div class="scanline"></div></div></div>
-  <div class="scantop">
-    <div class="t">Escanear código</div>
-    <button class="scanclose" id="scanClose">×</button>
-  </div>
+  <div class="scantop"><div class="t">Escanear código</div><button class="scanclose" id="scanClose">×</button></div>
   <div class="scanhint">
     <div id="scanStatus">Apunta al código de barras del producto</div>
-    <div class="scanmanual">
-      <input id="manualEan" inputmode="numeric" placeholder="o escribe el EAN">
-      <button id="manualGo">Ir</button>
-    </div>
+    <div class="scanmanual"><input id="manualEan" inputmode="numeric" placeholder="o escribe el EAN"><button id="manualGo">Ir</button></div>
   </div>
 </div>
 
@@ -283,483 +318,429 @@ header{position:sticky; top:0; z-index:30; background:var(--accent); color:var(-
 
 <script>
 "use strict";
-/* ============================ Estado y almacenamiento ============================ */
-var STORE_DATA='stk-data', STORE_META='stk-meta', STORE_ACCENT='stk-accent', STORE_THEME='stk-theme', STORE_LOW='stk-low';
-var PRODUCTS=[];            // productos agrupados por SKU
-var META={fecha:null, archivo:null, filas:0};
-var FILT={q:'', linea:'', sub:'', clase:'', subc:'', marca:'', low:false};
+/* ===== Claves de almacenamiento ===== */
+var K={DATA:'stk-data',META:'stk-meta',ACCENT:'stk-accent',THEME:'stk-theme',LOW:'stk-low',USERS:'stk-users',SESSION:'stk-session'};
+var ADMIN_KEY='connect2025';
+var PRODUCTS=[], META={fecha:null,archivo:null,filas:0};
+var FILT={q:'',linea:'',sub:'',clase:'',subc:'',marca:'',low:false};
+var SETUNLOCKED=false; // configuración desbloqueada en esta apertura
 
 var PALETTE=[
-  {name:'Falabella', c:'#aad503', d:'#7fa002', ink:'#20320a'},
-  {name:'Verde',     c:'#16a34a', d:'#128040', ink:'#ffffff'},
-  {name:'Esmeralda', c:'#059669', d:'#047857', ink:'#ffffff'},
-  {name:'Turquesa',  c:'#0891b2', d:'#0e7490', ink:'#ffffff'},
-  {name:'Azul',      c:'#2563eb', d:'#1d4ed8', ink:'#ffffff'},
-  {name:'Índigo',    c:'#4f46e5', d:'#4338ca', ink:'#ffffff'},
-  {name:'Morado',    c:'#7c3aed', d:'#6d28d9', ink:'#ffffff'},
-  {name:'Rosado',    c:'#db2777', d:'#be185d', ink:'#ffffff'},
-  {name:'Rojo',      c:'#dc2626', d:'#b91c1c', ink:'#ffffff'},
-  {name:'Naranjo',   c:'#ea580c', d:'#c2410c', ink:'#ffffff'},
-  {name:'Ámbar',     c:'#f59e0b', d:'#b45309', ink:'#20320a'},
-  {name:'Grafito',   c:'#334155', d:'#1e293b', ink:'#ffffff'}
+  {name:'Falabella',c:'#aad503',d:'#7fa002',ink:'#20320a'},
+  {name:'Verde',c:'#16a34a',d:'#128040',ink:'#ffffff'},
+  {name:'Esmeralda',c:'#059669',d:'#047857',ink:'#ffffff'},
+  {name:'Turquesa',c:'#0891b2',d:'#0e7490',ink:'#ffffff'},
+  {name:'Azul',c:'#2563eb',d:'#1d4ed8',ink:'#ffffff'},
+  {name:'Índigo',c:'#4f46e5',d:'#4338ca',ink:'#ffffff'},
+  {name:'Morado',c:'#7c3aed',d:'#6d28d9',ink:'#ffffff'},
+  {name:'Rosado',c:'#db2777',d:'#be185d',ink:'#ffffff'},
+  {name:'Rojo',c:'#dc2626',d:'#b91c1c',ink:'#ffffff'},
+  {name:'Naranjo',c:'#ea580c',d:'#c2410c',ink:'#ffffff'},
+  {name:'Ámbar',c:'#f59e0b',d:'#b45309',ink:'#20320a'},
+  {name:'Grafito',c:'#334155',d:'#1e293b',ink:'#ffffff'}
 ];
+var BRAND_NAMES={PLAYSTATIO:'PlayStation',SOUND_CORE:'Soundcore',KLIP_XTRE:'Klip Xtreme','KLIP XTREM':'Klip Xtreme',
+  'BLACK&DECK':'Black & Decker','B & DECKER':'Black & Decker','HARMAN KAR':'Harman Kardon','INSTANT PO':'Instant Pot',
+  'TURTLE BEA':'Turtle Beach',NESCAFE_DO:'Nescafé Dolce Gusto',KITCHE_NIT:'KitchenAid',MONSTERGAM:'Monster Game',
+  WESTERN:'Western Digital',WD:'Western Digital','MASTER-G':'Master-G',BEZEL_PRO:'Bezel Pro',BITTY_BOOM:'Bitty Boom',
+  SCALDASONN:'Scaldasonno',BR_0035470:'Genérica'};
 
-/* ============================ Marcas: colores y logo ============================ */
-var BRAND_COLORS={
-  APPLE:'#111111', SAMSUNG:'#1428a0', SONY:'#0b0b0b', XIAOMI:'#ff6900', HUAWEI:'#cf0a2c',
-  JBL:'#ff3300', HP:'#0096d6', PHILIPS:'#0b5ed7', LG:'#a50034', BOSE:'#0b0b0b',
-  LOGITECH:'#00b8fc', LENOVO:'#e2231a', CANON:'#bc0024', EPSON:'#003da5', NINTENDO:'#e60012',
-  PLAYSTATIO:'#003791', MICROSOFT:'#0a7d34', MOTOROLA:'#0a1e2c', GARMIN:'#007cc3', GOPRO:'#0b0b0b',
-  DJI:'#0b0b0b', BROTHER:'#0033a0', ASUS:'#1f2a44', ACER:'#83b81a', RAZER:'#00a550',
-  HYPERX:'#e6002b', KINGSTON:'#c8102e', NESPRESSO:'#3a2b23', DELONGHI:'#005ca9', OSTER:'#00539b',
-  BRAUN:'#111111', MARSHALL:'#111111', SANDISK:'#e4002b', WD:'#041e42', WESTERN:'#041e42',
-  TOSHIBA:'#e60012', HISENSE:'#00843d', HONOR:'#0b8bff', VIVO:'#4a90d9', ZTE:'#0060af',
-  REMINGTON:'#0b0b0b', NINJA:'#111111', ANKER:'#00a7e1', SOUND_CORE:'#00a7e1', EUFY:'#0e9f9f',
-  ORAIMO:'#ff7a00', ROWENTA:'#e2001a', MOULINEX:'#c8102e', TEFAL:'#c8102e', KRUPS:'#111111',
-  CASIO:'#001e62', AMAZON:'#ff9900', ROKU:'#662d91', SENNHEISER:'#0b0b0b', SHARK:'#0b1f3a',
-  MAXELL:'#e4002b', NESCAFE_DO:'#c8102e', TOYOTOMI:'#c8102e', GARMIN_:'#007cc3', PHILCO:'#e4002b',
-  MARLEY:'#5a3b1e', THOMAS:'#0b6bb2', SIEGEN:'#e08a00', BLACK:'#f5a623', 'BLACK&DECK':'#f5a623',
-  'B & DECKER':'#f5a623', 'HARMAN KAR':'#111111', BOSE_:'#0b0b0b', KODAK:'#ffb500', FUJIFILM:'#e4002b',
-  FUJI:'#e4002b', GENIUS:'#e4002b', TRUST:'#e4002b', REDRAGON:'#c0141c', KLIP_XTRE:'#0f9d58',
-  'KLIP XTREM':'#0f9d58', OURA:'#111111', SONOS:'#111111', MARSHALL_:'#111111', STARLINK:'#0b0b0b',
-  GAMA:'#e4008c', THULE:'#003a5d', TCL:'#000000'
-};
-var BRAND_NAMES={ // nombres truncados -> nombre legible
-  PLAYSTATIO:'PlayStation', SOUND_CORE:'Soundcore', KLIP_XTRE:'Klip Xtreme', 'KLIP XTREM':'Klip Xtreme',
-  'BLACK&DECK':'Black & Decker', 'B & DECKER':'Black & Decker', 'HARMAN KAR':'Harman Kardon',
-  'INSTANT PO':'Instant Pot', 'INS BEAUTY':'Ins Beauty', 'TURTLE BEA':'Turtle Beach',
-  NESCAFE_DO:'Nescafé Dolce Gusto', KITCHE_NIT:'KitchenAid', MONSTERGAM:'Monster Game',
-  WESTERN:'Western Digital', WD:'Western Digital', 'MASTER-G':'Master-G', BEZEL_PRO:'Bezel Pro',
-  BITTY_BOOM:'Bitty Boom', SCALDASONN:'Scaldasonno', BR_0035470:'Genérica'
-};
-function normBrand(b){ return (b||'').trim().toUpperCase(); }
-function brandDisplay(b){ b=normBrand(b); if(BRAND_NAMES[b]) return BRAND_NAMES[b];
-  var s=b.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,function(m){return m.toUpperCase();}); return s; }
-function hashColor(s){ var h=0; for(var i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))>>>0;} var hue=h%360; return 'hsl('+hue+',58%,42%)'; }
-function brandColor(b){ b=normBrand(b); return BRAND_COLORS[b]||hashColor(b); }
-function readable(hexOrHsl){ // decide texto blanco/negro
-  var c=hexOrHsl;
-  if(c[0]==='#'){ var r=parseInt(c.slice(1,3),16),g=parseInt(c.slice(3,5),16),b=parseInt(c.slice(5,7),16);
-    return (0.299*r+0.587*g+0.114*b)>150?'#111':'#fff'; }
-  // hsl con L=42% -> blanco
-  return '#fff';
-}
-function brandBadge(b){
-  var col=brandColor(b), fg=readable(col), disp=brandDisplay(b);
-  var letters=disp.replace(/[^A-Za-z0-9]/g,'').slice(0,2).toUpperCase()||'?';
-  return '<span class="badge" style="background:'+col+';color:'+fg+'">'+letters+'</span>';
+/* ===== Utilidades ===== */
+function $(id){return document.getElementById(id);}
+function esc(s){return (s||'').replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function deacc(s){return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'');}
+function up(s){return deacc(s).toUpperCase();}
+function toast(m){var t=$('toast');t.innerHTML=m;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(function(){t.classList.remove('show');},2200);}
+function normBrand(b){return (b||'').trim().toUpperCase();}
+function brandDisplay(b){b=normBrand(b);if(BRAND_NAMES[b])return BRAND_NAMES[b];return b.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,function(m){return m.toUpperCase();});}
+function loadScript(src){return new Promise(function(res,rej){if(document.querySelector('script[src="'+src+'"]')){res();return;}var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=function(){rej(new Error('No se pudo cargar '+src));};document.head.appendChild(s);});}
+
+/* ===== Hash de clave ===== */
+async function hashPass(s){
+  try{ if(window.crypto&&crypto.subtle){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('stkc·'+s));
+    return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0');}).join('');} }catch(e){}
+  var h=0; for(var i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0;} return 'f'+(h>>>0).toString(16);
 }
 
-/* ============================ Utilidades ============================ */
-function money(n){ try{return new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0}).format(n);}catch(e){return '$'+Math.round(n);} }
-function deacc(s){ return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,''); }
-function up(s){ return deacc(s).toUpperCase(); }
-function esc(s){ return (s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
-function toast(msg){ var t=document.getElementById('toast'); t.innerHTML=msg; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(function(){t.classList.remove('show');},2200); }
-function $(id){ return document.getElementById(id); }
-
-/* ============================ Carga y parseo de archivo ============================ */
-function parseNum(s){
-  if(!s) return 0; s=String(s).trim(); if(!s) return 0;
-  var neg=s.indexOf('-')>=0; s=s.replace(/[+\-\s]/g,'').replace(/\./g,'').replace(',', '.');
-  var n=parseFloat(s); if(isNaN(n)) return 0; return neg?-n:n;
+/* ===== Usuarios ===== */
+function getUsers(){ try{return JSON.parse(localStorage.getItem(K.USERS))||[];}catch(e){return [];} }
+function saveUsers(u){ try{localStorage.setItem(K.USERS,JSON.stringify(u));}catch(e){} }
+function slugUser(nombre,apellido){
+  var base=(deacc(nombre).trim().split(/\s+/)[0]+'.'+deacc(apellido).trim().split(/\s+/)[0]).toLowerCase().replace(/[^a-z0-9.]/g,'');
+  base=base.replace(/^\.+|\.+$/g,'')||'usuario';
+  var users=getUsers(), u=base, n=1; while(users.some(function(x){return x.username===u;})){ n++; u=base+n; } return u;
 }
+async function registerUser(nombre,apellido,clave){
+  nombre=(nombre||'').trim(); apellido=(apellido||'').trim();
+  if(nombre.length<2||apellido.length<2) return {ok:false,msg:'Ingresa tu nombre y apellido.'};
+  if((clave||'').length<4) return {ok:false,msg:'La clave debe tener al menos 4 caracteres.'};
+  var users=getUsers();
+  var username=slugUser(nombre,apellido);
+  var hash=await hashPass(clave);
+  users.push({username:username,nombre:nombre,apellido:apellido,hash:hash,estado:'pendiente',createdAt:new Date().toISOString()});
+  saveUsers(users);
+  return {ok:true,username:username};
+}
+async function loginUser(username,clave){
+  username=(username||'').trim().toLowerCase();
+  var users=getUsers(); var u=users.find(function(x){return x.username===username;});
+  if(!u) return {ok:false,msg:'Usuario no encontrado. ¿Ya te registraste?'};
+  var hash=await hashPass(clave);
+  if(u.hash!==hash) return {ok:false,msg:'Clave incorrecta.'};
+  if(u.estado!=='aprobado') return {ok:false,msg:'Tu cuenta está pendiente de aprobación por el administrador.'};
+  return {ok:true,user:u};
+}
+function currentUser(){ var s=localStorage.getItem(K.SESSION); if(!s) return null;
+  return getUsers().find(function(x){return x.username===s;})||null; }
+function logout(){ localStorage.removeItem(K.SESSION); SETUNLOCKED=false; showGate(); }
+
+/* ===== Datos ===== */
+function parseNum(s){ if(!s) return 0; s=String(s).trim(); if(!s) return 0; var neg=s.indexOf('-')>=0; s=s.replace(/[+\-\s]/g,'').replace(/\./g,'').replace(',','.'); var n=parseFloat(s); if(isNaN(n))return 0; return neg?-n:n; }
 async function readFile(file){
-  var name=(file.name||'').toLowerCase();
-  var buf=await file.arrayBuffer();
-  var isGz = name.endsWith('.gz') || (new Uint8Array(buf,0,2)[0]===0x1f && new Uint8Array(buf,0,2)[1]===0x8b);
-  if(isGz){ buf=await gunzip(buf); }
-  // El archivo viene en ISO-8859-1 (Latin-1)
-  var txt;
-  try{ txt=new TextDecoder('iso-8859-1').decode(buf); }
-  catch(e){ txt=new TextDecoder('windows-1252').decode(buf); }
-  return txt;
+  var name=(file.name||'').toLowerCase(); var buf=await file.arrayBuffer();
+  var head=new Uint8Array(buf.slice(0,2));
+  var isGz=name.endsWith('.gz')||(head[0]===0x1f&&head[1]===0x8b);
+  if(isGz) buf=await gunzip(buf);
+  try{ return new TextDecoder('iso-8859-1').decode(buf); }catch(e){ return new TextDecoder('windows-1252').decode(buf); }
 }
 async function gunzip(buf){
-  if(typeof DecompressionStream!=='undefined'){
-    try{
-      var ds=new DecompressionStream('gzip');
-      var stream=new Blob([buf]).stream().pipeThrough(ds);
-      return await new Response(stream).arrayBuffer();
-    }catch(e){ /* fallback */ }
-  }
-  // Fallback: pako desde CDN
+  if(typeof DecompressionStream!=='undefined'){ try{ var ds=new DecompressionStream('gzip');
+    var st=new Blob([buf]).stream().pipeThrough(ds); return await new Response(st).arrayBuffer(); }catch(e){} }
   await loadScript('https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.inflate.min.js');
   if(typeof pako==='undefined') throw new Error('No se pudo descomprimir el .gz');
   return pako.ungzip(new Uint8Array(buf)).buffer;
 }
-function loadScript(src){
-  return new Promise(function(res,rej){
-    if(document.querySelector('script[src="'+src+'"]')){ res(); return; }
-    var s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=function(){rej(new Error('No se pudo cargar '+src));}; document.head.appendChild(s);
-  });
-}
-
 function parseData(txt){
-  var lines=txt.split(/\r?\n/);
-  var map={}; var order=[]; var filas=0;
-  for(var i=0;i<lines.length;i++){
-    var ln=lines[i]; if(!ln) continue;
-    var f=ln.split(';');
-    if(f.length<16) continue;
-    var sku=(f[10]||'').trim();
-    if(!sku || up(f[0]).indexOf('LOCAL')>=0 || sku.toUpperCase()==='NUMBER') continue; // salta encabezado
-    filas++;
+  var lines=txt.split(/\r?\n/), map={}, order=[], filas=0;
+  for(var i=0;i<lines.length;i++){ var ln=lines[i]; if(!ln) continue; var f=ln.split(';'); if(f.length<16) continue;
+    var sku=(f[10]||'').trim(); if(!sku||up(f[0]).indexOf('LOCAL')>=0||sku.toUpperCase()==='NUMBER') continue; filas++;
     var ean=(f[11]||'').trim();
-    if(!map[sku]){
-      map[sku]={
-        sku:sku,
-        linea:(f[1]||'').trim(), lineaN:(f[2]||'').trim(),
-        sub:(f[3]||'').trim(),   subN:(f[4]||'').trim(),
-        clase:(f[5]||'').trim(), claseN:(f[6]||'').trim(),
-        subc:(f[7]||'').trim(),  subcN:(f[8]||'').trim(),
-        marca:(f[9]||'').trim(),
-        desc:(f[12]||'').trim(),
-        pvta:parseNum(f[13]), pcst:parseNum(f[14]),
-        stock:parseNum(f[15]),
-        eans:[]
-      };
-      order.push(sku);
-    }
-    if(ean && map[sku].eans.indexOf(ean)<0) map[sku].eans.push(ean);
+    if(!map[sku]){ map[sku]={sku:sku,linea:(f[1]||'').trim(),lineaN:(f[2]||'').trim(),sub:(f[3]||'').trim(),subN:(f[4]||'').trim(),
+      clase:(f[5]||'').trim(),claseN:(f[6]||'').trim(),subc:(f[7]||'').trim(),subcN:(f[8]||'').trim(),marca:(f[9]||'').trim(),
+      desc:(f[12]||'').trim(),stock:parseNum(f[15]),eans:[]}; order.push(sku); }
+    if(ean&&map[sku].eans.indexOf(ean)<0) map[sku].eans.push(ean);
   }
-  var arr=order.map(function(k){return map[k];});
-  return {arr:arr, filas:filas};
+  return {arr:order.map(function(k){return map[k];}),filas:filas};
 }
-
 async function handleFile(file){
-  if(!file) return;
-  toast('<span class="spin"></span> Leyendo '+esc(file.name)+'…');
-  try{
-    var txt=await readFile(file);
-    var r=parseData(txt);
+  if(!file) return; toast('<span class="spin"></span> Leyendo '+esc(file.name)+'…');
+  try{ var txt=await readFile(file); var r=parseData(txt);
     if(!r.arr.length){ toast('No se encontraron productos en el archivo'); return; }
-    PRODUCTS=r.arr;
-    META={fecha:new Date().toISOString(), archivo:file.name, filas:r.filas};
-    save();
-    buildFilters();
-    render();
-    updateBanner();
+    PRODUCTS=r.arr; META={fecha:new Date().toISOString(),archivo:file.name,filas:r.filas};
+    save(); buildFilters(); render(); updateBanner(); if(SETUNLOCKED) renderConfig();
     toast('✓ '+PRODUCTS.length+' productos cargados');
-  }catch(e){
-    console.error(e); toast('Error: '+(e.message||'no se pudo leer el archivo'));
-  }
+  }catch(e){ console.error(e); toast('Error: '+(e.message||'no se pudo leer el archivo')); }
 }
+function save(){ try{ localStorage.setItem(K.DATA,JSON.stringify(PRODUCTS)); localStorage.setItem(K.META,JSON.stringify(META)); }catch(e){ toast('No se pudieron guardar los datos (memoria llena)'); } }
+function load(){ try{ var d=localStorage.getItem(K.DATA); if(d)PRODUCTS=JSON.parse(d)||[]; var m=localStorage.getItem(K.META); if(m)META=JSON.parse(m)||META; }catch(e){PRODUCTS=[];} }
+function clearData(){ PRODUCTS=[]; META={fecha:null,archivo:null,filas:0}; try{localStorage.removeItem(K.DATA);localStorage.removeItem(K.META);}catch(e){} buildFilters(); render(); updateBanner(); }
 
-/* ============================ Persistencia ============================ */
-function save(){
-  try{ localStorage.setItem(STORE_DATA, JSON.stringify(PRODUCTS)); localStorage.setItem(STORE_META, JSON.stringify(META)); }
-  catch(e){ toast('No se pudieron guardar los datos (memoria llena)'); }
-}
-function load(){
-  try{
-    var d=localStorage.getItem(STORE_DATA); if(d) PRODUCTS=JSON.parse(d)||[];
-    var m=localStorage.getItem(STORE_META); if(m) META=JSON.parse(m)||META;
-  }catch(e){ PRODUCTS=[]; }
-}
-function clearData(){
-  PRODUCTS=[]; META={fecha:null,archivo:null,filas:0};
-  try{ localStorage.removeItem(STORE_DATA); localStorage.removeItem(STORE_META); }catch(e){}
-  buildFilters(); render(); updateBanner();
-}
-
-/* ============================ Banner de actualización ============================ */
+/* ===== Banner de alerta ===== */
 function updateBanner(){
-  var el=$('updbar'); var hs=$('hsub');
-  if(!META.fecha || !PRODUCTS.length){
-    el.className='updbar none wrap'; el.innerHTML='📂 Sin datos. Sube el archivo de inventario de hoy.'; hs.textContent='Consulta de inventario'; return;
-  }
-  var d=new Date(META.fecha); var now=new Date();
-  var diffMs=now-d; var hours=diffMs/36e5; var days=Math.floor(hours/24);
-  var fdate=d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
-  hs.textContent=PRODUCTS.length+' productos · '+fdate;
-  if(hours<24){
-    var ago = hours<1? 'hace '+Math.max(1,Math.round(hours*60))+' min' : 'hace '+Math.round(hours)+' h';
-    el.className='updbar fresh wrap'; el.innerHTML='✓ Datos actualizados <b>'+ago+'</b> · '+PRODUCTS.length+' productos';
-  }else{
-    el.className='updbar stale wrap';
-    el.innerHTML='⚠️ Han pasado <b>'+days+(days===1?' día':' días')+'</b> desde la última carga ('+fdate+'). Sube el archivo de hoy para actualizar el stock.';
-  }
+  var el=$('updbar');
+  if(!META.fecha||!PRODUCTS.length){ el.className='updbar none wrap'; el.innerHTML='📂 No hay stock cargado. Pide al administrador que suba el archivo del día en Configuración.'; el.style.display='flex'; return; }
+  var hours=(new Date()-new Date(META.fecha))/36e5, days=Math.floor(hours/24);
+  if(hours<24){ el.style.display='none'; return; }
+  el.className='updbar stale wrap'; el.style.display='flex';
+  el.innerHTML='⚠️ El stock tiene <b>'+days+(days===1?' día':' días')+'</b> de antigüedad. Pide al administrador que suba el archivo de hoy.';
 }
 
-/* ============================ Filtros ============================ */
-function distinct(getCode,getName,filterFn){
-  var seen={}, out=[];
-  for(var i=0;i<PRODUCTS.length;i++){ var p=PRODUCTS[i]; if(filterFn && !filterFn(p)) continue;
-    var code=getCode(p); if(code==null||code==='') continue;
-    if(!seen[code]){ seen[code]=1; out.push({code:code, name:getName(p)}); } }
-  out.sort(function(a,b){ return (a.name||'').localeCompare(b.name||'','es'); });
-  return out;
-}
-function fillSelect(sel, items, cur, allLabel){
-  var h='<option value="">'+allLabel+'</option>';
-  items.forEach(function(it){ h+='<option value="'+esc(it.code)+'"'+(it.code===cur?' selected':'')+'>'+esc(it.name||it.code)+'</option>'; });
-  sel.innerHTML=h;
-  if(cur && !items.some(function(it){return it.code===cur;})) sel.value='';
-}
+/* ===== Filtros ===== */
+function distinct(getCode,getName,filterFn){ var seen={},out=[];
+  for(var i=0;i<PRODUCTS.length;i++){ var p=PRODUCTS[i]; if(filterFn&&!filterFn(p))continue; var code=getCode(p); if(code==null||code==='')continue;
+    if(!seen[code]){seen[code]=1;out.push({code:code,name:getName(p)});} }
+  out.sort(function(a,b){return (a.name||'').localeCompare(b.name||'','es');}); return out; }
+function fillSelect(sel,items,cur,allLabel){ var h='<option value="">'+allLabel+'</option>';
+  items.forEach(function(it){h+='<option value="'+esc(it.code)+'"'+(it.code===cur?' selected':'')+'>'+esc(it.name||it.code)+'</option>';});
+  sel.innerHTML=h; if(cur&&!items.some(function(it){return it.code===cur;})) sel.value=''; }
 function buildFilters(){
-  fillSelect($('fLinea'), distinct(function(p){return p.linea;},function(p){return p.lineaN;},null), FILT.linea, 'Todas las líneas');
-  fillSelect($('fSub'),   distinct(function(p){return p.sub;},function(p){return p.subN;}, function(p){return !FILT.linea||p.linea===FILT.linea;}), FILT.sub, 'Todas las sublíneas');
-  fillSelect($('fClase'), distinct(function(p){return p.clase;},function(p){return p.claseN;}, function(p){return (!FILT.linea||p.linea===FILT.linea)&&(!FILT.sub||p.sub===FILT.sub);}), FILT.clase, 'Todas las clases');
-  fillSelect($('fSubc'),  distinct(function(p){return p.subc;},function(p){return p.subcN;}, function(p){return (!FILT.linea||p.linea===FILT.linea)&&(!FILT.sub||p.sub===FILT.sub)&&(!FILT.clase||p.clase===FILT.clase);}), FILT.subc, 'Todas las subclases');
-  fillSelect($('fMarca'), distinct(function(p){return normBrand(p.marca);},function(p){return brandDisplay(p.marca);},null), FILT.marca, 'Todas las marcas');
-  updateActiveFilters();
-}
-function updateActiveFilters(){
-  var n=[FILT.linea,FILT.sub,FILT.clase,FILT.subc,FILT.marca].filter(Boolean).length + (FILT.low?1:0);
-  $('clrFilters').classList.toggle('hide', n===0);
-  $('tglFilters').classList.toggle('on', n>0);
-  $('activeFilters').textContent = n>0? (n+' filtro'+(n>1?'s':'')+' activo'+(n>1?'s':'')) : '';
+  fillSelect($('fLinea'),distinct(function(p){return p.linea;},function(p){return p.lineaN;},null),FILT.linea,'Todas las líneas');
+  fillSelect($('fSub'),distinct(function(p){return p.sub;},function(p){return p.subN;},function(p){return !FILT.linea||p.linea===FILT.linea;}),FILT.sub,'Todas las sublíneas');
+  fillSelect($('fClase'),distinct(function(p){return p.clase;},function(p){return p.claseN;},function(p){return (!FILT.linea||p.linea===FILT.linea)&&(!FILT.sub||p.sub===FILT.sub);}),FILT.clase,'Todas las clases');
+  fillSelect($('fSubc'),distinct(function(p){return p.subc;},function(p){return p.subcN;},function(p){return (!FILT.linea||p.linea===FILT.linea)&&(!FILT.sub||p.sub===FILT.sub)&&(!FILT.clase||p.clase===FILT.clase);}),FILT.subc,'Todas las subclases');
+  fillSelect($('fMarca'),distinct(function(p){return normBrand(p.marca);},function(p){return brandDisplay(p.marca);},null),FILT.marca,'Todas las marcas');
+  var active=[FILT.linea,FILT.sub,FILT.clase,FILT.subc,FILT.marca].filter(Boolean).length+(FILT.low?1:0);
+  $('clrFilters').classList.toggle('hide',active===0);
 }
 
-/* ============================ Búsqueda y render ============================ */
-function stockClass(s,low){ if(s<=0) return 'no'; if(s<low) return 'lo'; return 'hi'; }
-function stockLabel(s,low){ if(s<=0) return 'Sin stock'; if(s<low) return 'Quedan '+s; return s+' disp.'; }
-
-function filtered(){
-  var low=lowThr();
-  var q=up(FILT.q).trim();
-  var qDigits=q.replace(/\D/g,'');
+/* ===== Búsqueda y render ===== */
+function lowThr(){ var v=parseInt(localStorage.getItem(K.LOW)||'3',10); return isNaN(v)?3:v; }
+function stockClass(s,low){ if(s<=0)return 'no'; if(s<low)return 'lo'; return 'hi'; }
+function stockLabel(s,low){ if(s<=0)return 'Sin stock'; if(s<low)return 'Quedan '+s; return s+' disp.'; }
+function filtered(){ var low=lowThr(); var q=up(FILT.q).trim(); var qd=q.replace(/\D/g,'');
   return PRODUCTS.filter(function(p){
-    if(FILT.linea && p.linea!==FILT.linea) return false;
-    if(FILT.sub && p.sub!==FILT.sub) return false;
-    if(FILT.clase && p.clase!==FILT.clase) return false;
-    if(FILT.subc && p.subc!==FILT.subc) return false;
-    if(FILT.marca && normBrand(p.marca)!==FILT.marca) return false;
-    if(FILT.low && !(p.stock<low)) return false;
-    if(q){
-      var hit = up(p.desc).indexOf(q)>=0 || p.sku.indexOf(q)>=0 || brandDisplay(p.marca).toUpperCase().indexOf(q)>=0;
-      if(!hit && qDigits){ hit = p.sku.indexOf(qDigits)>=0 || p.eans.some(function(e){return e.indexOf(qDigits)>=0;}); }
-      if(!hit) return false;
-    }
-    return true;
-  });
+    if(FILT.linea&&p.linea!==FILT.linea)return false;
+    if(FILT.sub&&p.sub!==FILT.sub)return false;
+    if(FILT.clase&&p.clase!==FILT.clase)return false;
+    if(FILT.subc&&p.subc!==FILT.subc)return false;
+    if(FILT.marca&&normBrand(p.marca)!==FILT.marca)return false;
+    if(FILT.low&&!(p.stock<low))return false;
+    if(q){ var hit=up(p.desc).indexOf(q)>=0||p.sku.indexOf(q)>=0||brandDisplay(p.marca).toUpperCase().indexOf(q)>=0;
+      if(!hit&&qd){ hit=p.sku.indexOf(qd)>=0||p.eans.some(function(e){return e.indexOf(qd)>=0;}); }
+      if(!hit)return false; }
+    return true; });
 }
 function render(){
-  var low=lowThr();
-  var arr=filtered();
-  var list=$('list');
-  if(!PRODUCTS.length){
-    $('count').textContent='';
-    list.innerHTML='<div class="empty"><div class="big">📦</div><h3>Aún no hay stock cargado</h3><p>Sube el archivo diario de inventario (.gz o .txt) para comenzar a consultar productos.</p><button class="btn primary" id="emptyUp" style="max-width:220px;margin:8px auto 0">⬆️ Subir archivo</button></div>';
-    var eu=$('emptyUp'); if(eu) eu.onclick=pickFile;
-    return;
-  }
-  $('count').textContent=arr.length+' de '+PRODUCTS.length+' productos';
-  $('onlyLow').classList.toggle('hide', false);
-  $('onlyLow').textContent = FILT.low?'Quitar filtro':'Solo stock bajo';
+  var low=lowThr(); var arr=filtered(); var list=$('list');
+  if(!PRODUCTS.length){ $('count').textContent=''; $('onlyLow').classList.add('hide');
+    list.innerHTML='<div class="empty"><div class="big">📦</div><h3>Aún no hay stock cargado</h3><p>El administrador debe subir el archivo diario de inventario en <b>Configuración</b>.</p></div>'; return; }
+  var anyFilter=!!(FILT.q||FILT.linea||FILT.sub||FILT.clase||FILT.subc||FILT.marca||FILT.low);
+  $('count').textContent = anyFilter ? (arr.length+' resultado'+(arr.length===1?'':'s')) : '';
+  $('onlyLow').classList.remove('hide'); $('onlyLow').textContent=FILT.low?'Quitar filtro':'Solo stock bajo';
   if(!arr.length){ list.innerHTML='<div class="empty"><div class="big">🔍</div><h3>Sin resultados</h3><p>Prueba con otro SKU, EAN o quita algún filtro.</p></div>'; return; }
-  var html='';
-  var slice=arr.slice(0,300);
-  for(var i=0;i<slice.length;i++){
-    var p=slice[i]; var sc=stockClass(p.stock,low);
-    html+='<button class="card" data-sku="'+esc(p.sku)+'">'+
-      brandBadge(p.marca)+
-      '<div class="cmid"><div class="cname">'+esc(p.desc||'(sin descripción)')+'</div>'+
-      '<div class="cmeta"><span class="brand">'+esc(brandDisplay(p.marca))+'</span><span>SKU '+esc(p.sku)+'</span>'+
-      (p.eans.length>1?'<span class="eanpill">'+p.eans.length+' EAN</span>':'')+'</div></div>'+
-      '<div class="cright"><div class="price">'+money(p.pvta)+'</div>'+
-      '<div class="stock '+sc+'">'+stockLabel(p.stock,low)+'</div></div>'+
-    '</button>';
+  var html='', slice=arr.slice(0,300);
+  for(var i=0;i<slice.length;i++){ var p=slice[i], sc=stockClass(p.stock,low);
+    html+='<div class="card" data-sku="'+esc(p.sku)+'">'+
+      '<button class="cmid" data-open="'+esc(p.sku)+'" style="background:none;text-align:left">'+
+        '<div class="cname">'+esc(p.desc||'(sin descripción)')+'</div>'+
+        '<div class="cmeta"><span class="brand">'+esc(brandDisplay(p.marca))+'</span><span>SKU '+esc(p.sku)+'</span>'+
+        (p.eans.length>1?'<span class="eanpill">'+p.eans.length+' EAN</span>':'')+'</div></button>'+
+      '<div class="cright"><div class="stock '+sc+'">'+stockLabel(p.stock,low)+'</div>'+
+        '<button class="imgbtn" data-img="'+esc(p.sku)+'" data-name="'+esc(p.desc||'')+'">🖼️ Ver imagen</button></div>'+
+    '</div>';
   }
   if(arr.length>300) html+='<div style="text-align:center;color:var(--mut);font-size:12px;padding:8px">Mostrando 300 de '+arr.length+'. Afina la búsqueda para ver más.</div>';
   list.innerHTML=html;
-  Array.prototype.forEach.call(list.querySelectorAll('.card'), function(c){
-    c.onclick=function(){ openDetail(c.getAttribute('data-sku')); };
-  });
+  Array.prototype.forEach.call(list.querySelectorAll('[data-open]'),function(b){b.onclick=function(){openDetail(b.getAttribute('data-open'));};});
+  Array.prototype.forEach.call(list.querySelectorAll('[data-img]'),function(b){b.onclick=function(e){e.stopPropagation();openImage(b.getAttribute('data-img'),b.getAttribute('data-name'));};});
 }
 
-/* ============================ Detalle de producto ============================ */
-function findBySku(sku){ for(var i=0;i<PRODUCTS.length;i++) if(PRODUCTS[i].sku===sku) return PRODUCTS[i]; return null; }
-function findByEan(code){ code=(code||'').replace(/\s/g,''); if(!code) return null;
-  for(var i=0;i<PRODUCTS.length;i++){ var p=PRODUCTS[i];
-    if(p.sku===code) return p;
-    for(var j=0;j<p.eans.length;j++) if(p.eans[j]===code || p.eans[j].replace(/^0+/,'')===code.replace(/^0+/,'')) return p; }
-  return null;
+/* ===== Imagen (lightbox) ===== */
+function imgUrl(sku){ return 'https://media.falabella.com/falabellaCL/'+encodeURIComponent((sku||'').trim())+'/public'; }
+function openImage(sku,name){
+  $('lbCap').textContent=name||''; $('lbSku').textContent='SKU '+sku;
+  var img=$('lbImg'); img.style.opacity='.3'; img.alt='Cargando…';
+  img.onload=function(){img.style.opacity='1';};
+  img.onerror=function(){ img.onerror=null; img.src='data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="220"><rect width="300" height="220" fill="#e5e7eb"/><text x="150" y="105" font-size="18" text-anchor="middle" fill="#6b7280">Imagen no disponible</text><text x="150" y="132" font-size="13" text-anchor="middle" fill="#9aa4b2">SKU '+esc(sku)+'</text></svg>'); img.style.opacity='1'; };
+  img.src=imgUrl(sku); $('lightbox').classList.add('show');
 }
+function closeImage(){ $('lightbox').classList.remove('show'); $('lbImg').src=''; }
+
+/* ===== Código de barras (JsBarcode) ===== */
+async function showBarcode(code){
+  code=(code||'').replace(/\s/g,'');
+  $('bcnum').textContent=code; $('bcsvg').innerHTML=''; $('bcwrap').classList.add('show');
+  try{ await loadScript('vendor/JsBarcode.all.min.js'); }catch(e){}
+  if(typeof JsBarcode==='undefined'){ try{ await loadScript('https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js'); }catch(e){} }
+  if(typeof JsBarcode==='undefined'){ $('bcnum').textContent=code+' (sin conexión para generar el gráfico)'; return; }
+  var d=code.replace(/\D/g,''); var formats=[];
+  if(d.length===13) formats.push('EAN13'); else if(d.length===12) formats.push('UPC'); else if(d.length===8) formats.push('EAN8');
+  formats.push('CODE128');
+  for(var i=0;i<formats.length;i++){ try{ JsBarcode('#bcsvg',formats[i]==='CODE128'?code:d,{format:formats[i],width:2.1,height:96,fontSize:17,margin:6,displayValue:true}); return; }catch(e){} }
+  try{ JsBarcode('#bcsvg',code,{format:'CODE128',width:2,height:96}); }catch(e){ $('bcnum').textContent=code+' (código no válido para gráfico)'; }
+}
+
+/* ===== Detalle ===== */
+function findBySku(sku){ for(var i=0;i<PRODUCTS.length;i++) if(PRODUCTS[i].sku===sku) return PRODUCTS[i]; return null; }
+function findByEan(code){ code=(code||'').replace(/\s/g,''); if(!code)return null;
+  for(var i=0;i<PRODUCTS.length;i++){ var p=PRODUCTS[i]; if(p.sku===code)return p;
+    for(var j=0;j<p.eans.length;j++) if(p.eans[j]===code||p.eans[j].replace(/^0+/,'')===code.replace(/^0+/,''))return p; } return null; }
 function openDetail(sku){
-  var p=findBySku(sku); if(!p) return;
-  var low=lowThr(); var sc=stockClass(p.stock,low);
-  var col=brandColor(p.marca), fg=readable(col);
-  var imgUrl='https://media.falabella.com/falabellaCL/'+encodeURIComponent(p.sku)+'/public';
-  var margen = p.pvta>0? Math.round((p.pvta-p.pcst)/p.pvta*100):0;
-  var stockTxt = p.stock<=0? 'Sin stock disponible' : (p.stock+' unidad'+(p.stock===1?'':'es')+' en tienda');
-  var stockCol = sc==='no'?'var(--danger)':(sc==='lo'?'var(--warn)':'var(--ok)');
+  var p=findBySku(sku); if(!p)return; var low=lowThr(), sc=stockClass(p.stock,low);
+  var stockCol=sc==='no'?'var(--danger)':(sc==='lo'?'var(--warn)':'var(--ok)');
+  var stockTxt=p.stock<=0?'Sin stock disponible':(p.stock+' unidad'+(p.stock===1?'':'es')+' en tienda');
   var h='';
-  h+='<div class="dhead">'+
-      '<img class="dphoto" src="'+imgUrl+'" alt="" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'data:image/svg+xml;utf8,'+esc(placeholderSvg())+'\'">'+
-      '<div style="flex:1;min-width:0"><div class="dtitle">'+esc(p.desc||'(sin descripción)')+'</div>'+
-        '<div class="dbrandrow">'+brandBadge(p.marca)+'<div><div style="font-weight:800">'+esc(brandDisplay(p.marca))+'</div>'+
-        '<div style="font-size:12px;color:var(--mut)">SKU '+esc(p.sku)+'</div></div></div>'+
-      '</div>'+
-     '</div>';
-  h+='<div class="dprice">'+money(p.pvta)+' <small>P. venta</small></div>';
-  h+='<div class="stockbig" style="background:color-mix(in srgb,'+stockCol+' 14%,var(--card));color:'+stockCol+'">'+
-       (sc==='no'?'⛔':(sc==='lo'?'⚠️':'✅'))+' '+stockTxt+'</div>';
-  if(p.stock<low){
-    h+='<div class="warnbox">🏬 <div><b>Consultar stock con la bodega.</b> '+
-       (p.stock<=0?'El sistema no muestra unidades disponibles.':'Quedan pocas unidades ('+p.stock+'), confirma disponibilidad real antes de comprometer la venta.')+'</div></div>';
-  }
-  // EANs / UPC
+  h+='<div class="dtitle">'+esc(p.desc||'(sin descripción)')+'</div>';
+  h+='<div class="dbrandrow"><div><div style="font-weight:900">'+esc(brandDisplay(p.marca))+'</div><div style="font-size:12px;color:var(--mut)">SKU '+esc(p.sku)+'</div></div></div>';
+  h+='<div style="margin-top:12px"><button class="btn primary" id="dImg" style="width:100%">🖼️ Ver imagen del producto</button></div>';
+  h+='<div class="stockbig" style="background:color-mix(in srgb,'+stockCol+' 14%,var(--card));color:'+stockCol+'">'+(sc==='no'?'⛔':(sc==='lo'?'⚠️':'✅'))+' '+stockTxt+'</div>';
+  if(p.stock<low){ h+='<div class="warnbox">🏬 <div><b>Consultar stock con la bodega.</b> '+(p.stock<=0?'El sistema no muestra unidades disponibles.':'Quedan pocas unidades ('+p.stock+'), confirma disponibilidad real con bodega.')+'</div></div>'; }
   h+='<div class="sec"><h4>Códigos EAN / UPC ('+p.eans.length+')</h4><div class="eanlist">';
-  if(!p.eans.length){ h+='<div style="color:var(--mut);font-size:13px">Este SKU no tiene EAN registrado.</div>'; }
+  if(!p.eans.length) h+='<div style="color:var(--mut);font-size:13px">Este SKU no tiene EAN registrado.</div>';
   p.eans.forEach(function(e,idx){
     h+='<div class="eanrow"><div><div class="lab">EAN '+(idx+1)+'</div><div class="code">'+esc(e)+'</div></div>'+
-       '<button class="copybtn" data-copy="'+esc(e)+'">Copiar</button></div>';
+       '<div class="eanacts"><button class="minibtn bc" data-bc="'+esc(e)+'">▐║▐ Código</button>'+
+       '<button class="minibtn" data-copy="'+esc(e)+'">⧉ Copiar</button></div></div>';
   });
   h+='</div></div>';
-  // Categoría
-  h+='<div class="sec"><h4>Categoría</h4><div class="catpath">'+
-     '<b>'+esc(p.lineaN||p.linea)+'</b>'+
-     (p.subN?' › '+esc(p.subN):'')+ (p.claseN?' › '+esc(p.claseN):'')+ (p.subcN?' › <b>'+esc(p.subcN)+'</b>':'')+
-     '</div></div>';
-  // Detalle precios
-  h+='<div class="sec"><h4>Detalle</h4><div class="kv">'+
-     '<div class="k">Precio venta</div><div class="v">'+money(p.pvta)+'</div>'+
-     '<div class="k">Precio costo</div><div class="v">'+money(p.pcst)+'</div>'+
-     '<div class="k">Margen aprox.</div><div class="v">'+margen+'%</div>'+
-     '<div class="k">Stock disponible</div><div class="v" style="color:'+stockCol+'">'+p.stock+'</div>'+
-     '</div></div>';
-  h+='<div class="sec"><a class="btn" style="text-decoration:none" href="'+imgUrl+'" target="_blank" rel="noreferrer">🖼️ Ver imagen en Falabella</a></div>';
+  h+='<div class="sec"><h4>Categoría</h4><div class="catpath"><b>'+esc(p.lineaN||p.linea)+'</b>'+
+     (p.subN?' › '+esc(p.subN):'')+(p.claseN?' › '+esc(p.claseN):'')+(p.subcN?' › <b>'+esc(p.subcN)+'</b>':'')+'</div></div>';
   $('detail').innerHTML=h;
-  Array.prototype.forEach.call($('detail').querySelectorAll('.copybtn'), function(b){
-    b.onclick=function(){ copyText(b.getAttribute('data-copy')); b.textContent='✓ Copiado'; setTimeout(function(){b.textContent='Copiar';},1200); };
-  });
+  $('dImg').onclick=function(){ openImage(p.sku,p.desc); };
+  Array.prototype.forEach.call($('detail').querySelectorAll('[data-copy]'),function(b){b.onclick=function(){var t=b.getAttribute('data-copy');if(navigator.clipboard)navigator.clipboard.writeText(t).catch(function(){});toast('Copiado: '+esc(t));};});
+  Array.prototype.forEach.call($('detail').querySelectorAll('[data-bc]'),function(b){b.onclick=function(){showBarcode(b.getAttribute('data-bc'));};});
   openSheet('sheet');
 }
-function placeholderSvg(){
-  return '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"><rect width="96" height="96" fill="#eef0f2"/><text x="48" y="52" font-size="34" text-anchor="middle" fill="#9aa4b2">📦</text></svg>';
-}
-function copyText(t){ if(navigator.clipboard){ navigator.clipboard.writeText(t).catch(function(){}); } toast('Copiado: '+esc(t)); }
 
-/* ============================ Hojas (sheets) ============================ */
-function openSheet(id){ var s=$(id), bg=$(id==='sheet'?'sheetBg':'setBg'); bg.classList.add('show'); requestAnimationFrame(function(){ s.classList.add('show'); }); }
+/* ===== Sheets ===== */
+function openSheet(id){ $(id).classList.add('show'); $(id==='sheet'?'sheetBg':'setBg').classList.add('show'); }
 function closeSheet(id){ $(id).classList.remove('show'); $(id==='sheet'?'sheetBg':'setBg').classList.remove('show'); }
 
-/* ============================ Ajustes / tema ============================ */
-function lowThr(){ var v=parseInt(localStorage.getItem(STORE_LOW)||'3',10); return isNaN(v)?3:v; }
-function applyAccent(idx){
-  var p=PALETTE[idx]||PALETTE[0];
-  var r=document.documentElement.style;
+/* ===== Tema / color ===== */
+function applyAccent(idx){ var p=PALETTE[idx]||PALETTE[0]; var r=document.documentElement.style;
   r.setProperty('--accent',p.c); r.setProperty('--accent-d',p.d); r.setProperty('--accent-ink',p.ink);
-  var meta=document.querySelector('meta[name=theme-color]'); if(meta) meta.setAttribute('content',p.c);
-  localStorage.setItem(STORE_ACCENT, idx);
-}
-function buildSwatches(){
-  var cur=parseInt(localStorage.getItem(STORE_ACCENT)||'0',10);
-  var h=''; PALETTE.forEach(function(p,i){ h+='<button class="sw'+(i===cur?' on':'')+'" data-i="'+i+'" title="'+p.name+'" style="background:'+p.c+'"></button>'; });
-  var sw=$('swatches'); sw.innerHTML=h;
-  Array.prototype.forEach.call(sw.querySelectorAll('.sw'), function(b){
-    b.onclick=function(){ var i=+b.getAttribute('data-i'); applyAccent(i); buildSwatches(); };
-  });
-}
-function applyTheme(){ var dark=localStorage.getItem(STORE_THEME)==='dark';
-  document.documentElement.setAttribute('data-theme', dark?'dark':'light'); $('tglDark').classList.toggle('on',dark); }
+  var m=document.querySelector('meta[name=theme-color]'); if(m)m.setAttribute('content',p.c); localStorage.setItem(K.ACCENT,idx); }
+function applyTheme(){ var dark=localStorage.getItem(K.THEME)==='dark'; document.documentElement.setAttribute('data-theme',dark?'dark':'light'); var b=$('btnDark'); if(b)b.textContent=dark?'☀️':'🌙'; }
+function toggleDark(){ var dark=localStorage.getItem(K.THEME)!=='dark'; localStorage.setItem(K.THEME,dark?'dark':'light'); applyTheme(); }
 
-/* ============================ Escáner ============================ */
-var scanState={stream:null, raf:0, detector:null, zxing:null, running:false};
+/* ===== Configuración (protegida con clave) ===== */
+function openConfig(){ SETUNLOCKED=false; renderConfig(); openSheet('setSheet'); }
+function renderConfig(){
+  var pad=$('setPad');
+  if(!SETUNLOCKED){
+    pad.innerHTML='<div class="dtitle">Configuración</div>'+
+      '<p style="color:var(--mut);font-size:13px;margin:6px 0 14px">Ingresa la clave de administrador para ver la configuración.</p>'+
+      '<div id="cfgMsg"></div>'+
+      '<div class="field"><label>Clave de configuración</label><input id="cfgKey" type="password" placeholder="••••••••" autocomplete="off"></div>'+
+      '<button class="btn primary" id="cfgGo" style="width:100%">Entrar</button>';
+    $('cfgGo').onclick=function(){ if($('cfgKey').value===ADMIN_KEY){ SETUNLOCKED=true; renderConfig(); } else { $('cfgMsg').innerHTML='<div class="msg err">Clave incorrecta.</div>'; } };
+    $('cfgKey').addEventListener('keydown',function(e){ if(e.key==='Enter') $('cfgGo').click(); });
+    return;
+  }
+  var users=getUsers();
+  var pend=users.filter(function(u){return u.estado==='pendiente';});
+  var appr=users.filter(function(u){return u.estado==='aprobado';});
+  var cu=currentUser();
+  var accentIdx=parseInt(localStorage.getItem(K.ACCENT)||'0',10);
+  var fecha=META.fecha?new Date(META.fecha).toLocaleString('es-CL'):'—';
+  var h='';
+  h+='<div class="dtitle">Configuración</div>';
+
+  // Datos
+  h+='<div class="sec"><h4>Datos de inventario</h4>';
+  h+='<div style="font-size:13px;color:var(--mut);line-height:1.6">Productos: <b style="color:var(--ink)">'+PRODUCTS.length+'</b><br>Archivo: <b style="color:var(--ink)">'+esc(META.archivo||'—')+'</b><br>Última carga: <b style="color:var(--ink)">'+esc(fecha)+'</b></div>';
+  h+='<div style="display:flex;gap:8px;margin-top:10px"><button class="btn primary" id="cfgUpload" style="flex:1">⬆️ Subir archivo</button><button class="btn danger" id="cfgClear" style="flex:1">🗑️ Borrar datos</button></div></div>';
+
+  // Usuarios
+  h+='<div class="sec"><h4>Usuarios ('+users.length+')</h4>';
+  if(pend.length){ h+='<div style="font-size:11px;font-weight:800;color:var(--warn);margin:0 0 4px">PENDIENTES DE APROBAR ('+pend.length+')</div>';
+    pend.forEach(function(u){ h+=userRowHTML(u,true); }); }
+  if(appr.length){ h+='<div style="font-size:11px;font-weight:800;color:var(--ok);margin:12px 0 4px">APROBADOS ('+appr.length+')</div>';
+    appr.forEach(function(u){ h+=userRowHTML(u,false); }); }
+  if(!users.length) h+='<div style="color:var(--mut);font-size:13px">Aún no hay usuarios registrados.</div>';
+  h+='</div>';
+
+  // Preferencias
+  h+='<div class="sec"><h4>Preferencias</h4>';
+  h+='<div class="setrow"><div><div style="font-weight:700">Umbral de stock bajo</div><div style="font-size:12px;color:var(--mut)">Avisar consultar bodega bajo…</div></div>'+
+     '<select id="cfgLow" style="padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)">'+
+     [2,3,5,10].map(function(n){return '<option value="'+n+'"'+(n===lowThr()?' selected':'')+'>'+n+' unidades</option>';}).join('')+'</select></div>';
+  h+='<div style="padding:13px 0"><div style="font-weight:700;margin-bottom:2px">Color de la app</div><div class="swatches" id="cfgSw"></div></div></div>';
+
+  // Sesión
+  h+='<div class="sec"><h4>Sesión</h4>';
+  if(cu) h+='<div style="font-size:13px;color:var(--mut);margin-bottom:8px">Conectado como <b style="color:var(--ink)">'+esc(cu.nombre+' '+cu.apellido)+'</b> ('+esc(cu.username)+')</div><button class="btn ghost" id="cfgLogout" style="width:100%">Cerrar sesión</button>';
+  else h+='<div style="font-size:13px;color:var(--mut)">Estás en modo administrador (sin sesión de usuario).</div>';
+  h+='</div>';
+
+  h+='<div class="sec" style="font-size:11.5px;color:var(--mut);line-height:1.6">Los usuarios, aprobaciones y el stock se guardan <b>solo en este dispositivo</b>. Para compartir el control entre varios teléfonos se necesita un servidor.</div>';
+
+  pad.innerHTML=h;
+  $('cfgUpload').onclick=pickFile;
+  $('cfgClear').onclick=function(){ if(confirm('¿Borrar todo el stock guardado en este dispositivo?')){ clearData(); renderConfig(); toast('Datos borrados'); } };
+  $('cfgLow').onchange=function(){ localStorage.setItem(K.LOW,this.value); render(); };
+  var lo=$('cfgLogout'); if(lo)lo.onclick=function(){ logout(); closeSheet('setSheet'); };
+  // swatches
+  var sw=$('cfgSw'); sw.innerHTML=PALETTE.map(function(p,i){return '<button class="sw'+(i===accentIdx?' on':'')+'" data-i="'+i+'" style="background:'+p.c+'"></button>';}).join('');
+  Array.prototype.forEach.call(sw.querySelectorAll('.sw'),function(b){b.onclick=function(){applyAccent(+b.getAttribute('data-i'));renderConfig();};});
+  // user actions
+  Array.prototype.forEach.call(pad.querySelectorAll('[data-appr]'),function(b){b.onclick=function(){setUserState(b.getAttribute('data-appr'),'aprobado');};});
+  Array.prototype.forEach.call(pad.querySelectorAll('[data-del]'),function(b){b.onclick=function(){ if(confirm('¿Eliminar a este usuario?')) deleteUser(b.getAttribute('data-del')); };});
+}
+function userRowHTML(u,pending){
+  var ini=((u.nombre||'?')[0]||'?').toUpperCase();
+  return '<div class="userrow"><div class="uav">'+esc(ini)+'</div>'+
+    '<div class="uinfo"><div class="un">'+esc(u.nombre+' '+u.apellido)+' '+(pending?'<span class="tagp">Pendiente</span>':'<span class="taga">Aprobado</span>')+'</div>'+
+    '<div class="us">'+esc(u.username)+' · '+new Date(u.createdAt).toLocaleDateString('es-CL')+'</div></div>'+
+    '<div class="uacts">'+(pending?'<button class="minibtn bc" data-appr="'+esc(u.username)+'">✓ Aprobar</button>':'')+
+    '<button class="minibtn" data-del="'+esc(u.username)+'">✕</button></div></div>';
+}
+function setUserState(username,estado){ var users=getUsers(); var u=users.find(function(x){return x.username===username;}); if(u){u.estado=estado;saveUsers(users);renderConfig();toast('Usuario '+(estado==='aprobado'?'aprobado':'actualizado'));} }
+function deleteUser(username){ var users=getUsers().filter(function(x){return x.username!==username;}); saveUsers(users);
+  if(localStorage.getItem(K.SESSION)===username) logout(); renderConfig(); toast('Usuario eliminado'); }
+
+/* ===== Escáner ===== */
+var scanState={stream:null,raf:0,detector:null,zxing:null,running:false};
 async function openScanner(){
   $('scan').classList.add('show'); $('scanStatus').textContent='Iniciando cámara…'; scanState.running=true;
-  try{
-    var stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}, audio:false});
-    scanState.stream=stream; var v=$('video'); v.srcObject=stream; await v.play();
-    $('scanStatus').textContent='Apunta al código de barras';
-    if('BarcodeDetector' in window){
-      try{
-        var formats=await window.BarcodeDetector.getSupportedFormats();
-        scanState.detector=new window.BarcodeDetector({formats:formats.filter(function(f){return /ean|upc|code_128|code_39|itf|codabar/.test(f);})});
-        detectLoop();
-        return;
-      }catch(e){}
-    }
+  try{ var stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+    scanState.stream=stream; var v=$('video'); v.srcObject=stream; await v.play(); $('scanStatus').textContent='Apunta al código de barras';
+    if('BarcodeDetector' in window){ try{ var fmts=await window.BarcodeDetector.getSupportedFormats();
+      scanState.detector=new window.BarcodeDetector({formats:fmts.filter(function(f){return /ean|upc|code_128|code_39|itf|codabar/.test(f);})}); detectLoop(); return; }catch(e){} }
     await zxingScan();
-  }catch(e){
-    $('scanStatus').textContent='No se pudo abrir la cámara. Escribe el EAN abajo.'; console.error(e);
-  }
+  }catch(e){ $('scanStatus').textContent='No se pudo abrir la cámara. Escribe el EAN abajo.'; console.error(e); }
 }
-function detectLoop(){
-  if(!scanState.running) return;
-  var v=$('video');
-  scanState.detector.detect(v).then(function(codes){
-    if(codes && codes.length){ onScanResult(codes[0].rawValue); return; }
-    scanState.raf=requestAnimationFrame(detectLoop);
-  }).catch(function(){ scanState.raf=requestAnimationFrame(detectLoop); });
-}
-async function zxingScan(){
-  try{
-    await loadScript('https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js');
-    if(typeof ZXing==='undefined'){ $('scanStatus').textContent='Escribe el EAN manualmente abajo.'; return; }
-    var reader=new ZXing.BrowserMultiFormatReader();
-    scanState.zxing=reader;
-    reader.decodeFromVideoDevice(null, 'video', function(result,err){
-      if(result){ onScanResult(result.getText()); }
-    });
-  }catch(e){ $('scanStatus').textContent='Escribe el EAN manualmente abajo.'; }
-}
-function onScanResult(code){
-  if(!scanState.running) return;
-  code=(code||'').trim(); if(!code) return;
-  if(navigator.vibrate) navigator.vibrate(60);
-  var p=findByEan(code);
-  closeScanner();
-  if(p){ openDetail(p.sku); }
-  else{
-    FILT.q=code; $('q').value=code; $('qclr').classList.remove('hide'); render();
-    toast('EAN '+esc(code)+' no está en el inventario cargado');
-  }
-}
-function closeScanner(){
-  scanState.running=false; cancelAnimationFrame(scanState.raf);
-  try{ if(scanState.zxing){ scanState.zxing.reset(); scanState.zxing=null; } }catch(e){}
-  if(scanState.stream){ scanState.stream.getTracks().forEach(function(t){t.stop();}); scanState.stream=null; }
-  $('scan').classList.remove('show');
-}
+function detectLoop(){ if(!scanState.running)return; scanState.detector.detect($('video')).then(function(codes){ if(codes&&codes.length){onScanResult(codes[0].rawValue);return;} scanState.raf=requestAnimationFrame(detectLoop); }).catch(function(){scanState.raf=requestAnimationFrame(detectLoop);}); }
+async function zxingScan(){ try{ await loadScript('https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js');
+  if(typeof ZXing==='undefined'){ $('scanStatus').textContent='Escribe el EAN manualmente abajo.'; return; }
+  var reader=new ZXing.BrowserMultiFormatReader(); scanState.zxing=reader;
+  reader.decodeFromVideoDevice(null,'video',function(result){ if(result)onScanResult(result.getText()); }); }catch(e){ $('scanStatus').textContent='Escribe el EAN manualmente abajo.'; } }
+function onScanResult(code){ if(!scanState.running&&$('scan').classList.contains('show')===false&&!code)return; code=(code||'').trim(); if(!code)return;
+  if(navigator.vibrate)navigator.vibrate(60); var p=findByEan(code); closeScanner();
+  if(p){ openDetail(p.sku); } else { FILT.q=code; $('q').value=code; $('qclr').classList.remove('hide'); render(); toast('EAN '+esc(code)+' no está en el inventario cargado'); } }
+function closeScanner(){ scanState.running=false; cancelAnimationFrame(scanState.raf);
+  try{ if(scanState.zxing){scanState.zxing.reset();scanState.zxing=null;} }catch(e){}
+  if(scanState.stream){scanState.stream.getTracks().forEach(function(t){t.stop();});scanState.stream=null;} $('scan').classList.remove('show'); }
 
-/* ============================ Acciones UI ============================ */
-function pickFile(){ $('file').click(); }
-function toggleFilters(){ $('filters').classList.toggle('hide'); }
-function clearFilters(){ FILT.linea=FILT.sub=FILT.clase=FILT.subc=FILT.marca=''; FILT.low=false; buildFilters(); render(); }
+/* ===== Gate / navegación ===== */
+function showApp(){ $('gate').classList.add('hide'); $('app').hidden=false; buildFilters(); render(); updateBanner(); }
+function showGate(){ $('app').hidden=true; $('gate').classList.remove('hide'); switchTab('login'); $('lgUser').value=''; $('lgPass').value=''; }
+function switchTab(which){
+  var lg=which==='login';
+  $('tabLogin').classList.toggle('on',lg); $('tabReg').classList.toggle('on',!lg);
+  $('loginForm').classList.toggle('hide',!lg); $('regForm').classList.toggle('hide',lg); $('authMsg').innerHTML='';
+}
+function authMsg(cls,txt){ $('authMsg').innerHTML='<div class="msg '+cls+'">'+txt+'</div>'; }
 
-/* ============================ Init ============================ */
+/* ===== Acciones ===== */
+function pickFile(){ $('file2').click(); }
+
+/* ===== Init ===== */
 function init(){
-  applyAccent(parseInt(localStorage.getItem(STORE_ACCENT)||'0',10));
-  applyTheme();
-  $('lowThr').value=String(lowThr());
-  load(); buildFilters(); buildSwatches(); render(); updateBanner();
+  applyAccent(parseInt(localStorage.getItem(K.ACCENT)||'0',10)); applyTheme();
+  load();
+  // input de archivo (creado dinámicamente para evitar duplicados)
+  var fi=document.createElement('input'); fi.type='file'; fi.id='file2'; fi.className='filepick'; fi.accept='.txt,.gz,text/plain,application/gzip';
+  fi.addEventListener('change',function(e){ if(e.target.files[0])handleFile(e.target.files[0]); e.target.value=''; }); document.body.appendChild(fi);
 
-  $('file').addEventListener('change', function(e){ if(e.target.files[0]) handleFile(e.target.files[0]); e.target.value=''; });
-  $('btnUpload').onclick=pickFile; $('setUpload').onclick=pickFile;
-  $('btnScan').onclick=openScanner; $('btnScan2').onclick=openScanner;
+  // Gate
+  $('tabLogin').onclick=function(){switchTab('login');};
+  $('tabReg').onclick=function(){switchTab('reg');};
+  $('loginForm').addEventListener('submit',async function(e){ e.preventDefault();
+    var r=await loginUser($('lgUser').value,$('lgPass').value);
+    if(r.ok){ localStorage.setItem(K.SESSION,r.user.username); showApp(); } else authMsg('err',esc(r.msg)); });
+  $('regForm').addEventListener('submit',async function(e){ e.preventDefault();
+    if($('rgPass').value!==$('rgPass2').value){ authMsg('err','Las claves no coinciden.'); return; }
+    var r=await registerUser($('rgNombre').value,$('rgApellido').value,$('rgPass').value);
+    if(r.ok){ switchTab('login'); $('lgUser').value=r.username;
+      authMsg('ok','✓ Registro enviado. Tu usuario es <b>'+esc(r.username)+'</b>. Un administrador debe aprobarlo en Configuración antes de que puedas ingresar.'); }
+    else authMsg('err',esc(r.msg)); });
+  $('gateAdmin').onclick=openConfig;
+
+  // App header
+  $('btnDark').onclick=toggleDark;
+  $('btnSet').onclick=openConfig;
+  $('btnScan').onclick=openScanner;
   $('scanClose').onclick=closeScanner;
-  $('manualGo').onclick=function(){ var v=$('manualEan').value.trim(); if(v) onScanResult(v); };
-  $('manualEan').addEventListener('keydown',function(e){ if(e.key==='Enter'){ var v=this.value.trim(); if(v) onScanResult(v); } });
+  $('manualGo').onclick=function(){ var v=$('manualEan').value.trim(); if(v)onScanResult(v); };
+  $('manualEan').addEventListener('keydown',function(e){ if(e.key==='Enter'){var v=this.value.trim();if(v)onScanResult(v);} });
 
-  $('q').addEventListener('input', function(){ FILT.q=this.value; $('qclr').classList.toggle('hide', !this.value); render(); });
+  // Búsqueda + filtros
+  $('q').addEventListener('input',function(){ FILT.q=this.value; $('qclr').classList.toggle('hide',!this.value); render(); });
   $('qclr').onclick=function(){ FILT.q=''; $('q').value=''; this.classList.add('hide'); render(); };
-
-  $('tglFilters').onclick=toggleFilters;
-  $('clrFilters').onclick=clearFilters;
-  $('onlyLow').onclick=function(){ FILT.low=!FILT.low; updateActiveFilters(); render(); };
+  $('clrFilters').onclick=function(){ FILT.linea=FILT.sub=FILT.clase=FILT.subc=FILT.marca=''; FILT.low=false; buildFilters(); render(); };
+  $('onlyLow').onclick=function(){ FILT.low=!FILT.low; buildFilters(); render(); };
   $('fLinea').onchange=function(){ FILT.linea=this.value; FILT.sub=FILT.clase=FILT.subc=''; buildFilters(); render(); };
   $('fSub').onchange=function(){ FILT.sub=this.value; FILT.clase=FILT.subc=''; buildFilters(); render(); };
   $('fClase').onchange=function(){ FILT.clase=this.value; FILT.subc=''; buildFilters(); render(); };
-  $('fSubc').onchange=function(){ FILT.subc=this.value; updateActiveFilters(); render(); };
-  $('fMarca').onchange=function(){ FILT.marca=this.value; updateActiveFilters(); render(); };
+  $('fSubc').onchange=function(){ FILT.subc=this.value; buildFilters(); render(); };
+  $('fMarca').onchange=function(){ FILT.marca=this.value; buildFilters(); render(); };
 
-  $('btnSet').onclick=function(){ $('setInfo').innerHTML = META.fecha? ('Archivo: <b>'+esc(META.archivo||'—')+'</b><br>Cargado: '+new Date(META.fecha).toLocaleString('es-CL')+'<br>'+PRODUCTS.length+' productos · '+META.filas+' filas') : 'Sin datos cargados.'; openSheet('setSheet'); };
-  $('setClear').onclick=function(){ if(confirm('¿Borrar todo el stock guardado en este dispositivo?')){ clearData(); closeSheet('setSheet'); toast('Datos borrados'); } };
-  $('tglDark').onclick=function(){ var dark=localStorage.getItem(STORE_THEME)!=='dark'; localStorage.setItem(STORE_THEME,dark?'dark':'light'); applyTheme(); };
-  $('lowThr').onchange=function(){ localStorage.setItem(STORE_LOW,this.value); render(); if(!$('setSheet').classList.contains('show')){} };
+  // Overlays
+  $('sheetBg').onclick=function(){closeSheet('sheet');};
+  $('setBg').onclick=function(){closeSheet('setSheet');};
+  Array.prototype.forEach.call(document.querySelectorAll('[data-close]'),function(b){b.onclick=function(){closeSheet(b.getAttribute('data-close'));};});
+  $('lbClose').onclick=closeImage; $('lightbox').onclick=function(e){ if(e.target===$('lightbox'))closeImage(); };
+  $('bcClose').onclick=function(){$('bcwrap').classList.remove('show');}; $('bcwrap').onclick=function(e){ if(e.target===$('bcwrap'))$('bcwrap').classList.remove('show'); };
 
-  $('sheetBg').onclick=function(){ closeSheet('sheet'); };
-  $('setBg').onclick=function(){ closeSheet('setSheet'); };
-
-  // refresca el banner cada minuto (para el aviso de "más de un día")
-  setInterval(updateBanner, 60000);
-
+  setInterval(updateBanner,60000);
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
+
+  // ¿Sesión activa y aprobada?
+  var cu=currentUser();
+  if(cu&&cu.estado==='aprobado') showApp(); else { if(localStorage.getItem(K.SESSION)) localStorage.removeItem(K.SESSION); showGate(); }
 }
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded',init);
 </script>
 </body>
 </html>

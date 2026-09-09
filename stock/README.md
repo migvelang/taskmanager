@@ -2,21 +2,29 @@
 
 Aplicación web (PWA) para consultar el inventario diario de la tienda, optimizada para el teléfono móvil.
 
+## Acceso (login + aprobación)
+
+- Antes de ver el stock, cada persona debe **ingresar** con usuario y contraseña, o **registrarse** (nombre, apellido y clave).
+- Al registrarse la cuenta queda **pendiente**. El **administrador** la aprueba en **Configuración** y recién ahí la persona puede entrar. Desde ahí también se pueden **eliminar** usuarios.
+- La **Configuración** está protegida con la **clave de administrador** (por defecto `connect2025`). Sin esa clave no se muestra ninguna configuración. La clave se puede cambiar en `index.html` (constante `ADMIN_KEY`).
+- La **subida del archivo diario** vive dentro de Configuración (solo el administrador sube stock).
+
+> ⚠️ **Importante:** al ser una app estática (sin servidor), los usuarios, aprobaciones y el stock se guardan **en el navegador de cada dispositivo** (localStorage). El control de usuarios funciona por dispositivo (ideal para un equipo/tablet compartido en la tienda), **no** se sincroniza entre teléfonos distintos. Para control centralizado entre varios equipos se necesita un backend (por ejemplo Firebase).
+
 ## Qué hace
 
-- **Sube el archivo diario** de inventario disponible (`.gz` o `.txt`) y actualiza el stock. El archivo viene separado por `;` y en codificación Latin‑1; la app lo descomprime y lo lee automáticamente.
+- **Sube el archivo diario** de inventario disponible (`.gz` o `.txt`) desde Configuración. El archivo viene separado por `;` y en codificación Latin‑1; la app lo descomprime y lo lee automáticamente.
 - **Escáner con la cámara**: apunta al código de barras (EAN/UPC) y abre el producto. Usa `BarcodeDetector` nativo cuando está disponible y ZXing como respaldo (iPhone). También puedes escribir el EAN a mano.
 - **Búsqueda** por SKU, EAN/UPC o descripción.
-- **Filtros** por línea, sublínea, clase, subclase y marca (en cascada).
-- **Muestra todos los UPC/EAN de cada SKU** (algunos tienen hasta 3) y permite copiarlos.
-- **Imagen del producto** desde `https://media.falabella.com/falabellaCL/{sku}/public`.
-- **Cada marca con su distintivo** (color e iniciales de la marca).
+- **Filtros siempre visibles** por línea, sublínea, clase, subclase y marca (en cascada).
+- **Muestra todos los UPC/EAN de cada SKU** (algunos tienen hasta 3), con opción de **copiar** y de **ver el código de barras** en pantalla (para leerlo desde otra pantalla o reimprimirlo).
+- **Ver imagen** del producto desde `https://media.falabella.com/falabellaCL/{sku}/public`.
 - **Aviso de bodega**: cuando quedan **menos de 3 unidades** (umbral configurable) recomienda consultar stock con la bodega.
 - **Aviso de datos antiguos**: si pasó **más de un día** sin subir el archivo, muestra una alerta para actualizar.
-- **Colores**: paleta de acentos con el verde de Falabella `#aad503` por defecto y varios más, además de modo claro/oscuro.
+- **Colores**: paleta de acentos con el verde de Falabella `#aad503` por defecto y varios más, además de un botón de **modo oscuro** en el encabezado.
 - **Funciona offline** (service worker) y se puede **instalar** en la pantalla de inicio.
 
-Los datos se guardan **solo en el dispositivo** (localStorage); no se envían a ningún servidor.
+No se muestran precios (venta, costo ni margen). Todo se guarda **solo en el dispositivo**; no se envía a ningún servidor.
 
 ## Estructura
 
@@ -25,6 +33,8 @@ stock/
 ├── index.html              # Toda la app (HTML + CSS + JS)
 ├── manifest.webmanifest    # Instalación como PWA
 ├── sw.js                   # Service worker (uso offline)
+├── vendor/
+│   └── JsBarcode.all.min.js  # Genera el gráfico de código de barras (offline)
 └── icons/                  # Íconos de la app
     ├── icon-32.png  icon-180.png  icon-192.png  icon-512.png
 ```
