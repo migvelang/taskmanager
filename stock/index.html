@@ -374,27 +374,16 @@ var BRAND_NAMES={PLAYSTATIO:'PlayStation',SOUND_CORE:'Soundcore',KLIP_XTRE:'Klip
   'TURTLE BEA':'Turtle Beach',NESCAFE_DO:'Nescafé Dolce Gusto',KITCHE_NIT:'KitchenAid',MONSTERGAM:'Monster Game',
   WESTERN:'Western Digital',WD:'Western Digital','MASTER-G':'Master-G',BEZEL_PRO:'Bezel Pro',BITTY_BOOM:'Bitty Boom',
   SCALDASONN:'Scaldasonno',BR_0035470:'Genérica'};
-// Dominios de marcas conocidas -> se usa para traer el logo en vivo (Clearbit). El resto usa insignia.
-var BRAND_DOMAINS={APPLE:'apple.com',SAMSUNG:'samsung.com',SONY:'sony.com',XIAOMI:'mi.com',HUAWEI:'huawei.com',JBL:'jbl.com',
-  HP:'hp.com',PHILIPS:'philips.com',LG:'lg.com',BOSE:'bose.com',LOGITECH:'logitech.com',LENOVO:'lenovo.com',CANON:'canon.com',
-  EPSON:'epson.com',NINTENDO:'nintendo.com',MICROSOFT:'microsoft.com',MOTOROLA:'motorola.com',GARMIN:'garmin.com',GOPRO:'gopro.com',
-  DJI:'dji.com',BROTHER:'brother.com',ASUS:'asus.com',ACER:'acer.com',RAZER:'razer.com',HYPERX:'hyperx.com',KINGSTON:'kingston.com',
-  NESPRESSO:'nespresso.com',DELONGHI:'delonghi.com',OSTER:'oster.com',BRAUN:'braun.com',MARSHALL:'marshall.com',SANDISK:'sandisk.com',
-  TOSHIBA:'toshiba.com',HISENSE:'hisense.com',HONOR:'hihonor.com',VIVO:'vivo.com',ZTE:'zte.com.cn',REMINGTON:'remingtonproducts.com',
-  ANKER:'anker.com',SOUND_CORE:'soundcore.com',EUFY:'eufy.com',ORAIMO:'oraimo.com',ROWENTA:'rowenta.com',MOULINEX:'moulinex.com',
-  TEFAL:'tefal.com',KRUPS:'krups.com',CASIO:'casio.com',AMAZON:'amazon.com',ROKU:'roku.com',SENNHEISER:'sennheiser.com',
-  SHARK:'sharkclean.com',MAXELL:'maxell.com',PHILCO:'philco.com',KODAK:'kodak.com',FUJIFILM:'fujifilm.com',TRUST:'trust.com',
-  REDRAGON:'redragon.com',OURA:'ouraring.com',SONOS:'sonos.com',THULE:'thule.com',TCL:'tcl.com',PLAYSTATIO:'playstation.com',
-  'HARMAN KAR':'harmankardon.com','KLIP XTREM':'klipxtreme.com',KLIP_XTRE:'klipxtreme.com','BLACK&DECK':'blackanddecker.com',
-  NINJA:'ninjakitchen.com',NESCAFE_DO:'nesc-dolce-gusto.cl',STARLINK:'starlink.com',NEXXT:'nexxtsolutions.com'};
-function brandInitials(marca){ var d=deacc(brandDisplay(marca)).replace(/[^A-Za-z0-9]/g,''); return (d.slice(0,2)||'?').toUpperCase(); }
-function brandHue(marca){ var b=normBrand(marca),h=0; for(var i=0;i<b.length;i++)h=(h*31+b.charCodeAt(i))%360; return h; }
+// Logos de marca (opcional). Se llena SOLO con los logos que subas a la carpeta logos/.
+// Formato: NOMBRE_DE_MARCA (tal como aparece en el archivo, en mayúsculas) -> nombre del archivo.
+// Ejemplo: LENOVO:'lenovo.png'. Mientras esté vacío, no se muestra ningún ícono a la izquierda.
+var LOGOS={};
+function logoFile(marca){ return normBrand(marca).replace(/[^A-Z0-9]+/g,'_').replace(/^_+|_+$/g,''); }
 function brandLogo(marca){
-  var b=normBrand(marca), dom=BRAND_DOMAINS[b], ini=brandInitials(marca), hue=brandHue(marca);
-  if(dom) return '<div class="blogo"><img src="https://logo.clearbit.com/'+dom+'?size=88" alt="'+esc(brandDisplay(marca))+'" loading="lazy" referrerpolicy="no-referrer" data-l="'+esc(ini)+'" data-h="'+hue+'" onerror="brandLogoFail(this)"></div>';
-  return '<div class="blogo"><div class="chip" style="background:hsl('+hue+',55%,42%)">'+esc(ini)+'</div></div>';
+  var b=normBrand(marca); var f=LOGOS[b];
+  if(!f) return '';   // sin logo => sin ícono (tarjeta limpia)
+  return '<div class="blogo"><img src="logos/'+encodeURIComponent(f)+'" alt="'+esc(brandDisplay(marca))+'" loading="lazy" onerror="var d=this.parentNode; if(d)d.remove();"></div>';
 }
-function brandLogoFail(img){ try{ img.parentNode.innerHTML='<div class="chip" style="background:hsl('+(img.getAttribute('data-h')||0)+',55%,42%)">'+esc(img.getAttribute('data-l')||'?')+'</div>'; }catch(e){} }
 
 /* ===== Utilidades ===== */
 function $(id){return document.getElementById(id);}
@@ -580,14 +569,20 @@ function parseData(txt){
   var lines=txt.split(/\r?\n/), map={}, order=[], filas=0;
   for(var i=0;i<lines.length;i++){ var ln=lines[i]; if(!ln) continue; var f=ln.split(';'); if(f.length<16) continue;
     var sku=(f[10]||'').trim(); if(!sku||up(f[0]).indexOf('LOCAL')>=0||sku.toUpperCase()==='NUMBER') continue; filas++;
-    var ean=(f[11]||'').trim();
+    var ean=(f[11]||'').trim(); var st=parseNum(f[15]);
     if(!map[sku]){ map[sku]={sku:sku,linea:(f[1]||'').trim(),lineaN:(f[2]||'').trim(),sub:(f[3]||'').trim(),subN:(f[4]||'').trim(),
       clase:(f[5]||'').trim(),claseN:(f[6]||'').trim(),subc:(f[7]||'').trim(),subcN:(f[8]||'').trim(),marca:(f[9]||'').trim(),
-      desc:(f[12]||'').trim(),stock:parseNum(f[15]),eans:[]}; order.push(sku); }
-    if(ean&&map[sku].eans.indexOf(ean)<0) map[sku].eans.push(ean);
+      desc:(f[12]||'').trim(),stock:0,eans:[]}; order.push(sku); }
+    map[sku].stock += st;   // stock del SKU = suma de todas sus filas (cada EAN aporta el suyo)
+    if(ean){ var found=null; for(var j=0;j<map[sku].eans.length;j++){ if(map[sku].eans[j].code===ean){found=map[sku].eans[j];break;} }
+      if(found) found.stock+=st; else map[sku].eans.push({code:ean,stock:st}); }
   }
   return {arr:order.map(function(k){return map[k];}),filas:filas};
 }
+// Accesores tolerantes: soporta eans como objetos {code,stock} o como texto (datos antiguos)
+function eanObjs(p){ return (p.eans||[]).map(function(e){ return (typeof e==='string')?{code:e,stock:null}:e; }); }
+function primaryEan(p){ var es=eanObjs(p); if(!es.length) return null; var best=es[0];
+  for(var i=1;i<es.length;i++){ if((es[i].stock||0)>(best.stock||0)) best=es[i]; } return best; }
 async function handleFile(file){
   if(!file) return; toast('<span class="spin"></span> Leyendo '+esc(file.name)+'…');
   try{ var txt=await readFile(file); var r=parseData(txt);
@@ -642,7 +637,7 @@ function filtered(){ var low=lowThr(); var q=up(FILT.q).trim(); var qd=q.replace
     if(FILT.marca&&normBrand(p.marca)!==FILT.marca)return false;
     if(FILT.low&&!(p.stock<low))return false;
     if(q){ var hit=up(p.desc).indexOf(q)>=0||p.sku.indexOf(q)>=0||brandDisplay(p.marca).toUpperCase().indexOf(q)>=0;
-      if(!hit&&qd){ hit=p.sku.indexOf(qd)>=0||p.eans.some(function(e){return e.indexOf(qd)>=0;}); }
+      if(!hit&&qd){ hit=p.sku.indexOf(qd)>=0||eanObjs(p).some(function(e){return e.code.indexOf(qd)>=0;}); }
       if(!hit)return false; }
     return true; });
 }
@@ -679,7 +674,7 @@ function render(){
   Array.prototype.forEach.call(list.querySelectorAll('[data-img]'),function(b){b.onclick=function(e){e.stopPropagation();openImage(b.getAttribute('data-img'),b.getAttribute('data-name'));};});
   Array.prototype.forEach.call(list.querySelectorAll('[data-bc]'),function(b){b.onclick=function(e){e.stopPropagation();showCardBarcode(b.getAttribute('data-bc'));};});
 }
-function showCardBarcode(sku){ var p=findBySku(sku); if(!p)return; if(p.eans&&p.eans.length) showBarcode(p.eans[0]); else toast('Este producto no tiene EAN registrado'); }
+function showCardBarcode(sku){ var p=findBySku(sku); if(!p)return; var pe=primaryEan(p); if(pe) showBarcode(pe.code); else toast('Este producto no tiene EAN registrado'); }
 
 /* ===== Imagen (lightbox) ===== */
 function imgUrl(sku){ return 'https://media.falabella.com/falabellaCL/'+encodeURIComponent((sku||'').trim())+'/public'; }
@@ -710,7 +705,7 @@ async function showBarcode(code){
 function findBySku(sku){ for(var i=0;i<PRODUCTS.length;i++) if(PRODUCTS[i].sku===sku) return PRODUCTS[i]; return null; }
 function findByEan(code){ code=(code||'').replace(/\s/g,''); if(!code)return null;
   for(var i=0;i<PRODUCTS.length;i++){ var p=PRODUCTS[i]; if(p.sku===code)return p;
-    for(var j=0;j<p.eans.length;j++) if(p.eans[j]===code||p.eans[j].replace(/^0+/,'')===code.replace(/^0+/,''))return p; } return null; }
+    var es=eanObjs(p); for(var j=0;j<es.length;j++){ var c=es[j].code; if(c===code||c.replace(/^0+/,'')===code.replace(/^0+/,''))return p; } } return null; }
 function openDetail(sku){
   var p=findBySku(sku); if(!p)return; var low=lowThr(), sc=stockClass(p.stock,low);
   var stockCol=sc==='no'?'var(--danger)':(sc==='lo'?'var(--warn)':'var(--ok)');
@@ -721,12 +716,15 @@ function openDetail(sku){
   h+='<div style="margin-top:12px"><button class="btn primary" id="dImg" style="width:100%">🖼️ Ver imagen del producto</button></div>';
   h+='<div class="stockbig" style="background:color-mix(in srgb,'+stockCol+' 14%,var(--card));color:'+stockCol+'">'+(sc==='no'?'⛔':(sc==='lo'?'⚠️':'✅'))+' '+stockTxt+'</div>';
   if(p.stock<low){ h+='<div class="warnbox">🏬 <div><b>Consultar stock con la bodega.</b> '+(p.stock<=0?'El sistema no muestra unidades disponibles.':'Quedan pocas unidades ('+p.stock+'), confirma disponibilidad real con bodega.')+'</div></div>'; }
-  h+='<div class="sec"><h4>Códigos EAN / UPC ('+p.eans.length+')</h4><div class="eanlist">';
-  if(!p.eans.length) h+='<div style="color:var(--mut);font-size:13px">Este SKU no tiene EAN registrado.</div>';
-  p.eans.forEach(function(e,idx){
-    h+='<div class="eanrow"><div><div class="lab">EAN '+(idx+1)+'</div><div class="code">'+esc(e)+'</div></div>'+
-       '<div class="eanacts"><button class="minibtn bc" data-bc="'+esc(e)+'">▐║▐ Código</button>'+
-       '<button class="minibtn" data-copy="'+esc(e)+'">⧉ Copiar</button></div></div>';
+  var es=eanObjs(p); var pe=primaryEan(p);
+  h+='<div class="sec"><h4>Códigos EAN / UPC ('+es.length+')</h4><div class="eanlist">';
+  if(!es.length) h+='<div style="color:var(--mut);font-size:13px">Este SKU no tiene EAN registrado.</div>';
+  es.forEach(function(e,idx){
+    var hasStock = pe && e.code===pe.code && (e.stock||0)>0;
+    var stTag = (e.stock!=null) ? ' <span style="font-weight:800;color:'+((e.stock>0)?'var(--ok)':'var(--mut)')+'">· '+e.stock+' u.</span>' : '';
+    h+='<div class="eanrow"><div><div class="lab">EAN '+(idx+1)+(hasStock?' · CON STOCK':'')+'</div><div class="code">'+esc(e.code)+stTag+'</div></div>'+
+       '<div class="eanacts"><button class="minibtn bc" data-bc="'+esc(e.code)+'">▐║▐ Código</button>'+
+       '<button class="minibtn" data-copy="'+esc(e.code)+'">⧉ Copiar</button></div></div>';
   });
   h+='</div></div>';
   h+='<div class="sec"><h4>Categoría</h4><div class="catpath"><b>'+esc(p.lineaN||p.linea)+'</b>'+

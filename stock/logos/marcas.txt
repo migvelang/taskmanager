@@ -1,0 +1,154 @@
+LISTA DE MARCAS -> nombre de archivo del logo (PNG)
+Envía cada logo como PNG cuadrado, fondo transparente, 128x128 o 256x256 px.
+Nombra el archivo EXACTAMENTE como la 2a columna. Ej: LENOVO -> lenovo.png
+
+MARCA (en el archivo) ARCHIVO SUGERIDO
+ACER             acer.png
+AMAZON           amazon.png
+ANKER            anker.png
+APPLE            apple.png
+ARIETE           ariete.png
+ASIAMERICA       asiamerica.png
+ASUS             asus.png
+AURA             aura.png
+B & DECKER       b_decker.png
+BACKBONE         backbone.png
+BANDRIDGE        bandridge.png
+BASEUS           baseus.png
+BELLISSIMA       bellissima.png
+BEZEL_PRO        bezel_pro.png
+BITTY_BOOM       bitty_boom.png
+BLACK&DECK       black_deck.png
+BLACKBIRD        blackbird.png
+BLIK             blik.png
+BOSE             bose.png
+BRAUN            braun.png
+BROTHER          brother.png
+BR_0035470       br_0035470.png
+CANON            canon.png
+CASELOGIC        caselogic.png
+CASIO            casio.png
+CLARO            claro.png
+COMPRAPO         comprapo.png
+DDESIGN          ddesign.png
+DELONGHI         delonghi.png
+DJI              dji.png
+EA               ea.png
+EMACHINES        emachines.png
+ENTEL            entel.png
+EPSON            epson.png
+EUFY             eufy.png
+EZVIZ            ezviz.png
+FDV              fdv.png
+FIFINE           fifine.png
+FUJI             fuji.png
+FUJIFILM         fujifilm.png
+GAMA             gama.png
+GAMAGAMA         gamagama.png
+GARMIN           garmin.png
+GENIUS           genius.png
+GOPRO            gopro.png
+HARMAN KAR       harman_kar.png
+HEAD             head.png
+HISENSE          hisense.png
+HONOR            honor.png
+HP               hp.png
+HUAWEI           huawei.png
+HYPERX           hyperx.png
+INS BEAUTY       ins_beauty.png
+INSTANT PO       instant_po.png
+JBL              jbl.png
+JVC              jvc.png
+KDT              kdt.png
+KENDAL           kendal.png
+KINGSTON         kingston.png
+KITCHE_NIT       kitche_nit.png
+KLIP XTREM       klip_xtrem.png
+KLIP_XTRE        klip_xtre.png
+KODAK            kodak.png
+KRUPS            krups.png
+LENOVO           lenovo.png
+LEVO             levo.png
+LG               lg.png
+LHOTSE           lhotse.png
+LOGITECH         logitech.png
+MACROTEL         macrotel.png
+MAGEFESA         magefesa.png
+MARLEY           marley.png
+MARSHALL         marshall.png
+MASTER-G         master_g.png
+MAXELL           maxell.png
+MICROSOFT        microsoft.png
+MONSTERGAM       monstergam.png
+MOTOROLA         motorola.png
+MOULINEX         moulinex.png
+MOVISTAR         movistar.png
+MYCOCOS          mycocos.png
+NAGOYA           nagoya.png
+NEBULA           nebula.png
+NESCAFE_DO       nescafe_do.png
+NESPRESSO        nespresso.png
+NEXXT            nexxt.png
+NINJA            ninja.png
+NINTENDO         nintendo.png
+ORAIMO           oraimo.png
+OSTER            oster.png
+OURA             oura.png
+OUTIN            outin.png
+OZU              ozu.png
+PDP              pdp.png
+PHILCO           philco.png
+PHILIPS          philips.png
+PLAYSTATIO       playstatio.png
+POWER ONE        power_one.png
+PRIMUS           primus.png
+PROSOUND         prosound.png
+RAYOVAC          rayovac.png
+RAZER            razer.png
+RECCO            recco.png
+REDRAGON         redragon.png
+REMAX            remax.png
+REMINGTON        remington.png
+ROKU             roku.png
+ROWENTA          rowenta.png
+SAMSUNG          samsung.png
+SANDISK          sandisk.png
+SAXOLINE         saxoline.png
+SCALDASONN       scaldasonn.png
+SENNHEISER       sennheiser.png
+SHARK            shark.png
+SIEGEN           siegen.png
+SINDELEN         sindelen.png
+SLEVE            sleve.png
+SOLIGOR          soligor.png
+SONOS            sonos.png
+SONY             sony.png
+SOUND_CORE       sound_core.png
+SOY_MOMO         soy_momo.png
+STARLINK         starlink.png
+STYLUS           stylus.png
+TAKE 2           take_2.png
+TEFAL            tefal.png
+TEKA             teka.png
+THOMAS           thomas.png
+THULE            thule.png
+TORRAS           torras.png
+TOSHIBA          toshiba.png
+TOYOTOMI         toyotomi.png
+TRUST            trust.png
+TURTLE BEA       turtle_bea.png
+ULA              ula.png
+ULTRA            ultra.png
+UTROTTER         utrotter.png
+VAIS             vais.png
+VIVO             vivo.png
+WD               wd.png
+WESTERN          western.png
+WOM              wom.png
+WURDEN           wurden.png
+XIAOMI           xiaomi.png
+XTECH            xtech.png
+XTREM            xtrem.png
+ZTE              zte.png
+
+Total marcas: 147
