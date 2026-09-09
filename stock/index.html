@@ -619,7 +619,9 @@ function buildFilters(){
   fillSelect($('fSub'),distinct(function(p){return p.sub;},function(p){return p.subN;},null),FILT.sub,'Todas las sublíneas');
   fillSelect($('fClase'),distinct(function(p){return p.clase;},function(p){return p.claseN;},function(p){return (!FILT.sub||p.sub===FILT.sub);}),FILT.clase,'Todas las clases');
   fillSelect($('fSubc'),distinct(function(p){return p.subc;},function(p){return p.subcN;},function(p){return (!FILT.sub||p.sub===FILT.sub)&&(!FILT.clase||p.clase===FILT.clase);}),FILT.subc,'Todas las subclases');
-  fillSelect($('fMarca'),distinct(function(p){return normBrand(p.marca);},function(p){return brandDisplay(p.marca);},null),FILT.marca,'Todas las marcas');
+  fillSelect($('fMarca'),distinct(function(p){return normBrand(p.marca);},function(p){return brandDisplay(p.marca);},function(p){return (!FILT.sub||p.sub===FILT.sub)&&(!FILT.clase||p.clase===FILT.clase)&&(!FILT.subc||p.subc===FILT.subc);}),FILT.marca,'Todas las marcas');
+  // Sincroniza FILT con lo que quedó realmente seleccionado (si algo dejó de ser válido, se limpia)
+  FILT.sub=$('fSub').value; FILT.clase=$('fClase').value; FILT.subc=$('fSubc').value; FILT.marca=$('fMarca').value;
   var active=[FILT.sub,FILT.clase,FILT.subc,FILT.marca].filter(Boolean).length+(FILT.low?1:0);
   $('clrFilters').classList.toggle('hide',active===0);
 }
