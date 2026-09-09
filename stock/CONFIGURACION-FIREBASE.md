@@ -50,23 +50,21 @@ Toma unos 10–15 minutos. Todo se hace con clicks en la consola de Firebase.
    > Estos valores **no son secretos**: son identificadores públicos. La seguridad real está en las reglas del Paso 4.
 3. Guarda el archivo y súbelo a tu repositorio (o vuelve a subir el sitio).
 
-## Paso 7 — Crear tu cuenta de administrador (una sola vez)
-1. Abre la app publicada → pestaña **“Registrarse”** → ingresa tu **nombre, apellido y clave** (mínimo 6 caracteres) → **Enviar registro**. Anota el **usuario** que te muestra (ej: `miguel.aranguiz`).
-2. Vuelve a la consola de Firebase → **Firestore Database → pestaña Datos**.
-3. Abre la colección **`usuarios`** y haz click en tu documento (tu ficha).
-4. Edita dos campos:
-   - `estado` → cámbialo de `pendiente` a **`aprobado`**.
-   - `rol` → cámbialo de `user` a **`admin`**.
-   (Se edita con el lápiz ✏️ junto a cada campo; **Actualizar/Update**.)
-5. Listo. Vuelve a la app e **inicia sesión** con tu usuario y clave: ya eres administrador.
+## Paso 7 — Entrar como administrador (¡sin crear nada!)
+Ya **no** hay que crear ni editar cuentas a mano. El administrador se activa solo con la clave:
+
+1. Abre la app publicada.
+2. Toca el **engranaje ⚙️** de la esquina superior derecha (en la pantalla de inicio).
+3. Escribe la clave de administrador **`connect2025`** → **Ingresar como administrador**.
+4. Listo: ya puedes **subir el archivo** del día y **aprobar/eliminar** usuarios.
+
+> La **primera vez** que escribas `connect2025`, la app crea sola la cuenta de administrador con esa clave. Las siguientes veces, esa misma clave te deja entrar. (Puedes cambiarla en `index.html`, constante `ADMIN_KEY`, si quieres otra.)
 
 ## Uso diario
-- **Tú (administrador):** entras con tu usuario → ⚙️ → clave `connect2025` → **subes el archivo** del día y **apruebas/eliminas** usuarios.
-- **El resto del equipo:** se registran una vez, tú los apruebas desde ⚙️, y luego consultan el stock desde cualquier teléfono. El stock que subes se ve al instante en todos.
-
-> La clave de configuración `connect2025` protege la pantalla de ⚙️. El poder de administrador (subir stock, aprobar usuarios) lo tiene solo la cuenta marcada como `admin`. Puedes cambiar `connect2025` en `index.html` (constante `ADMIN_KEY`).
+- **Tú (administrador):** ⚙️ en la esquina → `connect2025` → subes el archivo del día y gestionas usuarios.
+- **El resto del equipo:** se registran una vez (nombre, apellido, clave), tú los apruebas desde ⚙️, y luego consultan el stock desde cualquier teléfono. Lo que subes se ve al instante en todos.
 
 ## Notas
-- **Cambiar de admin o agregar otro:** repite el Paso 7 (poner `rol: admin`) en la ficha de esa persona.
-- **Eliminar a alguien del todo:** bórralo desde ⚙️ en la app (pierde el acceso). Para borrar también su login, ve a **Authentication → Users** en Firebase y elimínalo ahí.
+- **Eliminar a alguien:** bórralo desde ⚙️ → Usuarios (pierde el acceso). Para borrar también su login, ve a **Authentication → Users** en Firebase y elimínalo ahí.
 - **Costo:** el plan gratuito (Spark) alcanza de sobra para una tienda (miles de lecturas/escrituras al día).
+- Si ya habías pegado una versión anterior de las reglas, **vuelve a pegar** las de `firestore.rules` (cambiaron) y **Publica**.

@@ -69,8 +69,8 @@ header{position:sticky; top:0; z-index:30; background:var(--accent); color:var(-
 
 /* Filters (always visible) */
 .filters{margin-top:10px; background:var(--card); border-radius:14px; box-shadow:var(--shadow); padding:10px; display:grid; grid-template-columns:1fr 1fr; gap:8px}
-.filters label{font-size:10px; font-weight:800; color:var(--mut); text-transform:uppercase; letter-spacing:.5px; display:block; margin:0 0 3px 2px}
-.filters select{width:100%; padding:10px; border-radius:11px; border:1px solid var(--line); background:var(--bg); color:var(--ink)}
+.filters label{font-size:11.5px; font-weight:800; color:var(--mut); text-transform:uppercase; letter-spacing:.5px; display:block; margin:0 0 5px 2px}
+.filters select{width:100%; padding:14px 12px; font-size:16px; font-weight:600; border-radius:12px; border:1px solid var(--line); background:var(--bg); color:var(--ink)}
 .filters .full{grid-column:1 / -1}
 .fclear{grid-column:1 / -1; text-align:right}
 .fclear button{font-size:12.5px; font-weight:800; color:var(--accent-d)}
@@ -90,8 +90,18 @@ header{position:sticky; top:0; z-index:30; background:var(--accent); color:var(-
 .stock.hi{background:color-mix(in srgb,var(--ok) 16%,var(--card)); color:var(--ok)}
 .stock.lo{background:color-mix(in srgb,var(--warn) 18%,var(--card)); color:var(--warn)}
 .stock.no{background:color-mix(in srgb,var(--danger) 14%,var(--card)); color:var(--danger)}
-.imgbtn{font-size:11px; font-weight:800; color:var(--accent-d); background:color-mix(in srgb,var(--accent) 16%,var(--card)); padding:6px 10px; border-radius:9px; display:inline-flex; gap:5px; align-items:center; white-space:nowrap}
+.imgbtn{font-size:12px; font-weight:800; color:var(--accent-d); background:color-mix(in srgb,var(--accent) 16%,var(--card)); padding:8px 11px; border-radius:10px; display:inline-flex; gap:5px; align-items:center; white-space:nowrap}
+.imgbtn.bc2{color:var(--ink); background:var(--bg); border:1px solid var(--line)}
+.cardacts{display:flex; gap:6px; margin-top:4px}
 .eanpill{font-size:10px; color:var(--mut); font-weight:800; background:var(--bg); padding:2px 6px; border-radius:6px}
+/* Logo / insignia de marca a la izquierda de la tarjeta */
+.blogo{width:44px; height:44px; border-radius:11px; flex:0 0 auto; display:grid; place-items:center; overflow:hidden; background:var(--bg); border:1px solid var(--line)}
+.blogo img{width:100%; height:100%; object-fit:contain; padding:3px}
+.blogo .chip{width:100%; height:100%; display:grid; place-items:center; font-weight:900; font-size:14px; letter-spacing:.3px}
+/* Stock grande y prominente */
+.stock{font-weight:900; padding:6px 12px; border-radius:12px; white-space:nowrap; text-align:center; line-height:1.05}
+.stock .n{font-size:19px; display:block}
+.stock .t{font-size:9.5px; text-transform:uppercase; letter-spacing:.4px; font-weight:800; opacity:.85}
 
 .empty{text-align:center; color:var(--mut); padding:44px 20px}
 .empty .big{font-size:44px; margin-bottom:10px}
@@ -161,6 +171,7 @@ header{position:sticky; top:0; z-index:30; background:var(--accent); color:var(-
 
 /* Auth gate */
 #gate{position:fixed; inset:0; z-index:90; background:var(--bg); overflow:auto; display:flex; flex-direction:column}
+.gategear{position:absolute; top:calc(env(safe-area-inset-top) + 12px); right:14px; z-index:2; width:42px; height:42px; border-radius:12px; background:rgba(0,0,0,.12); color:var(--accent-ink); font-size:20px; display:grid; place-items:center}
 .gatehero{background:var(--accent); color:var(--accent-ink); padding:calc(env(safe-area-inset-top) + 34px) 20px 30px; text-align:center}
 .gatehero img{width:76px; height:76px; border-radius:20px; box-shadow:0 6px 18px rgba(0,0,0,.18)}
 .gatehero h1{margin:14px 0 2px; font-size:24px; font-weight:900; letter-spacing:.5px}
@@ -207,6 +218,7 @@ header{position:sticky; top:0; z-index:30; background:var(--accent); color:var(-
 
 <!-- ================= AUTH GATE ================= -->
 <div id="gate">
+  <button class="gategear" id="gateAdmin" title="Configuración">⚙️</button>
   <div class="gatehero">
     <img src="icons/icon-180.png" alt="">
     <h1>STOCK COSTANERA</h1>
@@ -233,9 +245,6 @@ header{position:sticky; top:0; z-index:30; background:var(--accent); color:var(-
       <button class="btn primary" type="submit" style="width:100%">Enviar registro</button>
       <p style="font-size:11.5px;color:var(--mut);margin:10px 2px 0;line-height:1.5">Tu cuenta quedará <b>pendiente</b> hasta que el administrador la apruebe en Configuración.</p>
     </form>
-  </div>
-  <div class="gatefoot">
-    <button id="gateAdmin">⚙️ Configuración de administrador</button>
   </div>
 </div>
 
@@ -265,11 +274,10 @@ header{position:sticky; top:0; z-index:30; background:var(--accent); color:var(-
     </div>
 
     <div class="filters" id="filters">
-      <div><label>Línea</label><select id="fLinea"></select></div>
       <div><label>Sublínea</label><select id="fSub"></select></div>
       <div><label>Clase</label><select id="fClase"></select></div>
       <div><label>Subclase</label><select id="fSubc"></select></div>
-      <div class="full"><label>Marca</label><select id="fMarca"></select></div>
+      <div><label>Marca</label><select id="fMarca"></select></div>
       <div class="fclear"><button id="clrFilters" class="hide">Limpiar filtros ×</button></div>
     </div>
 
@@ -341,6 +349,7 @@ var FIREBASE_CONFIG={
   measurementId:"G-TVXJ0DSYEN"
 };
 var EMAIL_DOMAIN='stockcostanera.web';           // dominio interno para armar el correo desde el usuario
+var ADMIN_EMAIL='admin@stockcostanera.web';      // cuenta de administrador (se crea sola con la clave connect2025)
 var CLOUD = FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey.indexOf('PEGA_AQUI')<0;
 var CURRENT=null;      // usuario en sesión (local o nube)
 var REGISTERING=false; // evita carreras con el listener de sesión de Firebase
@@ -365,6 +374,27 @@ var BRAND_NAMES={PLAYSTATIO:'PlayStation',SOUND_CORE:'Soundcore',KLIP_XTRE:'Klip
   'TURTLE BEA':'Turtle Beach',NESCAFE_DO:'Nescafé Dolce Gusto',KITCHE_NIT:'KitchenAid',MONSTERGAM:'Monster Game',
   WESTERN:'Western Digital',WD:'Western Digital','MASTER-G':'Master-G',BEZEL_PRO:'Bezel Pro',BITTY_BOOM:'Bitty Boom',
   SCALDASONN:'Scaldasonno',BR_0035470:'Genérica'};
+// Dominios de marcas conocidas -> se usa para traer el logo en vivo (Clearbit). El resto usa insignia.
+var BRAND_DOMAINS={APPLE:'apple.com',SAMSUNG:'samsung.com',SONY:'sony.com',XIAOMI:'mi.com',HUAWEI:'huawei.com',JBL:'jbl.com',
+  HP:'hp.com',PHILIPS:'philips.com',LG:'lg.com',BOSE:'bose.com',LOGITECH:'logitech.com',LENOVO:'lenovo.com',CANON:'canon.com',
+  EPSON:'epson.com',NINTENDO:'nintendo.com',MICROSOFT:'microsoft.com',MOTOROLA:'motorola.com',GARMIN:'garmin.com',GOPRO:'gopro.com',
+  DJI:'dji.com',BROTHER:'brother.com',ASUS:'asus.com',ACER:'acer.com',RAZER:'razer.com',HYPERX:'hyperx.com',KINGSTON:'kingston.com',
+  NESPRESSO:'nespresso.com',DELONGHI:'delonghi.com',OSTER:'oster.com',BRAUN:'braun.com',MARSHALL:'marshall.com',SANDISK:'sandisk.com',
+  TOSHIBA:'toshiba.com',HISENSE:'hisense.com',HONOR:'hihonor.com',VIVO:'vivo.com',ZTE:'zte.com.cn',REMINGTON:'remingtonproducts.com',
+  ANKER:'anker.com',SOUND_CORE:'soundcore.com',EUFY:'eufy.com',ORAIMO:'oraimo.com',ROWENTA:'rowenta.com',MOULINEX:'moulinex.com',
+  TEFAL:'tefal.com',KRUPS:'krups.com',CASIO:'casio.com',AMAZON:'amazon.com',ROKU:'roku.com',SENNHEISER:'sennheiser.com',
+  SHARK:'sharkclean.com',MAXELL:'maxell.com',PHILCO:'philco.com',KODAK:'kodak.com',FUJIFILM:'fujifilm.com',TRUST:'trust.com',
+  REDRAGON:'redragon.com',OURA:'ouraring.com',SONOS:'sonos.com',THULE:'thule.com',TCL:'tcl.com',PLAYSTATIO:'playstation.com',
+  'HARMAN KAR':'harmankardon.com','KLIP XTREM':'klipxtreme.com',KLIP_XTRE:'klipxtreme.com','BLACK&DECK':'blackanddecker.com',
+  NINJA:'ninjakitchen.com',NESCAFE_DO:'nesc-dolce-gusto.cl',STARLINK:'starlink.com',NEXXT:'nexxtsolutions.com'};
+function brandInitials(marca){ var d=deacc(brandDisplay(marca)).replace(/[^A-Za-z0-9]/g,''); return (d.slice(0,2)||'?').toUpperCase(); }
+function brandHue(marca){ var b=normBrand(marca),h=0; for(var i=0;i<b.length;i++)h=(h*31+b.charCodeAt(i))%360; return h; }
+function brandLogo(marca){
+  var b=normBrand(marca), dom=BRAND_DOMAINS[b], ini=brandInitials(marca), hue=brandHue(marca);
+  if(dom) return '<div class="blogo"><img src="https://logo.clearbit.com/'+dom+'?size=88" alt="'+esc(brandDisplay(marca))+'" loading="lazy" referrerpolicy="no-referrer" data-l="'+esc(ini)+'" data-h="'+hue+'" onerror="brandLogoFail(this)"></div>';
+  return '<div class="blogo"><div class="chip" style="background:hsl('+hue+',55%,42%)">'+esc(ini)+'</div></div>';
+}
+function brandLogoFail(img){ try{ img.parentNode.innerHTML='<div class="chip" style="background:hsl('+(img.getAttribute('data-h')||0)+',55%,42%)">'+esc(img.getAttribute('data-l')||'?')+'</div>'; }catch(e){} }
 
 /* ===== Utilidades ===== */
 function $(id){return document.getElementById(id);}
@@ -430,9 +460,10 @@ var Cloud={
     this.fn.onAuth(this.auth, async function(u){
       if(REGISTERING) return;
       if(!u){ CURRENT=null; SETUNLOCKED=false; showGate(); return; }
+      if(u.email===ADMIN_EMAIL){ CURRENT={uid:u.uid,admin:true,username:'admin',nombre:'Administrador',apellido:''}; showApp(); self.subscribeCatalog(); if($('setSheet').classList.contains('show')) renderConfig(); return; }
       var me=null;
       try{ var snap=await self.fn.getDoc(self.fn.doc(self.db,'usuarios',u.uid)); me=snap.exists()?snap.data():null; }catch(e){}
-      if(me && me.estado==='aprobado'){ CURRENT=Object.assign({uid:u.uid},me); showApp(); self.subscribeCatalog(); }
+      if(me && me.estado==='aprobado'){ CURRENT=Object.assign({uid:u.uid,admin:false},me); showApp(); self.subscribeCatalog(); }
       else { await self.fn.signOut(self.auth); CURRENT=null; showGate(); authMsg('info','Tu cuenta está pendiente de aprobación por el administrador.'); }
     });
   },
@@ -466,6 +497,16 @@ var Cloud={
     return {ok:false,msg:'No se pudo crear el usuario.'};
   },
   async login(username,clave){ try{ await this.fn.signIn(this.auth,this.email(username),clave); return {ok:true}; }catch(e){ return {ok:false,msg:this.mapErr(e)}; } },
+  async adminLogin(key){
+    try{ await this.fn.signIn(this.auth, ADMIN_EMAIL, key); return {ok:true}; }
+    catch(e){
+      // La primera vez la cuenta admin no existe: se crea con esta clave.
+      try{ await this.fn.createUser(this.auth, ADMIN_EMAIL, key); return {ok:true,created:true}; }
+      catch(e2){ if((e2.code||'').indexOf('email-already-in-use')>=0) return {ok:false,msg:'Clave de administrador incorrecta.'};
+        if((e2.code||'').indexOf('weak-password')>=0) return {ok:false,msg:'La clave debe tener al menos 6 caracteres.'};
+        return {ok:false,msg:this.mapErr(e2)}; }
+    }
+  },
   async logout(){ try{ await this.fn.signOut(this.auth); }catch(e){} CURRENT=null; SETUNLOCKED=false; },
   async listUsers(){ var out=[]; var snap=await this.fn.getDocs(this.fn.collection(this.db,'usuarios'));
     snap.forEach(function(d){ out.push(Object.assign({id:d.id},d.data())); });
@@ -494,13 +535,18 @@ var Cloud={
   subscribeCatalog(){
     var self=this; if(CATSUB){ try{CATSUB();}catch(e){} CATSUB=null; }
     try{ CATSUB=this.fn.onSnapshot(this.fn.doc(this.db,'catalogo','meta'), function(){
-      self.loadCatalog().then(function(){ buildFilters(); render(); updateBanner(); if(SETUNLOCKED) renderConfig(); }).catch(function(){});
+      self.loadCatalog().then(function(){ buildFilters(); render(); updateBanner(); if($('setSheet').classList.contains('show')) renderConfig(); }).catch(function(){});
     }); }catch(e){}
   }
 };
 
 /* ===== Dispatchers (nube o local) ===== */
-function isAdmin(){ return CLOUD ? !!(CURRENT&&CURRENT.rol==='admin') : true; }
+function isAdmin(){ return !!(CURRENT&&CURRENT.admin); }
+async function adminUnlock(key){
+  if(CLOUD){ var r=await Cloud.adminLogin(key); return r; }
+  if(key===ADMIN_KEY){ CURRENT={admin:true,username:'admin',nombre:'Administrador',apellido:''}; SETUNLOCKED=true; showApp(); return {ok:true}; }
+  return {ok:false,msg:'Clave de administrador incorrecta.'};
+}
 async function doRegister(n,a,c){ return CLOUD ? Cloud.register(n,a,c) : registerUser(n,a,c); }
 async function doLogin(u,c){
   if(CLOUD) return Cloud.login(u,c);
@@ -548,7 +594,7 @@ async function handleFile(file){
     if(!r.arr.length){ toast('No se encontraron productos en el archivo'); return; }
     PRODUCTS=r.arr; META={fecha:new Date().toISOString(),archivo:file.name,filas:r.filas};
     if(CLOUD) toast('<span class="spin"></span> Subiendo '+PRODUCTS.length+' productos a la nube…');
-    await persistCatalog(); buildFilters(); render(); updateBanner(); if(SETUNLOCKED) renderConfig();
+    await persistCatalog(); buildFilters(); render(); updateBanner(); if($('setSheet').classList.contains('show')) renderConfig();
     toast('✓ '+PRODUCTS.length+' productos '+(CLOUD?'subidos a la nube':'cargados'));
   }catch(e){ console.error(e); toast('Error: '+(e.message||'no se pudo leer el archivo')); }
 }
@@ -575,12 +621,11 @@ function fillSelect(sel,items,cur,allLabel){ var h='<option value="">'+allLabel+
   items.forEach(function(it){h+='<option value="'+esc(it.code)+'"'+(it.code===cur?' selected':'')+'>'+esc(it.name||it.code)+'</option>';});
   sel.innerHTML=h; if(cur&&!items.some(function(it){return it.code===cur;})) sel.value=''; }
 function buildFilters(){
-  fillSelect($('fLinea'),distinct(function(p){return p.linea;},function(p){return p.lineaN;},null),FILT.linea,'Todas las líneas');
-  fillSelect($('fSub'),distinct(function(p){return p.sub;},function(p){return p.subN;},function(p){return !FILT.linea||p.linea===FILT.linea;}),FILT.sub,'Todas las sublíneas');
-  fillSelect($('fClase'),distinct(function(p){return p.clase;},function(p){return p.claseN;},function(p){return (!FILT.linea||p.linea===FILT.linea)&&(!FILT.sub||p.sub===FILT.sub);}),FILT.clase,'Todas las clases');
-  fillSelect($('fSubc'),distinct(function(p){return p.subc;},function(p){return p.subcN;},function(p){return (!FILT.linea||p.linea===FILT.linea)&&(!FILT.sub||p.sub===FILT.sub)&&(!FILT.clase||p.clase===FILT.clase);}),FILT.subc,'Todas las subclases');
+  fillSelect($('fSub'),distinct(function(p){return p.sub;},function(p){return p.subN;},null),FILT.sub,'Todas las sublíneas');
+  fillSelect($('fClase'),distinct(function(p){return p.clase;},function(p){return p.claseN;},function(p){return (!FILT.sub||p.sub===FILT.sub);}),FILT.clase,'Todas las clases');
+  fillSelect($('fSubc'),distinct(function(p){return p.subc;},function(p){return p.subcN;},function(p){return (!FILT.sub||p.sub===FILT.sub)&&(!FILT.clase||p.clase===FILT.clase);}),FILT.subc,'Todas las subclases');
   fillSelect($('fMarca'),distinct(function(p){return normBrand(p.marca);},function(p){return brandDisplay(p.marca);},null),FILT.marca,'Todas las marcas');
-  var active=[FILT.linea,FILT.sub,FILT.clase,FILT.subc,FILT.marca].filter(Boolean).length+(FILT.low?1:0);
+  var active=[FILT.sub,FILT.clase,FILT.subc,FILT.marca].filter(Boolean).length+(FILT.low?1:0);
   $('clrFilters').classList.toggle('hide',active===0);
 }
 
@@ -588,9 +633,9 @@ function buildFilters(){
 function lowThr(){ var v=parseInt(localStorage.getItem(K.LOW)||'3',10); return isNaN(v)?3:v; }
 function stockClass(s,low){ if(s<=0)return 'no'; if(s<low)return 'lo'; return 'hi'; }
 function stockLabel(s,low){ if(s<=0)return 'Sin stock'; if(s<low)return 'Quedan '+s; return s+' disp.'; }
+function stockBadge(s,low){ var n=s<=0?0:s; var t=s<=0?'sin stock':(s<low?(s===1?'queda':'quedan'):'disp.'); return '<span class="n">'+n+'</span><span class="t">'+t+'</span>'; }
 function filtered(){ var low=lowThr(); var q=up(FILT.q).trim(); var qd=q.replace(/\D/g,'');
   return PRODUCTS.filter(function(p){
-    if(FILT.linea&&p.linea!==FILT.linea)return false;
     if(FILT.sub&&p.sub!==FILT.sub)return false;
     if(FILT.clase&&p.clase!==FILT.clase)return false;
     if(FILT.subc&&p.subc!==FILT.subc)return false;
@@ -602,29 +647,39 @@ function filtered(){ var low=lowThr(); var q=up(FILT.q).trim(); var qd=q.replace
     return true; });
 }
 function render(){
-  var low=lowThr(); var arr=filtered(); var list=$('list');
+  var low=lowThr(); var list=$('list');
   if(!PRODUCTS.length){ $('count').textContent=''; $('onlyLow').classList.add('hide');
     list.innerHTML='<div class="empty"><div class="big">📦</div><h3>Aún no hay stock cargado</h3><p>El administrador debe subir el archivo diario de inventario en <b>Configuración</b>.</p></div>'; return; }
-  var anyFilter=!!(FILT.q||FILT.linea||FILT.sub||FILT.clase||FILT.subc||FILT.marca||FILT.low);
-  $('count').textContent = anyFilter ? (arr.length+' resultado'+(arr.length===1?'':'s')) : '';
+  var anyFilter=!!(FILT.q||FILT.sub||FILT.clase||FILT.subc||FILT.marca||FILT.low);
+  // No mostramos resultados hasta que se busque o se filtre (así la app no queda tan larga)
+  if(!anyFilter){ $('count').textContent=''; $('onlyLow').classList.remove('hide'); $('onlyLow').textContent='Solo stock bajo';
+    list.innerHTML='<div class="empty"><div class="big">🔎</div><h3>Busca o filtra</h3><p>Escanea un código, escribe un SKU/EAN, o usa los filtros para ver productos.</p></div>'; return; }
+  var arr=filtered();
+  $('count').textContent = arr.length+' resultado'+(arr.length===1?'':'s');
   $('onlyLow').classList.remove('hide'); $('onlyLow').textContent=FILT.low?'Quitar filtro':'Solo stock bajo';
   if(!arr.length){ list.innerHTML='<div class="empty"><div class="big">🔍</div><h3>Sin resultados</h3><p>Prueba con otro SKU, EAN o quita algún filtro.</p></div>'; return; }
   var html='', slice=arr.slice(0,300);
   for(var i=0;i<slice.length;i++){ var p=slice[i], sc=stockClass(p.stock,low);
     html+='<div class="card" data-sku="'+esc(p.sku)+'">'+
-      '<button class="cmid" data-open="'+esc(p.sku)+'" style="background:none;text-align:left">'+
+      brandLogo(p.marca)+
+      '<div class="cmid">'+
+        '<button data-open="'+esc(p.sku)+'" style="background:none;text-align:left;padding:0;width:100%">'+
         '<div class="cname">'+esc(p.desc||'(sin descripción)')+'</div>'+
         '<div class="cmeta"><span class="brand">'+esc(brandDisplay(p.marca))+'</span><span>SKU '+esc(p.sku)+'</span>'+
         (p.eans.length>1?'<span class="eanpill">'+p.eans.length+' EAN</span>':'')+'</div></button>'+
-      '<div class="cright"><div class="stock '+sc+'">'+stockLabel(p.stock,low)+'</div>'+
-        '<button class="imgbtn" data-img="'+esc(p.sku)+'" data-name="'+esc(p.desc||'')+'">🖼️ Ver imagen</button></div>'+
+        '<div class="cardacts"><button class="imgbtn" data-img="'+esc(p.sku)+'" data-name="'+esc(p.desc||'')+'">🖼️ Ver imagen</button>'+
+        '<button class="imgbtn bc2" data-bc="'+esc(p.sku)+'">▐║▐ Código</button></div>'+
+      '</div>'+
+      '<div class="cright"><div class="stock '+sc+'">'+stockBadge(p.stock,low)+'</div></div>'+
     '</div>';
   }
   if(arr.length>300) html+='<div style="text-align:center;color:var(--mut);font-size:12px;padding:8px">Mostrando 300 de '+arr.length+'. Afina la búsqueda para ver más.</div>';
   list.innerHTML=html;
   Array.prototype.forEach.call(list.querySelectorAll('[data-open]'),function(b){b.onclick=function(){openDetail(b.getAttribute('data-open'));};});
   Array.prototype.forEach.call(list.querySelectorAll('[data-img]'),function(b){b.onclick=function(e){e.stopPropagation();openImage(b.getAttribute('data-img'),b.getAttribute('data-name'));};});
+  Array.prototype.forEach.call(list.querySelectorAll('[data-bc]'),function(b){b.onclick=function(e){e.stopPropagation();showCardBarcode(b.getAttribute('data-bc'));};});
 }
+function showCardBarcode(sku){ var p=findBySku(sku); if(!p)return; if(p.eans&&p.eans.length) showBarcode(p.eans[0]); else toast('Este producto no tiene EAN registrado'); }
 
 /* ===== Imagen (lightbox) ===== */
 function imgUrl(sku){ return 'https://media.falabella.com/falabellaCL/'+encodeURIComponent((sku||'').trim())+'/public'; }
@@ -695,19 +750,9 @@ function applyTheme(){ var dark=localStorage.getItem(K.THEME)==='dark'; document
 function toggleDark(){ var dark=localStorage.getItem(K.THEME)!=='dark'; localStorage.setItem(K.THEME,dark?'dark':'light'); applyTheme(); }
 
 /* ===== Configuración (protegida con clave) ===== */
-function openConfig(){ SETUNLOCKED=false; renderConfig(); openSheet('setSheet'); }
+function openConfig(){ renderConfig(); openSheet('setSheet'); }
 function renderConfig(){
   var pad=$('setPad');
-  if(!SETUNLOCKED){
-    pad.innerHTML='<div class="dtitle">Configuración</div>'+
-      '<p style="color:var(--mut);font-size:13px;margin:6px 0 14px">Ingresa la clave de administrador para ver la configuración.</p>'+
-      '<div id="cfgMsg"></div>'+
-      '<div class="field"><label>Clave de configuración</label><input id="cfgKey" type="password" placeholder="••••••••" autocomplete="off"></div>'+
-      '<button class="btn primary" id="cfgGo" style="width:100%">Entrar</button>';
-    $('cfgGo').onclick=function(){ if($('cfgKey').value===ADMIN_KEY){ SETUNLOCKED=true; renderConfig(); } else { $('cfgMsg').innerHTML='<div class="msg err">Clave incorrecta.</div>'; } };
-    $('cfgKey').addEventListener('keydown',function(e){ if(e.key==='Enter') $('cfgGo').click(); });
-    return;
-  }
   var cu=CURRENT;
   var admin=isAdmin();
   var accentIdx=parseInt(localStorage.getItem(K.ACCENT)||'0',10);
@@ -716,18 +761,23 @@ function renderConfig(){
   h+='<div class="dtitle">Configuración</div>';
   h+='<div style="font-size:11.5px;font-weight:800;color:'+(CLOUD?'var(--ok)':'var(--warn)')+';margin:4px 0 2px">'+(CLOUD?'☁️ NUBE (compartida entre dispositivos)':'📱 LOCAL (solo este equipo)')+'</div>';
 
-  // Datos
+  // Datos (info visible para todos)
   h+='<div class="sec"><h4>Datos de inventario</h4>';
   h+='<div style="font-size:13px;color:var(--mut);line-height:1.6">Productos: <b style="color:var(--ink)">'+PRODUCTS.length+'</b><br>Archivo: <b style="color:var(--ink)">'+esc(META.archivo||'—')+'</b><br>Última carga: <b style="color:var(--ink)">'+esc(fecha)+'</b></div>';
   if(admin) h+='<div style="display:flex;gap:8px;margin-top:10px"><button class="btn primary" id="cfgUpload" style="flex:1">⬆️ Subir archivo</button><button class="btn danger" id="cfgClear" style="flex:1">🗑️ Borrar datos</button></div>';
-  else h+='<div style="font-size:12.5px;color:var(--mut);margin-top:8px">Solo el administrador puede subir o borrar el stock.</div>';
   h+='</div>';
 
-  // Usuarios
-  h+='<div class="sec"><h4>Usuarios</h4>';
-  if(admin) h+='<div id="usersBox" style="color:var(--mut);font-size:13px">Cargando usuarios…</div>';
-  else h+='<div style="font-size:12.5px;color:var(--mut)">Solo el administrador gestiona los usuarios.</div>';
-  h+='</div>';
+  if(!admin){
+    // Ingreso de administrador (clave connect2025)
+    h+='<div class="sec"><h4>Administrador</h4>'+
+       '<p style="color:var(--mut);font-size:13px;margin:0 0 10px">Ingresa la clave de administrador para subir el stock y gestionar usuarios.</p>'+
+       '<div id="cfgMsg"></div>'+
+       '<div class="field"><label>Clave de administrador</label><input id="cfgKey" type="password" placeholder="••••••••" autocomplete="off"></div>'+
+       '<button class="btn primary" id="cfgGo" style="width:100%">Ingresar como administrador</button></div>';
+  } else {
+    // Usuarios (solo admin)
+    h+='<div class="sec"><h4>Usuarios</h4><div id="usersBox" style="color:var(--mut);font-size:13px">Cargando usuarios…</div></div>';
+  }
 
   // Preferencias
   h+='<div class="sec"><h4>Preferencias</h4>';
@@ -753,6 +803,15 @@ function renderConfig(){
   var lo=$('cfgLogout'); if(lo)lo.onclick=function(){ logout(); closeSheet('setSheet'); };
   var sw=$('cfgSw'); sw.innerHTML=PALETTE.map(function(p,i){return '<button class="sw'+(i===accentIdx?' on':'')+'" data-i="'+i+'" style="background:'+p.c+'"></button>';}).join('');
   Array.prototype.forEach.call(sw.querySelectorAll('.sw'),function(b){b.onclick=function(){applyAccent(+b.getAttribute('data-i'));renderConfig();};});
+  if(!admin){
+    var go=$('cfgGo'); var ck=$('cfgKey');
+    if(go)go.onclick=async function(){ var k=(ck&&ck.value)||''; if(k.length<4){ $('cfgMsg').innerHTML='<div class="msg err">Ingresa la clave.</div>'; return; }
+      $('cfgMsg').innerHTML='<div class="msg info"><span class="spin"></span> Verificando…</div>';
+      var r=await adminUnlock(k);
+      if(r.ok){ if(CLOUD){ $('cfgMsg').innerHTML='<div class="msg ok">✓ Ingresando como administrador…</div>'; } else { renderConfig(); } }
+      else { $('cfgMsg').innerHTML='<div class="msg err">'+esc(r.msg||'Clave incorrecta')+'</div>'; } };
+    if(ck)ck.addEventListener('keydown',function(e){ if(e.key==='Enter'&&go) go.click(); });
+  }
   if(admin) populateUsers();
 }
 async function populateUsers(){
@@ -851,7 +910,6 @@ function init(){
       authMsg('ok','✓ Registro enviado. Tu usuario es <b>'+esc(r.username)+'</b>. Un administrador debe aprobarlo en Configuración antes de que puedas ingresar.'); }
     else authMsg('err',esc(r.msg)); });
   $('gateAdmin').onclick=openConfig;
-  if(CLOUD) $('gateAdmin').classList.add('hide'); // en la nube, el admin entra con su usuario
 
   // App header
   $('btnDark').onclick=toggleDark;
@@ -864,9 +922,8 @@ function init(){
   // Búsqueda + filtros
   $('q').addEventListener('input',function(){ FILT.q=this.value; $('qclr').classList.toggle('hide',!this.value); render(); });
   $('qclr').onclick=function(){ FILT.q=''; $('q').value=''; this.classList.add('hide'); render(); };
-  $('clrFilters').onclick=function(){ FILT.linea=FILT.sub=FILT.clase=FILT.subc=FILT.marca=''; FILT.low=false; buildFilters(); render(); };
+  $('clrFilters').onclick=function(){ FILT.sub=FILT.clase=FILT.subc=FILT.marca=''; FILT.low=false; buildFilters(); render(); };
   $('onlyLow').onclick=function(){ FILT.low=!FILT.low; buildFilters(); render(); };
-  $('fLinea').onchange=function(){ FILT.linea=this.value; FILT.sub=FILT.clase=FILT.subc=''; buildFilters(); render(); };
   $('fSub').onchange=function(){ FILT.sub=this.value; FILT.clase=FILT.subc=''; buildFilters(); render(); };
   $('fClase').onchange=function(){ FILT.clase=this.value; FILT.subc=''; buildFilters(); render(); };
   $('fSubc').onchange=function(){ FILT.subc=this.value; buildFilters(); render(); };
