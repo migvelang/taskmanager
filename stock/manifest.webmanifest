@@ -1,0 +1,18 @@
+{
+  "name": "Stock Costanera",
+  "short_name": "Stock",
+  "description": "Consulta de inventario, escáner de códigos y stock por producto.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f5f7",
+  "theme_color": "#aad503",
+  "lang": "es-CL",
+  "categories": ["business", "productivity", "shopping"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
