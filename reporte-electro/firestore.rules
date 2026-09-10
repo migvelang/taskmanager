@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Perfiles de usuario: cualquiera con sesión iniciada puede leerlos
+    // (para mostrar nombres en el reporte); cada quien solo edita el suyo.
+    match /usuarios/{uid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Ventas: son el reporte compartido del equipo.
+    //  - cualquier usuario con sesión puede leerlas y crear nuevas
+    //  - solo quien la registró puede editarla o borrarla
+    match /ventas/{id} {
+      allow read:   if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.registradoPor == request.auth.uid;
+      allow update, delete: if request.auth != null
+                    && resource.data.registradoPor == request.auth.uid;
+    }
+
+    // Configuración compartida (metas, jefes, clave de Gemini, etc.).
+    // La protege la clave "connect2025" dentro de la app.
+    // Si quieres endurecerlo, restringe la escritura a UIDs de administradores.
+    match /config/{doc} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null;
+    }
+  }
+}
