@@ -78,6 +78,24 @@ Cualquier hosting estático sirve. Dos opciones fáciles:
 Jerarquías y elegibilidad salen de los archivos oficiales (subclases elegibles + inventario).
 Para actualizar el inventario o el mapeo, se regenera el bloque de datos de `index.html`.
 
+### Fuentes del reporte
+
+En la vista **Reporte** puedes elegir la fuente:
+
+- **Registradas:** suma las ventas cargadas en la app (tiempo real, día a día).
+- **Avance Looker:** usa el último **avance importado** con fecha ≤ la seleccionada.
+
+**Importar avances de Looker:** en Reporte → *⬆️ Importar avances de Looker*. Sube el **HTML** o
+**TXT/CSV** que descargas de Looker con los avances por departamento y/o asesor; la IA (Gemini) lo lee,
+lo muestra en una tabla **editable** para que verifiques, y al guardar queda como snapshot con fecha.
+Así se va armando el reporte global día a día sin tipear a mano.
+
+### Metas diarias (mes comercial)
+
+En ⚙️ Config defines la **fecha de inicio y término del mes comercial**. El reporte calcula, por jefe
+y total, la **meta diaria = (plan del mes − avance del mes) ÷ días que faltan**, y muestra cuántos
+días quedan por vender.
+
 ---
 
 ## Traspasar este repo a `costaneraelectro/reporte`

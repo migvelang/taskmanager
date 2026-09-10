@@ -226,6 +226,7 @@ const TIPO_CAT_DEFAULT = {
 /* ---------- Config por defecto (editable en Configuración) ---------- */
 const DEFAULT_CONFIG = {
   tienda:"Costanera Electro",
+  mes:{ inicio:"", fin:"" },   // mes comercial (YYYY-MM-DD) para metas diarias
   departamentos:{
     "ELECTRO NEGRO":["CONNECT","COMPUTACION","AUDIO","OTRAS","VIDEOJUEGOS"],
     "LINEA BLANCA":["LINEA BLANCA"]
@@ -294,7 +295,7 @@ function buscarProductos(q){
    ========================================================================= */
 const Store = {
   mode:"local", fb:null, db:null, auth:null, storage:null,
-  user:null, config:null, onVentas:null, ventasCache:[],
+  user:null, config:null, onVentas:null, ventasCache:[], onAvances:null, avancesCache:[],
 
   lsGet(k,def){ try{return JSON.parse(localStorage.getItem(k))??def}catch{return def} },
   lsSet(k,v){ localStorage.setItem(k,JSON.stringify(v)) },
@@ -306,6 +307,7 @@ const Store = {
     this.config.gemini   = Object.assign({},DEFAULT_CONFIG.gemini,this.config.gemini||{});
     this.config.firebase = Object.assign({},DEFAULT_CONFIG.firebase,this.config.firebase||{});
     this.config.tipoCat  = Object.assign({},TIPO_CAT_DEFAULT,this.config.tipoCat||{});
+    this.config.mes      = Object.assign({inicio:"",fin:""},this.config.mes||{});
     return this.config;
   },
   async saveConfig(cfg){
@@ -437,6 +439,27 @@ const Store = {
   _emit(){ this.ventasCache=this.lsGet("re_ventas",[]).sort((a,b)=>b.ts-a.ts);
     if(this.onVentas)this.onVentas(this.ventasCache); },
 
+  /* -------- Avances importados (Looker) -------- */
+  async addAvance(a){
+    a.importadoPor=this.user.uid; a.importadoPorNombre=this.user.display||""; a.ts=Date.now();
+    if(this.mode==="firebase"){ const ref=await this.db.collection("avances").add(a); a.id=ref.id; }
+    else{ a.id=uid(); const arr=this.lsGet("re_avances",[]); arr.push(a); this.lsSet("re_avances",arr); this._emitAv(); }
+    return a;
+  },
+  async deleteAvance(id){
+    if(this.mode==="firebase"){ await this.db.collection("avances").doc(id).delete(); }
+    else{ let arr=this.lsGet("re_avances",[]).filter(x=>x.id!==id); this.lsSet("re_avances",arr); this._emitAv(); }
+  },
+  subscribeAvances(cb){
+    this.onAvances=cb;
+    if(this.mode==="firebase"){
+      this.db.collection("avances").orderBy("ts","desc").onSnapshot(snap=>{
+        this.avancesCache=snap.docs.map(d=>Object.assign({id:d.id},d.data())); cb(this.avancesCache);
+      },err=>console.warn(err));
+    }else{ this._emitAv(); }
+  },
+  _emitAv(){ this.avancesCache=this.lsGet("re_avances",[]).sort((a,b)=>b.ts-a.ts); if(this.onAvances)this.onAvances(this.avancesCache); },
+
   async uploadBoleta(file){
     if(this.mode==="firebase" && this.storage){
       const path=`boletas/${this.user.uid}/${Date.now()}_${file.name||"boleta"}`;
@@ -481,6 +504,43 @@ Reglas: montos como número entero sin puntos ni símbolos. Si un dato no aparec
   const txt=j?.candidates?.[0]?.content?.parts?.[0]?.text||"{}";
   let data; try{ data=JSON.parse(txt); }catch{ const m=txt.match(/\{[\s\S]*\}/); data=m?JSON.parse(m[0]):{}; }
   return data;
+}
+
+/* Parseo de export de Looker (HTML/TXT/CSV) con Gemini -> filas normalizadas */
+async function geminiTexto(prompt){
+  const g=Store.config.gemini;
+  if(!g.apiKey) throw new Error("Falta la API key de Gemini (⚙️ Config).");
+  const model=g.model||"gemini-2.0-flash";
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(g.apiKey)}`;
+  const body={contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1,response_mime_type:"application/json"}};
+  const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  if(!r.ok){ const t=await r.text(); throw new Error("Gemini "+r.status+": "+t.slice(0,180)); }
+  const j=await r.json();
+  const txt=j?.candidates?.[0]?.content?.parts?.[0]?.text||"{}";
+  try{ return JSON.parse(txt); }catch{ const m=txt.match(/\{[\s\S]*\}/); return m?JSON.parse(m[0]):{}; }
+}
+function htmlATexto(s){
+  return s.replace(/<style[\s\S]*?<\/style>/gi,"").replace(/<script[\s\S]*?<\/script>/gi,"")
+          .replace(/<\/(tr|div|p|table)>/gi,"\n").replace(/<\/td>|<\/th>/gi," | ")
+          .replace(/<[^>]+>/g," ").replace(/&nbsp;/g," ").replace(/&amp;/g,"&")
+          .replace(/[ \t]+/g," ").replace(/\n{2,}/g,"\n").trim();
+}
+async function extraerAvancesLooker(text){
+  const clip=text.slice(0,120000);
+  const prompt=`Recibes el contenido de un reporte exportado desde Looker Studio (puede venir como texto/tabla) de una tienda de electrohogar en Chile.
+Contiene AVANCES de venta por DEPARTAMENTO y/o por ASESOR (vendedor), para garantía extendida (GEXT) y/o seguro (Seguro Connect).
+Devuelve EXCLUSIVAMENTE un JSON válido:
+{
+ "filas":[ { "nivel":"departamento"|"asesor", "nombre":string, "area":string|null,
+             "departamento":string|null, "gext":number, "seguro":number, "otros":number } ],
+ "periodo": string|null,
+ "dudas":[string]
+}
+Reglas: montos como enteros en pesos (sin puntos ni símbolos); si no hay un valor usa 0.
+Áreas posibles: "ELECTRO NEGRO" o "LINEA BLANCA". Departamentos típicos: CONNECT, COMPUTACION, AUDIO, OTRAS, VIDEOJUEGOS, LINEA BLANCA.
+Si una fila es un total general, NO la incluyas. Contenido:
+"""${clip}"""`;
+  return await geminiTexto(prompt);
 }
 
 /* =========================================================================
@@ -781,51 +841,105 @@ function modalBuscarProducto(onPick){
 }
 
 /* ---------------- REPORTE ---------------- */
-let repDate=todayStr(); let repRange="dia"; // dia | acumulado
-function ventasFiltradas(){
-  let arr=Store.ventasCache.slice();
-  if(repRange==="dia") arr=arr.filter(v=>v.fecha===repDate);
-  else{ // acumulado del mes de repDate
-    const ym=repDate.slice(0,7); arr=arr.filter(v=>(v.fecha||"").slice(0,7)===ym);
-  }
-  return arr;
-}
+let repDate=todayStr(); let repRange="dia"; let repSource="ventas"; // ventas | looker
+const M0=()=>({gext:0,seguro:0,otros:0});
 function estado(pct){ if(pct>=100)return"ok"; if(pct>=80)return"warn"; return"bad"; }
-function renderReporte(app){
-  const arr=ventasFiltradas();
-  const cfg=Store.config;
-  // acumular por jefe
-  const jefeAgg={}; cfg.jefes.forEach(j=>jefeAgg[j.id]={gext:0,seguro:0,otros:0});
-  // acumular por area/depto/asesor
+function colorPct(es){ return es==='ok'?'#4ade80':es==='warn'?'#fbbf24':'#f87171'; }
+function diffDays(a,b){ return Math.round((new Date(b+"T00:00:00")-new Date(a+"T00:00:00"))/86400000); }
+function inferArea(depto){
+  const dep=(depto||"").toUpperCase();
+  for(const a of AREAS){ if((Store.config.departamentos[a]||[]).map(x=>x.toUpperCase()).includes(dep)) return a; }
+  return dep.includes("BLANCA")?"LINEA BLANCA":"ELECTRO NEGRO";
+}
+function jefeDe(area,depto){
+  const cand=Store.config.jefes.filter(j=>j.area===area);
+  return cand.find(j=>(j.departamentos||[]).includes(depto)) || cand[0] || null;
+}
+function deptTotal(D){
+  if(Object.keys(D.ases).length){ const t=M0(); Object.values(D.ases).forEach(x=>{t.gext+=x.gext;t.seguro+=x.seguro;t.otros+=x.otros;}); return t; }
+  return D.dept||M0();
+}
+/* Ventas del periodo -> areaAgg */
+function areaAggVentas(desde,hasta){
   const areaAgg={};
-  function jefeDe(area,depto){
-    const cand=cfg.jefes.filter(j=>j.area===area);
-    const m=cand.find(j=>(j.departamentos||[]).includes(depto));
-    return (m||cand[0]||null);
-  }
-  let totGext=0,totSeg=0,totOtros=0;
-  arr.forEach(v=>{
-    const cat=v.categoria||cfg.tipoCat[v.tipo]||"OTROS";
-    const monto=+v.monto||0;
-    const j=jefeDe(v.area,v.departamento);
-    if(j){ if(cat==="GEXT")jefeAgg[j.id].gext+=monto; else if(cat==="SEGURO")jefeAgg[j.id].seguro+=monto; else jefeAgg[j.id].otros+=monto; }
-    if(cat==="GEXT")totGext+=monto; else if(cat==="SEGURO")totSeg+=monto; else totOtros+=monto;
-    // area/depto/asesor
-    areaAgg[v.area]=areaAgg[v.area]||{depts:{}};
-    const A=areaAgg[v.area]; A.depts[v.departamento]=A.depts[v.departamento]||{ases:{}};
-    const D=A.depts[v.departamento]; const key=v.asesorNombre||"(sin nombre)";
-    D.ases[key]=D.ases[key]||{gext:0,seguro:0,otros:0};
-    if(cat==="GEXT")D.ases[key].gext+=monto; else if(cat==="SEGURO")D.ases[key].seguro+=monto; else D.ases[key].otros+=monto;
+  Store.ventasCache.forEach(v=>{
+    const f=v.fecha||""; if(f<desde||f>hasta) return;
+    const cat=v.categoria||Store.config.tipoCat[v.tipo]||"OTROS"; const monto=+v.monto||0;
+    const area=v.area||"(sin área)", depto=v.departamento||"(sin depto)", nm=v.asesorNombre||"(sin nombre)";
+    const A=areaAgg[area]=areaAgg[area]||{depts:{}};
+    const D=A.depts[depto]=A.depts[depto]||{ases:{},dept:null};
+    const x=D.ases[nm]=D.ases[nm]||M0();
+    if(cat==="GEXT")x.gext+=monto; else if(cat==="SEGURO")x.seguro+=monto; else x.otros+=monto;
   });
+  return areaAgg;
+}
+/* Avance Looker (el más reciente con fecha <= hasta) -> areaAgg */
+function avanceVigente(hasta){
+  return Store.avancesCache.filter(a=>(a.fecha||"")<=hasta).sort((a,b)=>(a.fecha<b.fecha?1:-1)||(b.ts-a.ts))[0]||null;
+}
+function areaAggAvance(av){
+  const areaAgg={};
+  (av?.filas||[]).forEach(f=>{
+    const depto=(f.departamento||(f.nivel==='departamento'?f.nombre:"(sin depto)"))||"(sin depto)";
+    const area=f.area||inferArea(depto);
+    const A=areaAgg[area]=areaAgg[area]||{depts:{}};
+    const D=A.depts[depto]=A.depts[depto]||{ases:{},dept:null};
+    const g=+f.gext||0,s=+f.seguro||0,o=+f.otros||0;
+    if(f.nivel==='asesor'){ const nm=f.nombre||"(sin nombre)"; const x=D.ases[nm]=D.ases[nm]||M0(); x.gext+=g;x.seguro+=s;x.otros+=o; }
+    else { D.dept=D.dept||M0(); D.dept.gext+=g;D.dept.seguro+=s;D.dept.otros+=o; }
+  });
+  return areaAgg;
+}
+/* jefeAgg + totales desde areaAgg */
+function rollup(areaAgg){
+  const jefeAgg={}; Store.config.jefes.forEach(j=>jefeAgg[j.id]=M0());
+  let gextTot=0,segTot=0,otrosTot=0;
+  for(const area of Object.keys(areaAgg)){
+    for(const depto of Object.keys(areaAgg[area].depts)){
+      const dt=deptTotal(areaAgg[area].depts[depto]);
+      const j=jefeDe(area,depto);
+      if(j){ jefeAgg[j.id].gext+=dt.gext; jefeAgg[j.id].seguro+=dt.seguro; jefeAgg[j.id].otros+=dt.otros; }
+      gextTot+=dt.gext; segTot+=dt.seguro; otrosTot+=dt.otros;
+    }
+  }
+  return {jefeAgg,gextTot,segTot,otrosTot};
+}
 
-  // resumen jefes (vista foto)
-  let planGextTot=0,planSegTot=0,gextTot=0,segTot=0;
+function renderReporte(app){
+  const cfg=Store.config;
+  const ym=repDate.slice(0,7);
+  const desde = repRange==="dia" ? repDate : ym+"-01";
+  const hasta = repRange==="dia" ? repDate : ym+"-31";
+  // fuente de datos
+  let areaAgg, avUsado=null;
+  if(repSource==="looker"){ avUsado=avanceVigente(hasta); areaAgg=areaAggAvance(avUsado); }
+  else areaAgg=areaAggVentas(desde,hasta);
+  const {jefeAgg,gextTot,segTot,otrosTot}=rollup(areaAgg);
+
+  // ---- metas diarias (mes comercial) usan SIEMPRE el acumulado del mes ----
+  const mes=cfg.mes||{};
+  let metaInfo=null;
+  if(mes.inicio&&mes.fin){
+    // avance del mes segun la fuente
+    let mesAgg;
+    if(repSource==="looker"){ mesAgg=areaAggAvance(avanceVigente(mes.fin)); }
+    else mesAgg=areaAggVentas(mes.inicio,mes.fin);
+    const mesRoll=rollup(mesAgg);
+    const diasTot=diffDays(mes.inicio,mes.fin)+1;
+    const hoy=todayStr();
+    const ref = hoy<mes.inicio?mes.inicio : (hoy>mes.fin?mes.fin:hoy);
+    const diasRest=Math.max(1,diffDays(ref,mes.fin)+1);
+    const diasTrans=diasTot-diasRest+1;
+    metaInfo={diasTot,diasRest,diasTrans,mesRoll};
+  }
+
+  // ---- resumen jefes (vista foto) ----
+  let planGextTot=0,planSegTot=0;
   const jefeCards=cfg.jefes.map(j=>{
-    const a=jefeAgg[j.id]||{gext:0,seguro:0,otros:0};
-    const total=a.gext+a.seguro;
+    const a=jefeAgg[j.id]||M0(); const total=a.gext+a.seguro;
     const plan=(j.planGext||0)+(j.planSeguro||0);
     const pct=plan?Math.round(total/plan*1000)/10:0;
-    planGextTot+=j.planGext||0; planSegTot+=j.planSeguro||0; gextTot+=a.gext; segTot+=a.seguro;
+    planGextTot+=j.planGext||0; planSegTot+=j.planSeguro||0;
     const es=estado(pct);
     return `<div class="jefe state-${es}">
       <div class="jn"><span>${esc(j.nombre)}</span><span class="chip ${j.area==='LINEA BLANCA'?'lb':'en'}">${j.area==='LINEA BLANCA'?'L. BLANCA':'E. NEGRO'}</span></div>
@@ -841,22 +955,53 @@ function renderReporte(app){
   const pctTot=planTot?Math.round(totalTienda/planTot*1000)/10:0;
   const esTot=estado(pctTot);
 
-  // tabla detalle
+  // ---- metas diarias card ----
+  let metasHTML="";
+  if(metaInfo){
+    const rows=cfg.jefes.map(j=>{
+      const a=metaInfo.mesRoll.jefeAgg[j.id]||M0(); const av=a.gext+a.seguro;
+      const plan=(j.planGext||0)+(j.planSeguro||0);
+      const falta=Math.max(0,plan-av);
+      const diaria=Math.round(falta/metaInfo.diasRest);
+      return `<tr><td>${esc(j.nombre)}</td><td>${CLP(plan)}</td><td>${CLP(av)}</td><td>${CLP(falta)}</td><td><b>${CLP(diaria)}</b></td></tr>`;
+    }).join("");
+    const mtot=metaInfo.mesRoll; const avT=mtot.gextTot+mtot.segTot; const faltaT=Math.max(0,planTot-avT);
+    metasHTML=`
+    <div class="card">
+      <div class="row" style="align-items:center">
+        <h2 style="flex:1">Metas diarias</h2>
+        <span class="chip">${metaInfo.diasRest} día(s) por vender</span>
+      </div>
+      <p class="sub">Mes comercial ${esc(mes.inicio)} → ${esc(mes.fin)} · van ${metaInfo.diasTrans}/${metaInfo.diasTot} días. Meta diaria = lo que falta ÷ días restantes.</p>
+      <div class="rep-wrap"><table>
+        <thead><tr><th>Jefe</th><th>Plan mes</th><th>Avance mes</th><th>Falta</th><th>Meta diaria</th></tr></thead>
+        <tbody>${rows}
+          <tr class="total"><td>TOTAL</td><td>${CLP(planTot)}</td><td>${CLP(avT)}</td><td>${CLP(faltaT)}</td><td><b>${CLP(Math.round(faltaT/metaInfo.diasRest))}</b></td></tr>
+        </tbody></table></div>
+    </div>`;
+  }else{
+    metasHTML=`<div class="card"><h2>Metas diarias</h2><p class="sub">Define la fecha de inicio y término del <b>mes comercial</b> en ⚙️ Config para calcular las metas diarias según los días que faltan.</p></div>`;
+  }
+
+  // ---- tabla detalle ----
   let detalle="";
   for(const area of Object.keys(areaAgg)){
     detalle+=`<tr class="area-row"><td>${esc(area)}</td><td>GExt</td><td>Seguro</td><td>Otros</td><td>Total</td></tr>`;
     const A=areaAgg[area];
     for(const depto of Object.keys(A.depts)){
-      const D=A.depts[depto];
-      let dg=0,ds=0,doo=0;
+      const D=A.depts[depto]; const dt=deptTotal(D);
       const filas=Object.keys(D.ases).map(nm=>{
-        const x=D.ases[nm]; dg+=x.gext;ds+=x.seguro;doo+=x.otros;
+        const x=D.ases[nm];
         return `<tr class="asesor"><td>${esc(nm)}</td><td>${CLP(x.gext)}</td><td>${CLP(x.seguro)}</td><td>${CLP(x.otros)}</td><td>${CLP(x.gext+x.seguro+x.otros)}</td></tr>`;
       }).join("");
-      detalle+=`<tr><td><b>${esc(depto)}</b></td><td>${CLP(dg)}</td><td>${CLP(ds)}</td><td>${CLP(doo)}</td><td><b>${CLP(dg+ds+doo)}</b></td></tr>`+filas;
+      detalle+=`<tr><td><b>${esc(depto)}</b></td><td>${CLP(dt.gext)}</td><td>${CLP(dt.seguro)}</td><td>${CLP(dt.otros)}</td><td><b>${CLP(dt.gext+dt.seguro+dt.otros)}</b></td></tr>`+filas;
     }
   }
-  if(!detalle) detalle=`<tr><td colspan="5" class="center muted" style="padding:20px">Sin ventas en este periodo</td></tr>`;
+  if(!detalle) detalle=`<tr><td colspan="5" class="center muted" style="padding:20px">Sin datos en este periodo</td></tr>`;
+
+  const fuenteMsg = repSource==="looker"
+    ? (avUsado?`Fuente: avance Looker del ${esc(avUsado.fecha)}`:`No hay avances Looker importados ≤ ${esc(hasta)}. Importa uno o usa "Registradas".`)
+    : `Fuente: ventas registradas en la app`;
 
   app.innerHTML=`
   <div class="card">
@@ -867,12 +1012,18 @@ function renderReporte(app){
         <button id="rgAcum" class="${repRange==='acumulado'?'active':''}">Mes</button>
       </div>
     </div>
+    <div class="seg" style="margin-top:10px">
+      <button id="srcV" class="${repSource==='ventas'?'active':''}">Registradas</button>
+      <button id="srcL" class="${repSource==='looker'?'active':''}">Avance Looker</button>
+    </div>
+    <p class="tiny" style="margin:8px 2px 0">${fuenteMsg}</p>
     <div class="kpi" style="margin-top:12px">
       <div class="k"><div class="l">GExt total</div><div class="n">${CLP(gextTot)}</div></div>
       <div class="k"><div class="l">Seguro total</div><div class="n">${CLP(segTot)}</div></div>
-      <div class="k"><div class="l">Otros (mix/attach/puntos)</div><div class="n">${CLP(totOtros)}</div></div>
-      <div class="k"><div class="l">Cumplimiento tienda</div><div class="n" style="color:${esTot==='ok'?'#4ade80':esTot==='warn'?'#fbbf24':'#f87171'}">${pctTot}%</div></div>
+      <div class="k"><div class="l">Otros (mix/attach/puntos)</div><div class="n">${CLP(otrosTot)}</div></div>
+      <div class="k"><div class="l">Cumplimiento tienda</div><div class="n" style="color:${colorPct(esTot)}">${pctTot}%</div></div>
     </div>
+    <button class="btn secondary" id="btnImport" style="margin-top:12px">⬆️ Importar avances de Looker (HTML/TXT)</button>
   </div>
 
   <div class="card">
@@ -895,6 +1046,8 @@ function renderReporte(app){
     </div>
   </div>
 
+  ${metasHTML}
+
   <div class="card">
     <h2>Detalle por área · departamento · asesor</h2>
     <div class="rep-wrap" style="margin-top:10px">
@@ -908,12 +1061,79 @@ function renderReporte(app){
   $("#repDate").onchange=e=>{repDate=e.target.value;renderReporte(app);};
   $("#rgDia").onclick=()=>{repRange="dia";renderReporte(app);};
   $("#rgAcum").onclick=()=>{repRange="acumulado";renderReporte(app);};
+  $("#srcV").onclick=()=>{repSource="ventas";renderReporte(app);};
+  $("#srcL").onclick=()=>{repSource="looker";renderReporte(app);};
   $("#btnShot").onclick=()=>capturaShot();
+  $("#btnImport").onclick=()=>modalImportarLooker();
 }
 async function capturaShot(){
-  toast("Sugerencia: usa la captura de pantalla de tu teléfono sobre la tarjeta 'Resumen por jefe'.",4200);
-  // scroll a la vista de captura
+  toast("Usa la captura de pantalla de tu teléfono sobre la tarjeta 'Resumen por jefe'.",4200);
   $("#shot").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+/* Modal importar avances de Looker (HTML/TXT/CSV) -> IA -> verificación editable */
+let impFilas=[];
+function modalImportarLooker(){
+  impFilas=[];
+  const html=`<div class="modal-bg" id="impBg"><div class="modal"><div class="m-head"><b>Importar avances de Looker</b><button class="icon-btn" id="impX">✕</button></div>
+    <div class="m-body">
+      <p class="sub">Sube el archivo <b>HTML</b> o <b>TXT/CSV</b> que descargaste de Looker con los avances por departamento y/o asesor. La IA los lee y podrás verificarlos antes de guardar.</p>
+      <label>Fecha del avance</label><input type="date" id="impFecha" value="${todayStr()}">
+      <label class="btn secondary" style="cursor:pointer;margin-top:10px">📄 Elegir archivo (.html/.txt/.csv)
+        <input id="impFile" type="file" accept=".html,.htm,.txt,.csv,text/html,text/plain" class="hidden"></label>
+      <div id="impStatus"></div>
+      <div id="impTabla"></div>
+    </div></div></div>`;
+  document.body.insertAdjacentHTML("beforeend",html);
+  const close=()=>$("#impBg").remove();
+  $("#impX").onclick=close;
+  $("#impBg").onclick=e=>{if(e.target.id==="impBg")close();};
+  $("#impFile").onchange=async e=>{
+    const file=e.target.files[0]; if(!file) return;
+    const st=$("#impStatus");
+    if(!Store.config.gemini.apiKey){ st.innerHTML=`<div class="ocr-note">⚠️ Configura la API key de Gemini en ⚙️ Config para leer el archivo.</div>`; return; }
+    st.innerHTML=`<div class="ocr-note">🤖 Leyendo el archivo con IA…</div>`;
+    try{
+      let text=await file.text();
+      if(/\.html?$/i.test(file.name)||/<html|<table|<td/i.test(text)) text=htmlATexto(text);
+      const data=await extraerAvancesLooker(text);
+      impFilas=(data.filas||[]).map(f=>({
+        nivel:f.nivel==='departamento'?'departamento':'asesor',
+        nombre:f.nombre||"", area:f.area||inferArea(f.departamento||f.nombre),
+        departamento:f.departamento|| (f.nivel==='departamento'?f.nombre:""),
+        gext:+f.gext||0, seguro:+f.seguro||0, otros:+f.otros||0
+      }));
+      st.innerHTML=`<div class="ocr-note">Detecté ${impFilas.length} fila(s). Revisa y corrige antes de guardar.${data.dudas&&data.dudas.length?' Dudas: '+data.dudas.map(esc).join(', '):''}</div>`;
+      drawImpTabla();
+    }catch(err){ st.innerHTML=`<div class="ocr-note">No pude leer el archivo (${esc(err.message||'')}).</div>`; }
+  };
+  function drawImpTabla(){
+    if(!impFilas.length){ $("#impTabla").innerHTML=""; return; }
+    $("#impTabla").innerHTML=`
+      <div class="rep-wrap" style="margin-top:12px"><table><thead><tr><th>Nivel</th><th>Nombre</th><th>Área</th><th>Depto</th><th>GExt</th><th>Seguro</th><th></th></tr></thead>
+      <tbody>${impFilas.map((f,i)=>`<tr>
+        <td><select data-i="${i}" data-f="nivel"><option value="asesor" ${f.nivel==='asesor'?'selected':''}>asesor</option><option value="departamento" ${f.nivel==='departamento'?'selected':''}>depto</option></select></td>
+        <td><input data-i="${i}" data-f="nombre" value="${esc(f.nombre)}" style="min-width:120px"></td>
+        <td><select data-i="${i}" data-f="area">${AREAS.map(a=>`<option ${f.area===a?'selected':''}>${a}</option>`).join("")}</select></td>
+        <td><input data-i="${i}" data-f="departamento" value="${esc(f.departamento)}" style="min-width:100px"></td>
+        <td><input data-i="${i}" data-f="gext" inputmode="numeric" value="${f.gext}" style="min-width:80px"></td>
+        <td><input data-i="${i}" data-f="seguro" inputmode="numeric" value="${f.seguro}" style="min-width:80px"></td>
+        <td><button class="icon-btn" data-del="${i}">🗑</button></td></tr>`).join("")}</tbody></table></div>
+      <div class="btn-row"><button class="btn green" id="impSave">Guardar avance</button>
+        <button class="btn ghost sm" id="impAdd">+ Fila</button></div>`;
+    $$("#impTabla [data-i]").forEach(el=>el.onchange=()=>{
+      const f=impFilas[+el.dataset.i],k=el.dataset.f;
+      f[k]=(k==='gext'||k==='seguro')? (+String(el.value).replace(/[^\d]/g,"")||0) : el.value;
+    });
+    $$("#impTabla [data-del]").forEach(b=>b.onclick=()=>{impFilas.splice(+b.dataset.del,1);drawImpTabla();});
+    $("#impAdd").onclick=()=>{impFilas.push({nivel:'asesor',nombre:'',area:AREAS[0],departamento:'',gext:0,seguro:0,otros:0});drawImpTabla();};
+    $("#impSave").onclick=async()=>{
+      const fecha=$("#impFecha").value||todayStr();
+      const btn=$("#impSave"); btn.disabled=true; btn.textContent="Guardando…";
+      try{ await Store.addAvance({fecha, fuente:"looker", filas:impFilas}); toast("Avance guardado ✓"); close(); repSource="looker"; renderReporte($("#app")); }
+      catch(err){ toast("Error: "+(err.message||err)); btn.disabled=false; btn.textContent="Guardar avance"; }
+    };
+  }
 }
 
 /* ---------------- HISTORIAL ---------------- */
@@ -977,6 +1197,13 @@ function renderConfig(app){
     <h3>Tienda</h3>
     <input id="cTienda" value="${esc(c.tienda||'')}">
 
+    <h3>Mes comercial (para metas diarias)</h3>
+    <div class="grid2">
+      <div><label>Inicio</label><input id="cMesIni" type="date" value="${esc(c.mes?.inicio||'')}"></div>
+      <div><label>Término</label><input id="cMesFin" type="date" value="${esc(c.mes?.fin||'')}"></div>
+    </div>
+    <p class="tiny">La meta diaria se calcula como (plan − avance) ÷ días que faltan hasta el término.</p>
+
     <h3>Jefes y metas</h3>
     <div id="jefesBox"></div>
     <button class="btn ghost sm" id="addJefe" style="margin-top:8px">+ Agregar jefe</button>
@@ -1031,6 +1258,7 @@ function renderConfig(app){
   $("#cfgLock").onclick=()=>{cfgUnlocked=false;renderConfig(app);};
   $("#cfgSave").onclick=async()=>{
     c.tienda=$("#cTienda").value;
+    c.mes={inicio:$("#cMesIni").value,fin:$("#cMesFin").value};
     $$("#jefesBox [data-j]").forEach(inp=>{
       const j=c.jefes[+inp.dataset.j],f=inp.dataset.f;
       if(f==="departamentos")j[f]=inp.value.split(",").map(s=>s.trim()).filter(Boolean);
@@ -1068,6 +1296,7 @@ function updateModePill(){
   await Store.restoreSession();
   Store.subscribeVentas(()=>{ if(CURRENT==="reporte")renderReporte($("#app"));
     if(CURRENT==="historial")renderHistorial($("#app")); });
+  Store.subscribeAvances(()=>{ if(CURRENT==="reporte")renderReporte($("#app")); });
   render();
   // service worker (PWA) — opcional
   if("serviceWorker" in navigator){ try{ navigator.serviceWorker.register("sw.js"); }catch{} }
